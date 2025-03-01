@@ -1,5 +1,4 @@
 import os
-import sys
 import argparse
 import customtkinter as ctk
 from WinCap import WindowCapture
@@ -11,7 +10,7 @@ args = parser.parse_args()
 
 # 根據 `--force-cpu` 設置環境變數
 if args.force_cpu:
-    os.environ["CUDA_VISIBLE_DEVICES"] = "-1" # 在 Windows 環境中要使用空列表 ","
+    os.environ["CUDA_VISIBLE_DEVICES"] = "," # 在 Windows 環境中要使用空列表 ","
 
 def run_wincap():
     """啟動 WindowCapture GUI 並取得擷取的螢幕畫面"""
@@ -21,7 +20,7 @@ def run_wincap():
 def on_closing():
     """確保關閉視窗時正常退出"""
     window.destroy() # 關閉 Tkinter 視窗
-    sys.exit(0) # 強制結束 Python 程式
+    window.quit() # 強制結束 Python 程式
 
 # GUI    
 # 建立主視窗

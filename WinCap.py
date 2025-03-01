@@ -4,7 +4,7 @@ import tkinter as tk
 import pyautogui
 import pyperclip # 剪貼簿
 from PIL import Image
-import torch
+from torch import cuda
 from surya.recognition import RecognitionPredictor
 from surya.detection import DetectionPredictor
 
@@ -101,12 +101,13 @@ class WindowCapture(tk.Tk):
 
         # 關閉視窗
         self.destroy()
+        self.quit()
 
     def perform_ocr(self, image):
         """使用 Surya-OCR 進行辨識 (延遲加載)"""
         if self.recognition_predictor is None or self.detection_predictor is None:
             # 判斷裝置
-            device = "CUDA" if torch.cuda.is_available() else "CPU"
+            device = "CUDA" if cuda.is_available() else "CPU"
             print(f"\033[32m[INFO]載入 OCR 模型（使用裝置: {device}）...\033[0m")
             self.recognition_predictor = RecognitionPredictor()
             self.detection_predictor = DetectionPredictor()
@@ -127,9 +128,9 @@ class WindowCapture(tk.Tk):
             del self.detection_predictor
             self.detection_predictor = None
 
-        if torch.cuda.is_available():
-            torch.cuda.empty_cache()
-            torch.cuda.ipc_collect()
+        if cuda.is_available():
+            cuda.empty_cache()
+            cuda.ipc_collect()
             print("\033[32m[INFO]已釋放 GPU 記憶體\033[0m")
         else:
             gc.collect()

@@ -11,7 +11,7 @@ if args.force_cpu:
     os.environ["CUDA_VISIBLE_DEVICES"] = ","  # 在 Windows 環境中要使用空列表 ","
 
 import gc
-import torch  # 在設置 CUDA_VISIBLE_DEVICES 之後載入 torch
+from torch import cuda  # 在設置 CUDA_VISIBLE_DEVICES 之後載入 torch
 from surya.recognition import RecognitionPredictor
 from surya.detection import DetectionPredictor
 
@@ -19,7 +19,7 @@ def download_models():
     """下載 OCR 模型並確保它們已被加載一次"""
 
     # 判斷裝置
-    device = "CUDA" if torch.cuda.is_available() else "CPU"
+    device = "CUDA" if cuda.is_available() else "CPU"
     print(f"\033[32m[INFO]正在下載並初始化 OCR 模型（使用裝置: {device}），請稍候...\033[0m")
 
     # 初始化一次，確保模型已下載
@@ -27,11 +27,11 @@ def download_models():
     detection_predictor = DetectionPredictor()
 
     # 釋放記憶體（CUDA 模式釋放 VRAM; CPU 模式釋放 DRAM）
-    if torch.cuda.is_available():
+    if cuda.is_available():
         del recognition_predictor
         del detection_predictor
-        torch.cuda.empty_cache()
-        torch.cuda.ipc_collect()
+        cuda.empty_cache()
+        cuda.ipc_collect()
         print("\033[32m[INFO]已釋放 GPU 記憶體\033[0m")
     else:
         gc.collect()
