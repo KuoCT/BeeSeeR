@@ -23,7 +23,7 @@ SnapOCR是一款高效且易用的光學字符識別（OCR）工具，為快速�
 - **NVIDIA GPU（選配）** – 建議使用 CUDA 加速提高 OCR 速度。
 
 ### **Setup & First-Time Run**
-1. 複製存儲庫：:
+1. 複製存儲庫
    ```bash
    git clone https://github.com/your-username/SnapOCR.git
    cd SnapOCR
