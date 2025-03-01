@@ -13,6 +13,9 @@ args = parser.parse_args()
 if args.force_cpu:
     os.environ["CUDA_VISIBLE_DEVICES"] = "," # 在 Windows 環境中要使用空列表 ","
 
+# 定義預設參數
+prompt_control = True
+
 def run_wincap():
     """啟動 WindowCapture GUI 並取得擷取的螢幕畫面"""
     app = WindowCapture(prompt_control)
