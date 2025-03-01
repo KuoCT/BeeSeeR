@@ -2,7 +2,7 @@
 setlocal
 
 :: 設定模式（0 為正常模式，1 為強制CPU模式）
-set mode=0
+set mode=1
 
 :: 設定 debug 變數（0 為正常模式，1 為除錯模式）
 set debug=0
