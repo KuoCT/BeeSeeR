@@ -76,10 +76,21 @@ class WindowCapture(tk.Tk):
         image = Image.open(img_bytes)
         extracted_text = self.perform_ocr(image)
 
+        # 讀取 Prompt.txt 內容
+        prompt_text = ""
+        prompt_file = "Prompt.txt"  # 檔案名稱
+        try:
+            with open(prompt_file, "r", encoding="utf-8") as file:
+                prompt_text = file.read().strip()  # 讀取並去除前後空白
+        except FileNotFoundError:
+            print(f"找不到 {prompt_file}，將只輸出 OCR 結果。")
+
+        # 合併 prompt 與 OCR 結果
         if extracted_text:
-            pyperclip.copy(extracted_text)
+            final_text = f"{prompt_text}\n\n{extracted_text}" if prompt_text else extracted_text
+            pyperclip.copy(final_text)
             print("OCR 辨識結果已複製到剪貼簿：")
-            print(extracted_text)
+            print(final_text)
         else:
             print("未偵測到文字內容。")
 
