@@ -5,7 +5,7 @@
 SnapOCR是一款高效且易用的光學字符識別（OCR）工具，為快速且可靠地從螢幕上的任何區域提取文字而設計。
 
 ## 應用
-![DEMO](./asset/DEMO.mp4)
+https://github.com/user-attachments/assets/340bdbb9-ad20-4f22-bf8c-2db590b9c0d9
 - 無縫提取文字**供 LLM（大語言模型）使用**（如 ChatGPT、Claude），避免輸入限制。
 - 直接**從 PC 遊戲畫面擷取文字**。
 - **提升 PDF 閱讀體驗**，快速擷取並識別文字。
