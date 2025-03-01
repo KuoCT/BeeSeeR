@@ -3,6 +3,7 @@ import sys
 import argparse
 import customtkinter as ctk
 
+
 # 解析命令列參數
 parser = argparse.ArgumentParser(description="OCR 模型控制器")
 parser.add_argument("--force-cpu", action="store_true", help="強制使用 CPU 模式")
@@ -12,10 +13,10 @@ args = parser.parse_args()
 if args.force_cpu:
     os.environ["CUDA_VISIBLE_DEVICES"] = ","  # 在 Windows 環境中要使用空列表 ","
 
-import WinCap  # 導入 WinCap.py
-
 def run_wincap():
     """啟動 WindowCapture GUI 並取得擷取的螢幕畫面"""
+    global WinCap
+    import WinCap  # 只在需要時載入，減少初始開啟時間
     app = WinCap.WindowCapture()
     app.mainloop()
 

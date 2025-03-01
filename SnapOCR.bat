@@ -4,7 +4,7 @@ setlocal
 :: 設定模式（0 為正常模式，1 為強制CPU模式）
 set mode=0
 
-:: 設定 debug 變數（0 為正常模式，1 為啟用除錯模式）
+:: 設定 debug 變數（0 為正常模式，1 為除錯模式）
 set debug=0
 
 :: 設定虛擬環境路徑
@@ -14,6 +14,7 @@ set GUI=%~dp0GUI.py
 set INIT=%~dp0init.py
 set INIT_FLAG=%VENV_DIR%\init.flag
 set INIT_CPU_FLAG=%VENV_DIR%\init_cpu.flag
+set GUI_READY_FLAG=%~dp0gui_ready.flag
 
 :: 檢查虛擬環境是否已存在，若不存在則建立
 if not exist "%VENV_DIR%" (
@@ -53,6 +54,9 @@ if "%mode%"=="1" (
         echo INIT has already been executed in normal mode.
     )
 )
+
+:: 刪除舊的 flag，確保這次執行是新的
+if exist "gui_ready.flag" del "gui_ready.flag"
 
 :: 啟動 GUI
 if "%mode%"=="1" (
