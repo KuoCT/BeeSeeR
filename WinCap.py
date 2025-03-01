@@ -1,9 +1,10 @@
 import io
+import gc
 import tkinter as tk
 import pyautogui
-import pyperclip  # 剪貼簿
-import torch  # 用來釋放 VRAM
+import pyperclip # 剪貼簿
 from PIL import Image
+import torch
 from surya.recognition import RecognitionPredictor
 from surya.detection import DetectionPredictor
 
@@ -83,20 +84,20 @@ class WindowCapture(tk.Tk):
             with open(prompt_file, "r", encoding="utf-8") as file:
                 prompt_text = file.read().strip()
         except FileNotFoundError:
-            print(f"\033[32m找不到 {prompt_file}，將只輸出 OCR 結果。\033[0m")
+            print(f"\033[32m[INFO]找不到 {prompt_file}，將只輸出 OCR 結果。\033[0m")
 
         # 合併 prompt 與 OCR 結果
         if extracted_text:
             final_text = f"{prompt_text}\n\n{extracted_text}" if prompt_text else extracted_text
             pyperclip.copy(final_text)
-            print("\033[32mOCR 辨識結果已複製到剪貼簿：\033[0m")
+            print("\033[32m[INFO]OCR 辨識結果已複製到剪貼簿：\033[0m")
             print(final_text)
         else:
-            print("\033未偵測到文字內容\033[0m。")
+            print("\033[INFO]未偵測到文字內容\033[0m。")
 
         # 清理資源
         image.close()
-        self.cleanup_gpu_memory()  # 釋放 GPU 記憶體
+        self.cleanup_memory()  # 釋放記憶體
 
         # 關閉視窗
         self.destroy()
@@ -104,7 +105,9 @@ class WindowCapture(tk.Tk):
     def perform_ocr(self, image):
         """使用 Surya-OCR 進行辨識 (延遲加載)"""
         if self.recognition_predictor is None or self.detection_predictor is None:
-            print("\033[32m載入 OCR 模型...\033[0m")
+            # 判斷裝置
+            device = "CUDA" if torch.cuda.is_available() else "CPU"
+            print(f"\033[32m[INFO]載入 OCR 模型（使用裝置: {device}）...\033[0m")
             self.recognition_predictor = RecognitionPredictor()
             self.detection_predictor = DetectionPredictor()
 
@@ -114,8 +117,8 @@ class WindowCapture(tk.Tk):
             return "\n".join([line.text for line in predictions[0].text_lines])
         return None
 
-    def cleanup_gpu_memory(self):
-        """釋放 GPU 記憶體並卸載 OCR 模型"""
+    def cleanup_memory(self):
+        """釋放記憶體（CUDA 模式釋放 VRAM; CPU 模式釋放 DRAM）"""
         if self.recognition_predictor is not None:
             del self.recognition_predictor
             self.recognition_predictor = None
@@ -124,11 +127,15 @@ class WindowCapture(tk.Tk):
             del self.detection_predictor
             self.detection_predictor = None
 
-        # 釋放 GPU 記憶體
-        torch.cuda.empty_cache()
-        torch.cuda.ipc_collect()
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+            torch.cuda.ipc_collect()
+            print("\033[32m[INFO]已釋放 GPU 記憶體\033[0m")
+        else:
+            gc.collect()
+            print("\033[32m[INFO]已釋放 CPU 記憶體\033[0m")
 
-        print("\033[32mOCR 模型已卸載，並釋放 GPU 記憶體。\033[0m")
+        print("\033[32m[INFO]OCR 模型已卸載，並釋放記憶體。\033[0m")
 
     def exit_without_screenshot(self):
         """直接關閉視窗，不進行截圖"""
