@@ -25,7 +25,7 @@ SnapOCR是一款高效且易用的光學字符識別（OCR）工具，為快速�
 ### **Setup & First-Time Run**
 1. 複製存儲庫到電腦
    ```shell
-   git clone https://github.com/your-username/SnapOCR.git
+   git clone https://github.com/KuoCT/SnapOCR.git
    cd SnapOCR
    ```
 2. 執行 `SnapOCR.bat`

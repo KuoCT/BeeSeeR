@@ -27,7 +27,7 @@ SnapOCR is an **efficient and user-friendly** Optical Character Recognition (OCR
 ### **Setup & First-Time Run**
 1. Clone the repository:
    ```bash
-   git clone https://github.com/your-username/SnapOCR.git
+   git clone https://github.com/KuoCT/SnapOCR.git
    cd SnapOCR
    ```
 2. Run SnapOCR.bat
