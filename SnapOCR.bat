@@ -5,7 +5,7 @@ setlocal
 set mode=0
 
 :: 設定 debug 變數（0 為正常模式，1 為除錯模式）
-set debug=0
+set debug=1
 
 :: 設定虛擬環境路徑
 set VENV_DIR=%~dp0SnapOCR_env
