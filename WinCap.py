@@ -33,7 +33,7 @@ class WindowCapture(tk.Tk):
         self.rect_id = None
         self.start_x = 0
         self.start_y = 0
-        self.is_dragging = False  # 用來記錄是否有拖曳
+        self.is_dragging = False # 用來記錄是否有拖曳
 
         # 初始化 OCR 變數 (延遲加載)
         self.recognition_predictor = None
@@ -49,13 +49,13 @@ class WindowCapture(tk.Tk):
         self.start_y = event.y
         self.rect_id = self.canvas.create_rectangle(self.start_x, self.start_y, self.start_x, self.start_y,
                                                     outline="white", width=1, fill="green")
-        self.is_dragging = False  # 每次點擊時重置拖曳狀態
+        self.is_dragging = False # 每次點擊時重置拖曳狀態
 
     def update_draw(self, event):
         """當滑鼠拖曳時，更新矩形的大小"""
         if self.rect_id:
             self.canvas.coords(self.rect_id, self.start_x, self.start_y, event.x, event.y)
-            self.is_dragging = True  # 只要有拖曳，就設置為 True
+            self.is_dragging = True # 只要有拖曳，就設置為 True
 
     def stop_draw(self, event):
         """當滑鼠釋放時，結束繪製並擷取螢幕 + OCR 辨識 + 複製到剪貼簿"""
@@ -97,7 +97,7 @@ class WindowCapture(tk.Tk):
 
         # 清理資源
         image.close()
-        self.cleanup_memory()  # 釋放記憶體
+        self.cleanup_memory() # 釋放記憶體
 
         # 關閉視窗
         self.destroy()
