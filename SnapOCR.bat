@@ -14,7 +14,7 @@ set GUI=%~dp0GUI.py
 set INIT=%~dp0init.py
 set INIT_FLAG=%VENV_DIR%\init.flag
 set INIT_CPU_FLAG=%VENV_DIR%\init_cpu.flag
-set GUI_READY_FLAG=%~dp0gui_ready.flag
+set REQUIREMENT_FLAG=%VENV_DIR%\requirement.flag
 
 :: 檢查虛擬環境是否已存在，若不存在則建立
 if not exist "%VENV_DIR%" (
@@ -28,12 +28,23 @@ if not exist "%VENV_DIR%" (
 echo Activating virtual environment...
 call "%ACTIVATE_SCRIPT%"
 
+:: 在除錯模式中重新檢查安裝套件
+if %debug%==1 (
+    echo Debug mode enabled: Reinstalling required packages...
+    del "%REQUIREMENT_FLAG%" >nul 2>&1
+)
+
 :: 檢查是否已安裝必要的套件
-echo Installing required packages...
-python.exe -m pip install --upgrade pip
-pip install torch==2.6.0+cu118 torchvision==0.21.0+cu118 torchaudio==2.6.0+cu118 --index-url https://download.pytorch.org/whl/cu118
-pip install customtkinter==5.2.2 pyautogui==0.9.54
-pip install surya-ocr==0.13.0
+if not exist "%REQUIREMENT_FLAG%" (
+    echo Installing required packages...
+    python.exe -m pip install --upgrade pip
+    pip install torch==2.6.0+cu118 torchvision==0.21.0+cu118 torchaudio==2.6.0+cu118 --index-url https://download.pytorch.org/whl/cu118
+    pip install customtkinter==5.2.2 pyautogui==0.9.54
+    pip install surya-ocr==0.13.0
+    echo Required packages installed > "%REQUIREMENT_FLAG%"
+) else (
+    echo Required packages already been installed.
+)
 
 :: 檢查是否需要執行 INIT
 if "%mode%"=="1" (
