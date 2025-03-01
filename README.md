@@ -7,7 +7,8 @@ An intuitive GUI-based OCR tool with screenshot-like functionality.
 SnapOCR is an **efficient and user-friendly** Optical Character Recognition (OCR) tool, designed for **fast and reliable text extraction** from any part of the screen.
 
 ## Use Cases
-![DEMO](./asset/DEMO.mp4)
+https://github.com/user-attachments/assets/340bdbb9-ad20-4f22-bf8c-2db590b9c0d9
+
 - **Seamless text extraction for LLMs** (e.g., ChatGPT, Claude) without input limitations.
 - **Extracting text directly from PC game screens.**
 - **Enhancing PDF reading** by quickly capturing and recognizing text.
