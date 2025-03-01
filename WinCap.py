@@ -9,8 +9,9 @@ from surya.recognition import RecognitionPredictor
 from surya.detection import DetectionPredictor
 
 class WindowCapture(tk.Tk):
-    def __init__(self):
+    def __init__(self, prompt_control = True):
         super().__init__()
+        self.prompt_control = prompt_control
 
         # 設定全螢幕
         self.attributes('-fullscreen', True)
@@ -80,11 +81,12 @@ class WindowCapture(tk.Tk):
         # 讀取 Prompt.txt 內容
         prompt_text = ""
         prompt_file = "Prompt.txt"
-        try:
-            with open(prompt_file, "r", encoding="utf-8") as file:
-                prompt_text = file.read().strip()
-        except FileNotFoundError:
-            print(f"\033[32m[INFO]找不到 {prompt_file}，將只輸出 OCR 結果。\033[0m")
+        if self.prompt_control:
+            try:
+                with open(prompt_file, "r", encoding="utf-8") as file:
+                    prompt_text = file.read().strip()
+            except FileNotFoundError:
+                print(f"\033[32m[INFO]找不到 {prompt_file}，將只輸出 OCR 結果。\033[0m")
 
         # 合併 prompt 與 OCR 結果
         if extracted_text:
@@ -143,5 +145,5 @@ class WindowCapture(tk.Tk):
         self.destroy()
 
 if __name__ == "__main__":
-    app = WindowCapture()
+    app = WindowCapture(prompt_control = True)
     app.mainloop()
