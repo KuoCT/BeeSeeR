@@ -39,6 +39,7 @@ SnapOCR is an **efficient and user-friendly** Optical Character Recognition (OCR
 2. Click the button – Select any part of the screen.
 3. OCR processing – The text is extracted instantly.
 4. Text is copied to clipboard – Paste it anywhere (e.g., ChatGPT, Google Translate).
+5. You can find and edit the text in `Prompt.txt` within the folder. It will be copied to the clipboard as a prompt along with the recognized text! (If you don't want to copy the prompt, simply delete the content in the file.)
 
 ## Credit
 A huge thanks to the following open-source projects:

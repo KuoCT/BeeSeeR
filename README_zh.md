@@ -1,5 +1,5 @@
 # SnapOCR
-直觀的 GUI OCR 工具，用類似螢幕截圖的方法解析文字。
+這是一個直觀的 GUI OCR 工具，用類似螢幕截圖的方法解析文字。
 
 ## 概述
 SnapOCR是一款高效且易用的光學字符識別（OCR）工具，為快速且可靠地從螢幕上的任何區域提取文字而設計。
@@ -23,8 +23,8 @@ SnapOCR是一款高效且易用的光學字符識別（OCR）工具，為快速�
 - **NVIDIA GPU（選配）** – 建議使用 CUDA 加速提高 OCR 速度。
 
 ### **Setup & First-Time Run**
-1. 複製存儲庫
-   ```bash
+1. 複製存儲庫到電腦
+   ```shell
    git clone https://github.com/your-username/SnapOCR.git
    cd SnapOCR
    ```
@@ -37,6 +37,7 @@ SnapOCR是一款高效且易用的光學字符識別（OCR）工具，為快速�
 2. 點擊按鈕 – 選擇螢幕上的任何區域。
 3. OCR 處理 – 文字將被即時提取。
 4. 文字自動複製到剪貼簿 – 可直接貼上到 ChatGPT、Google 翻譯等應用程式中。
+5. 在資料夾中可以找到並編輯 `Prompt.txt` 中的文字，它會作為提示詞一起被複製到剪貼簿！(不想要複製提示詞的話刪除檔案中的內容即可)
 
 ## 致謝
 特別感謝以下開源專案的支持：
