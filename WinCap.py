@@ -7,10 +7,6 @@ from PIL import Image
 from surya.recognition import RecognitionPredictor
 from surya.detection import DetectionPredictor
 
-# 只初始化一次 OCR 模型，避免多次加載
-recognition_predictor = RecognitionPredictor()
-detection_predictor = DetectionPredictor()
-
 class WindowCapture(tk.Tk):
     def __init__(self):
         super().__init__()
@@ -37,6 +33,10 @@ class WindowCapture(tk.Tk):
         self.start_x = 0
         self.start_y = 0
         self.is_dragging = False  # 用來記錄是否有拖曳
+
+        # 初始化 OCR 變數 (延遲加載)
+        self.recognition_predictor = None
+        self.detection_predictor = None
 
     def set_transparent_color(self, color):
         """讓指定顏色變成透明"""
@@ -78,42 +78,57 @@ class WindowCapture(tk.Tk):
 
         # 讀取 Prompt.txt 內容
         prompt_text = ""
-        prompt_file = "Prompt.txt"  # 檔案名稱
+        prompt_file = "Prompt.txt"
         try:
             with open(prompt_file, "r", encoding="utf-8") as file:
-                prompt_text = file.read().strip()  # 讀取並去除前後空白
+                prompt_text = file.read().strip()
         except FileNotFoundError:
-            print(f"找不到 {prompt_file}，將只輸出 OCR 結果。")
+            print(f"\033[32m找不到 {prompt_file}，將只輸出 OCR 結果。\033[0m")
 
         # 合併 prompt 與 OCR 結果
         if extracted_text:
             final_text = f"{prompt_text}\n\n{extracted_text}" if prompt_text else extracted_text
             pyperclip.copy(final_text)
-            print("OCR 辨識結果已複製到剪貼簿：")
+            print("\033[32mOCR 辨識結果已複製到剪貼簿：\033[0m")
             print(final_text)
         else:
-            print("未偵測到文字內容。")
+            print("\033未偵測到文字內容\033[0m。")
 
         # 清理資源
-        image.close()  # 釋放 PIL 圖像
+        image.close()
         self.cleanup_gpu_memory()  # 釋放 GPU 記憶體
 
         # 關閉視窗
         self.destroy()
 
     def perform_ocr(self, image):
-        """使用 Surya-OCR 進行辨識"""
-        global recognition_predictor, detection_predictor
-        predictions = recognition_predictor([image], [None], detection_predictor)
+        """使用 Surya-OCR 進行辨識 (延遲加載)"""
+        if self.recognition_predictor is None or self.detection_predictor is None:
+            print("\033[32m載入 OCR 模型...\033[0m")
+            self.recognition_predictor = RecognitionPredictor()
+            self.detection_predictor = DetectionPredictor()
+
+        predictions = self.recognition_predictor([image], [None], self.detection_predictor)
 
         if predictions and hasattr(predictions[0], 'text_lines'):
             return "\n".join([line.text for line in predictions[0].text_lines])
         return None
 
     def cleanup_gpu_memory(self):
-        """釋放 GPU 記憶體"""
+        """釋放 GPU 記憶體並卸載 OCR 模型"""
+        if self.recognition_predictor is not None:
+            del self.recognition_predictor
+            self.recognition_predictor = None
+
+        if self.detection_predictor is not None:
+            del self.detection_predictor
+            self.detection_predictor = None
+
+        # 釋放 GPU 記憶體
         torch.cuda.empty_cache()
         torch.cuda.ipc_collect()
+
+        print("\033[32mOCR 模型已卸載，並釋放 GPU 記憶體。\033[0m")
 
     def exit_without_screenshot(self):
         """直接關閉視窗，不進行截圖"""
