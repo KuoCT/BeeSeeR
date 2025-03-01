@@ -66,9 +66,6 @@ if "%mode%"=="1" (
     )
 )
 
-:: 刪除舊的 flag，確保這次執行是新的
-if exist "gui_ready.flag" del "gui_ready.flag"
-
 :: 啟動 GUI
 if "%mode%"=="1" (
     echo Launching GUI in force-CPU mode...
