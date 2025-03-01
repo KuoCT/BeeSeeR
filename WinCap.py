@@ -2,9 +2,14 @@ import io
 import tkinter as tk
 import pyautogui
 import pyperclip  # 剪貼簿
+import torch  # 用來釋放 VRAM
 from PIL import Image
 from surya.recognition import RecognitionPredictor
 from surya.detection import DetectionPredictor
+
+# 只初始化一次 OCR 模型，避免多次加載
+recognition_predictor = RecognitionPredictor()
+detection_predictor = DetectionPredictor()
 
 class WindowCapture(tk.Tk):
     def __init__(self):
@@ -12,20 +17,10 @@ class WindowCapture(tk.Tk):
 
         # 設定全螢幕
         self.attributes('-fullscreen', True)
-
-        # 設定視窗背景色
         self.config(bg="black")
-
-        # 設定透明度 (0.0 完全透明, 1.0 完全不透明)
         self.attributes('-alpha', 0.6)
-
-        # 設定無邊框模式
         self.overrideredirect(True)
-
-        # 設定按 ESC 鍵可關閉視窗
         self.bind("<Escape>", lambda event: self.exit_without_screenshot())
-
-        # 設定 Windows Layered Window，讓特定顏色變透明
         self.set_transparent_color("green")
 
         # 創建畫布 (Canvas) 來繪製矩形
@@ -42,10 +37,6 @@ class WindowCapture(tk.Tk):
         self.start_x = 0
         self.start_y = 0
         self.is_dragging = False  # 用來記錄是否有拖曳
-
-        # 初始化 Surya-OCR 模型
-        self.recognition_predictor = RecognitionPredictor()
-        self.detection_predictor = DetectionPredictor()
 
     def set_transparent_color(self, color):
         """讓指定顏色變成透明"""
@@ -68,7 +59,6 @@ class WindowCapture(tk.Tk):
     def stop_draw(self, event):
         """當滑鼠釋放時，結束繪製並擷取螢幕 + OCR 辨識 + 複製到剪貼簿"""
         if not self.is_dragging:
-            # 如果沒有拖曳，則直接離開（不截圖）
             self.exit_without_screenshot()
             return
 
@@ -77,31 +67,42 @@ class WindowCapture(tk.Tk):
             x1, y1, x2, y2 = int(x1), int(y1), int(x2), int(y2)
 
         # 擷取螢幕畫面到記憶體
-        img_bytes = io.BytesIO()  # 建立記憶體 buffer
+        img_bytes = io.BytesIO()
         screenshot = pyautogui.screenshot(region=(x1, y1, x2 - x1, y2 - y1))
-        screenshot.save(img_bytes, format="PNG")  # 存入記憶體，不寫入硬碟
-        img_bytes.seek(0)  # 重設讀取位置
+        screenshot.save(img_bytes, format="PNG")
+        img_bytes.seek(0)
 
-        # 從記憶體讀取影像
+        # 讀取影像並進行 OCR
         image = Image.open(img_bytes)
+        extracted_text = self.perform_ocr(image)
 
-        # 使用 Surya-OCR 進行辨識
-        langs = None
-        predictions = self.recognition_predictor([image], [langs], DetectionPredictor())
-        # print(predictions)
-
-        # 解析 OCRResult 並提取純文字
-        # 確保 `predictions` 內有 OCRResult
-        if predictions and hasattr(predictions[0], 'text_lines'):
-            extracted_text = "\n".join([line.text for line in predictions[0].text_lines])  # 取得所有文字
-            pyperclip.copy(extracted_text)  # 複製到剪貼簿
+        if extracted_text:
+            pyperclip.copy(extracted_text)
             print("OCR 辨識結果已複製到剪貼簿：")
             print(extracted_text)
         else:
             print("未偵測到文字內容。")
 
+        # 清理資源
+        image.close()  # 釋放 PIL 圖像
+        self.cleanup_gpu_memory()  # 釋放 GPU 記憶體
+
         # 關閉視窗
         self.destroy()
+
+    def perform_ocr(self, image):
+        """使用 Surya-OCR 進行辨識"""
+        global recognition_predictor, detection_predictor
+        predictions = recognition_predictor([image], [None], detection_predictor)
+
+        if predictions and hasattr(predictions[0], 'text_lines'):
+            return "\n".join([line.text for line in predictions[0].text_lines])
+        return None
+
+    def cleanup_gpu_memory(self):
+        """釋放 GPU 記憶體"""
+        torch.cuda.empty_cache()
+        torch.cuda.ipc_collect()
 
     def exit_without_screenshot(self):
         """直接關閉視窗，不進行截圖"""
