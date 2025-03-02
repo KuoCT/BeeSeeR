@@ -31,6 +31,7 @@ https://github.com/user-attachments/assets/340bdbb9-ad20-4f22-bf8c-2db590b9c0d9
    git clone https://github.com/KuoCT/SnapOCR.git
    cd SnapOCR
    ```
+   或從[這裡](https://github.com/KuoCT/SnapOCR/archive/refs/heads/main.zip)下載，解壓縮並打開。
 
 #### **NVIDIA GPU (推薦使用)**
 - 執行 `SnapOCR.bat` 進行首次安裝。

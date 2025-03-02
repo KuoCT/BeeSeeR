@@ -33,6 +33,8 @@ https://github.com/user-attachments/assets/340bdbb9-ad20-4f22-bf8c-2db590b9c0d9
    git clone https://github.com/KuoCT/SnapOCR.git
    cd SnapOCR
    ```
+   Or download it from [here](https://github.com/KuoCT/SnapOCR/archive/refs/heads/main.zip), then extract it and open the folder.
+
 #### **NVIDIA GPU (Recommended)**
 - Run `SnapOCR.bat` for the initial installation.
 - After the first installation, users can freely switch between CUDA and CPU mode by editing `SnapOCR.bat` and setting `mode` to `1`:
