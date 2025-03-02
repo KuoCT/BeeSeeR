@@ -5,6 +5,7 @@ An intuitive GUI-based OCR tool with screenshot-like functionality.
 
 ## Overview
 SnapOCR is an **efficient and user-friendly** Optical Character Recognition (OCR) tool, designed for **fast and reliable text extraction** from any part of the screen.
+
 **Important Reminder:** This script involves automation features such as selecting a specific area on the computer desktop. I am not sure if it will trigger anti-cheat programs. If you plan to use it in online games (especially competitive games), you do so at your own risk!
 
 ## Use Cases
