@@ -1,7 +1,7 @@
 @echo off
 setlocal
 
-:: 設定模式（0 為正常模式，1 為強制CPU模式）
+:: 設定模式（0 為兼容模式，1 為強制CPU模式）
 set mode=0
 
 :: 設定 debug 變數（0 為正常模式，1 為除錯模式）
@@ -73,7 +73,7 @@ if not exist "%REQUIREMENT_FLAG%" (
     echo Installing required packages...
     python.exe -m pip install --upgrade pip
     if "%mode%"=="0" (
-        pip install torch==2.6.0+cu118 torchvision==0.21.0+cu118 torchaudio==2.6.0+cu118 --index-url https://download.pytorch.org/whl/cu118
+        pip install torch==2.6.0+cu118 --index-url https://download.pytorch.org/whl/cu118
     )
     pip install customtkinter==5.2.2 pyautogui==0.9.54 surya-ocr==0.13.0
     echo Required packages installed > "%REQUIREMENT_FLAG%"
