@@ -53,11 +53,11 @@ echo After the script completes, rerun SnapOCR.bat with the correct settings.
 
 :: 解除安裝torch套件
 echo Uninstalling torch packages...
-pip uninstall torch torchvision torchaudio -y
+pip uninstall torch torchvision torchaudio -y 2>nul
 echo Reset Checkpoint...
-del %INIT_FLAG%
-del %INIT_CPU_FLAG%
-del %REQUIREMENT_FLAG%
+del %INIT_FLAG% >nul 2>nul
+del %INIT_CPU_FLAG% >nul 2>nul
+del %REQUIREMENT_FLAG% >nul 2>nul
 echo Torch packages have been uninstalled. Remember to adjust the mode in SnapOCR.bat before running it again!
 
 pause
