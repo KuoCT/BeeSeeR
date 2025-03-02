@@ -33,7 +33,7 @@ https://github.com/user-attachments/assets/340bdbb9-ad20-4f22-bf8c-2db590b9c0d9
    ```
    或從[這裡](https://github.com/KuoCT/SnapOCR/archive/refs/heads/main.zip)下載，解壓縮並打開。
 
-#### **NVIDIA GPU (推薦使用)**
+#### 使用NVIDIA GPU (推薦使用)
 - 執行 `SnapOCR.bat` 進行首次安裝。
 - 首次安裝完成後，使用者可以自由切換 CUDA 或是 CPU 模式，只要編輯`SnapOCR.bat` 設定 `mode` 成 `1`:
    ```bat
@@ -47,7 +47,7 @@ https://github.com/user-attachments/assets/340bdbb9-ad20-4f22-bf8c-2db590b9c0d9
    ```
 - 存檔`SnapOCR.bat`供後續使用。
 
-#### **其他廠牌 GPUs or 或只有 CPU **
+#### 使用其他廠牌 GPUs or 或只有 CPU
 - 編輯 `SnapOCR.bat`設定 `mode` 成 `1`，然後不要更改它。
 - 執行 `SnapOCR.bat` 進行首次安裝。
 - 首次安裝完成後，在 `SnapOCR.bat` 中設定 `debug` 成 `0` 可以隱藏 terminal 視窗(確定可以正常運行後使用):
