@@ -27,6 +27,12 @@ if not exist "%VENV_DIR%" (
 :: 啟動虛擬環境
 echo Activating virtual environment...
 call "%ACTIVATE_SCRIPT%"
+if errorlevel 1 (
+    echo Failed to activate virtual environment.
+    pause
+    exit /b 1
+)
+echo Virtual environment activated successfully.
 
 :: 在除錯模式中重新檢查安裝套件
 if %debug%==1 (
@@ -85,4 +91,5 @@ if "%mode%"=="1" (
     )
 )
 
+pause
 endlocal
