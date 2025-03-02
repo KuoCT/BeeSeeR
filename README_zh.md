@@ -26,8 +26,8 @@ https://github.com/user-attachments/assets/340bdbb9-ad20-4f22-bf8c-2db590b9c0d9
 - **NVIDIA GPU（建議）** – 使用 CUDA 加速提高 OCR 速度。
 
 ### **Setup & First-Time Run**
-1. 複製存儲庫到電腦
-   ```shell
+- 複製存儲庫到電腦
+   ```bash
    git clone https://github.com/KuoCT/SnapOCR.git
    cd SnapOCR
    ```
