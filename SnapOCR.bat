@@ -5,7 +5,7 @@ setlocal
 set mode=0
 
 :: 設定 debug 變數（0 為正常模式，1 為除錯模式）
-set debug=1
+set debug=0
 
 :: 設定虛擬環境路徑
 set VENV_DIR=%~dp0SnapOCR_env
@@ -29,6 +29,9 @@ echo Activating virtual environment...
 call "%ACTIVATE_SCRIPT%"
 if errorlevel 1 (
     echo Failed to activate virtual environment.
+    echo May consider run `Set-ExecutionPolicy RemoteSigned -Scope LocalMachine`
+    echo on your `PowerShell` as an administrator.
+
     pause
     exit /b 1
 )
@@ -58,7 +61,6 @@ if "%mode%"=="1" (
         echo Running INIT in force-CPU mode...
         python "%INIT%" --force-cpu
         echo Initialized CPU Mode > "%INIT_CPU_FLAG%"
-
     ) else (
         echo INIT has already been executed in force-CPU mode.
     )
