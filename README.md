@@ -52,7 +52,7 @@ https://github.com/user-attachments/assets/340bdbb9-ad20-4f22-bf8c-2db590b9c0d9
 #### Other GPUs or CPU only
 - Edit `SnapOCR.bat`, set `mode` to `1`, and do not change it.
 - Save and run the `SnapOCR.bat` for the initial installation.
-- After the first installation, set `debug` to `0` in `SnapOCR.bat` to hide the terminal window (recommended once everything is running smoothly):
+- After the first installation, set `debug` to `0` in `SnapOCR.bat` to hide the terminal window (recommended once everything is running smoothly)
 - Save `SnapOCR.bat` for future use.
 
 The first run may take some time as required dependencies are automatically installed. Subsequent runs will be faster.

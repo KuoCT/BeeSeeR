@@ -50,7 +50,7 @@ https://github.com/user-attachments/assets/340bdbb9-ad20-4f22-bf8c-2db590b9c0d9
 #### 使用其他廠牌 GPUs or 或只有 CPU
 - 編輯 `SnapOCR.bat`設定 `mode` 成 `1`，然後不要更改它。
 - 執行 `SnapOCR.bat` 進行首次安裝。
-- 首次安裝完成後，在 `SnapOCR.bat` 中設定 `debug` 成 `0` 可以隱藏 terminal 視窗(確定可以正常運行後使用):
+- 首次安裝完成後，在 `SnapOCR.bat` 中設定 `debug` 成 `0` 可以隱藏 terminal 視窗(確定可以正常運行後使用)
 - 存檔`SnapOCR.bat`供後續使用。
 
 首次運行可能需要一些時間，因為會自動安裝所需的依賴項。安裝完成後再次運行將更快。

@@ -81,4 +81,7 @@ checkbox = ctk.CTkCheckBox(master = frame, text = "Prompt (提示詞)", font = c
 checkbox.grid(row = 1, column = 0, padx = 5, pady = 5, sticky = "nswe")
 
 # 啟動 GUI
+with open("GUI_open.flag", "w") as f:
+    f.write("GUI_is_opened")
+print("\033[32m[INFO]SnapOCR GUI已啟動，系統正常運行\033[0m")
 window.mainloop()
