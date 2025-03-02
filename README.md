@@ -11,7 +11,7 @@ SnapOCR is an **efficient and user-friendly** Optical Character Recognition (OCR
 ## Use Cases
 https://github.com/user-attachments/assets/340bdbb9-ad20-4f22-bf8c-2db590b9c0d9
 
-- **Seamless text extraction for LLMs** (e.g., ChatGPT, Claude) without input limitations.
+- **Extract text from the screen for LLMs** (e.g., ChatGPT, Claude) without input limitations.
 - **Extracting text directly from PC game screens.**
 - **Enhancing PDF reading** by quickly capturing and recognizing text.
 
@@ -23,26 +23,47 @@ https://github.com/user-attachments/assets/340bdbb9-ad20-4f22-bf8c-2db590b9c0d9
 
 ## Installation
 ### **System Requirements**
-- **Windows 10+** (Tested on Windows 10 with Python 3.10)
-- **Python 3.10**
-- **NVIDIA GPU (optional)** – Recommended for faster OCR processing.
+- **Windows 10+** (Tested on Windows 10 with Python 3.10-3.13)
+- **Python 3.10+**
+- **NVIDIA GPU (Recommended)** – For faster OCR processing.
 
 ### **Setup & First-Time Run**
-1. Clone the repository:
+- Clone the repository:
    ```bash
    git clone https://github.com/KuoCT/SnapOCR.git
    cd SnapOCR
    ```
-2. Run SnapOCR.bat
-- The first launch may take some time as dependencies are installed.
-- Subsequent runs will be faster.
+#### **NVIDIA GPU (Recommended)**
+- Simply run `SnapOCR.bat` for first-time installation.
+- After the first run, you can switch between CUDA and CPU mode by editing `SnapOCR.bat` and setting `mode` to `1`:
+   ```bat
+   :: 設定模式（0 為正常模式，1 為強制CPU模式）
+   set mode=1
+   ```
+- You can also hide the terminal console by setting `debug` to `0`:
+   ```bat
+   :: 設定 debug 變數（0 為正常模式，1 為除錯模式）
+   set debug=0
+   ```
+- Save `SnapOCR.bat` for future use.
+
+#### **Other GPUs or CPU only**
+- Edit `SnapOCR.bat`, set `mode` to `1`, and do not change it.
+- Save and run the `SnapOCR.bat` for first-time installation.
+- After the first run, you can hide the terminal console by editing `SnapOCR.bat` and setting `debug` to `0`:
+   ```bat
+   :: 設定 debug 變數（0 為正常模式，1 為除錯模式）
+   set debug=0
+   ```
+- Save `SnapOCR.bat` for future use.
+
+The first launch may take some time as dependencies are installed. Subsequent runs will be faster.
 
 ## Usage
-1. Launch SnapOCR – Run SnapOCR.bat.
-2. Click the button – Select any part of the screen.
-3. OCR processing – The text is extracted instantly.
-4. Text is copied to clipboard – Paste it anywhere (e.g., ChatGPT, Google Translate).
-5. You can find and edit the text in `Prompt.txt` within the folder. It will be copied to the clipboard as a prompt along with the recognized text! (If you don't want to copy the prompt, simply uncheck the prompt checkbox.)
+1. Launch SnapOCR – Run `SnapOCR.bat.`
+2. Click the `Caprure` button – Select any part of the screen.
+3. Text is text is extracted and copied to clipboard – Paste it anywhere (e.g., ChatGPT).
+4. You can find and edit the text in `Prompt.txt` within the folder. It will be copied to the clipboard as a prompt along with the recognized text! (If you don't want to copy the prompt, simply uncheck the prompt checkbox.)
 
 ## Credit
 A huge thanks to the following open-source projects:

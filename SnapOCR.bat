@@ -5,7 +5,7 @@ setlocal
 set mode=0
 
 :: 設定 debug 變數（0 為正常模式，1 為除錯模式）
-set debug=0
+set debug=1
 
 :: 設定虛擬環境路徑
 set VENV_DIR=%~dp0SnapOCR_env
@@ -31,7 +31,6 @@ if errorlevel 1 (
     echo Failed to activate virtual environment.
     echo May consider run `Set-ExecutionPolicy RemoteSigned -Scope LocalMachine`
     echo on your `PowerShell` as an administrator.
-
     pause
     exit /b 1
 )
@@ -47,7 +46,9 @@ if %debug%==1 (
 if not exist "%REQUIREMENT_FLAG%" (
     echo Installing required packages...
     python.exe -m pip install --upgrade pip
-    pip install torch==2.6.0+cu118 torchvision==0.21.0+cu118 torchaudio==2.6.0+cu118 --index-url https://download.pytorch.org/whl/cu118
+    if "%mode%"=="0" (
+        pip install torch==2.6.0+cu118 torchvision==0.21.0+cu118 torchaudio==2.6.0+cu118 --index-url https://download.pytorch.org/whl/cu118
+    )
     pip install customtkinter==5.2.2 pyautogui==0.9.54
     pip install surya-ocr==0.13.0
     echo Required packages installed > "%REQUIREMENT_FLAG%"
