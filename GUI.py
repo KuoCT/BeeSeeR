@@ -73,7 +73,7 @@ button = ctk.CTkButton(master = frame, text = "Capture", font = button_font,
                        anchor = "c", command = run_wincap)
 button.grid(row = 0, column = 0, padx = 5, pady = 5, sticky = "nswe")
 
-
+# 建立核取方塊
 check_var = tk.StringVar(master = frame, value = "ON")
 checkbox = ctk.CTkCheckBox(master = frame, text = "Prompt (提示詞)", font = checkbox_font,
                            variable = check_var, onvalue = "ON", offvalue = "OFF",
