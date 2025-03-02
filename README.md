@@ -4,14 +4,14 @@ A screen OCR tool that extracts text using a screenshot-like method.
 [中文版說明](./README_zh.md)
 
 ## Overview
-SnapOCR is a convenient screen Optical Character Recognition (OCR) tool designed to quickly extract text from any area of the screen and copy it to the clipboard.
+SnapOCR is a convenient screen Optical Character Recognition (OCR) tool designed to quickly capture text from any area of the screen and copy it to the clipboard.
 
 ⚠ **Important Notice:** Since this script utilizes automation features like selecting specific areas of the desktop, I am unsure whether it might trigger anti-cheat programs. If you plan to use it in online games (especially competitive games), proceed at your own risk!
 
 ## Use Cases
 https://github.com/user-attachments/assets/340bdbb9-ad20-4f22-bf8c-2db590b9c0d9
 
-- **Extract text from the screen for LLMs** (e.g., ChatGPT, Claude) without input limitations.
+- **Capture text from the screen for LLMs** (e.g., ChatGPT, Claude) without input limitations.
 - **Directly capture text from PC game screens.**
 - **Enhance PDF reading experience** by quickly extracting and recognizing text.
 

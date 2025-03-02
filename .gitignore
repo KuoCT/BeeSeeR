@@ -1,3 +1,4 @@
 SnapOCR_env/
 __pycache__/
 gui_ready.flag
+dist/
