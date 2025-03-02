@@ -20,7 +20,7 @@ https://github.com/user-attachments/assets/340bdbb9-ad20-4f22-bf8c-2db590b9c0d9
 - **最佳化速度** – 可選擇啟用 GPU 加速，以提升處理效率。
 
 ## 安裝
-### **系統需求**
+### 系統需求
 - **Windows 10+**（已在 Windows 10 + Python 3.10-3.13 中測試）
 - **Python 3.10+**
 - **NVIDIA GPU（建議）** – 使用 CUDA 加速提高 OCR 速度。

@@ -22,7 +22,7 @@ https://github.com/user-attachments/assets/340bdbb9-ad20-4f22-bf8c-2db590b9c0d9
 - **Optimized speed** – Option to enable GPU acceleration for improved performance. 
 
 ## Installation
-### **System Requirements**
+### System Requirements
 - **Windows 10+** (Tested on Windows 10 with Python 3.10-3.13)
 - **Python 3.10+**
 - **NVIDIA GPU (Recommended)** – Uses CUDA acceleration for faster OCR processing.
@@ -58,7 +58,7 @@ https://github.com/user-attachments/assets/340bdbb9-ad20-4f22-bf8c-2db590b9c0d9
 The first run may take some time as required dependencies are automatically installed. Subsequent runs will be faster.
 
 ## Usage
-1. Launch SnapOCR – Run `SnapOCR.bat.`
+1. Launch SnapOCR – Run `SnapOCR.bat`.
 2. Click the `Caprure` button – Select any area on the screen.
 3. The text will be extracted and automatically copied to the clipboard – Ready to paste anywhere (e.g., ChatGPT).
 4. You can find and edit `Prompt.txt` within the folder - this text will be copied along with the extracted text! (If you don’t want to copy the prompt, simply uncheck the prompt checkbox.)
