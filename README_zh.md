@@ -32,7 +32,7 @@ https://github.com/user-attachments/assets/340bdbb9-ad20-4f22-bf8c-2db590b9c0d9
    cd SnapOCR
    ```
 
-#### **NVIDIA GPU (Recommended)**
+#### **NVIDIA GPU (推薦使用)**
 - 執行 `SnapOCR.bat` 進行首次安裝。
 - 首次安裝完成後，使用者可以自由切換 CUDA 或是 CPU 模式，只要編輯`SnapOCR.bat` 設定 `mode` 成 `1`:
    ```bat
