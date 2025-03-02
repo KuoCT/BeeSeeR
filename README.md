@@ -27,7 +27,7 @@ https://github.com/user-attachments/assets/340bdbb9-ad20-4f22-bf8c-2db590b9c0d9
 - **Python 3.10+**
 - **NVIDIA GPU (Recommended)** – Uses CUDA acceleration for faster OCR processing.
 
-### **Setup & First-Time Run**
+### Setup & First-Time Run
 - Clone the repository to your computer:
    ```bash
    git clone https://github.com/KuoCT/SnapOCR.git
@@ -35,7 +35,7 @@ https://github.com/user-attachments/assets/340bdbb9-ad20-4f22-bf8c-2db590b9c0d9
    ```
    Or download it from [here](https://github.com/KuoCT/SnapOCR/archive/refs/heads/main.zip), then extract it and open the folder.
 
-#### **NVIDIA GPU (Recommended)**
+#### NVIDIA GPU (Recommended)
 - Run `SnapOCR.bat` for the initial installation.
 - After the first installation, users can freely switch between CUDA and CPU mode by editing `SnapOCR.bat` and setting `mode` to `1`:
    ```bat
@@ -49,7 +49,7 @@ https://github.com/user-attachments/assets/340bdbb9-ad20-4f22-bf8c-2db590b9c0d9
    ```
 - Save `SnapOCR.bat` for future use.
 
-#### **Other GPUs or CPU only**
+#### Other GPUs or CPU only
 - Edit `SnapOCR.bat`, set `mode` to `1`, and do not change it.
 - Save and run the `SnapOCR.bat` for the initial installation.
 - After the first installation, set `debug` to `0` in `SnapOCR.bat` to hide the terminal window (recommended once everything is running smoothly):
