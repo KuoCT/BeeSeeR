@@ -55,7 +55,7 @@ https://github.com/user-attachments/assets/340bdbb9-ad20-4f22-bf8c-2db590b9c0d9
 - After the first installation, set `debug` to `0` in `SnapOCR.bat` to hide the terminal window (recommended once everything is running smoothly)
 - Save `SnapOCR.bat` for future use.
 
-The first run may take some time as required dependencies are automatically installed. Subsequent runs will be faster.
+The first run may take some time as required dependencies are automatically installed. **Please wait until the OCR popup appears, indicating that the installation is complete.**
 
 🛠 **Tool:** `fix.bat` helps you uninstall PyTorch-related packages. Use it when you need to switch the initial installation to `Compatibility Mode` or `Force CPU Mode`.
 
