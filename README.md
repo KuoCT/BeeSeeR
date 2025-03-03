@@ -22,8 +22,8 @@ https://github.com/user-attachments/assets/340bdbb9-ad20-4f22-bf8c-2db590b9c0d9
 - **Optimized Speed** – Option to enable GPU acceleration for improved performance.
 
 ## System Requirements
-- **Windows 10+** (Tested on Windows 10 with Python 3.10-3.13)
-- **Python 3.10+**
+- **Windows 10/11** 
+- **Python 3.10-3.13**
 - **NVIDIA GPU (Recommended)** – Uses CUDA acceleration for faster OCR processing.
 
 ## Download
