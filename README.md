@@ -37,7 +37,7 @@ https://github.com/user-attachments/assets/340bdbb9-ad20-4f22-bf8c-2db590b9c0d9
 ## Installation
 ### `Compatibility Mode` with NVIDIA GPU Acceleration (Recommended)
 - Run `SnapOCR.bat` for the initial installation.
-- After the first installation, users can freely switch between CUDA and CPU mode by editing `SnapOCR.bat` and setting `mode` to `1`:
+- After the first installation, users can freely switch between to CPU mode by editing `SnapOCR.bat` and setting `mode` to `1`:
    ```bat
    :: 設定模式（0 為兼容模式，1 為強制CPU模式）
    set mode=1
