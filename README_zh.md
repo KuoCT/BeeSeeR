@@ -19,13 +19,12 @@ https://github.com/user-attachments/assets/340bdbb9-ad20-4f22-bf8c-2db590b9c0d9
 - **支援多種語言** – 以 `Surya模型` 為基礎，可適應90+種語言。
 - **最佳化速度** – 可選擇啟用 GPU 加速，以提升處理效率。
 
-## 安裝
-### 系統需求
+## 系統需求
 - **Windows 10+**（已在 Windows 10 + Python 3.10-3.13 中測試）
 - **Python 3.10+**
 - **NVIDIA GPU（建議）** – 使用 CUDA 加速提高 OCR 速度。
 
-### 下載
+## 下載
 - 複製存儲庫到電腦
    ```bash
    git clone https://github.com/KuoCT/SnapOCR.git
@@ -33,6 +32,7 @@ https://github.com/user-attachments/assets/340bdbb9-ad20-4f22-bf8c-2db590b9c0d9
    ```
    或從[這裡](https://github.com/KuoCT/SnapOCR/archive/refs/heads/main.zip)下載，解壓縮並打開。
 
+## 安裝
 ### 使用 NVIDIA GPU 加速的 `兼容模式` (推薦使用)
 - 執行 `SnapOCR.bat` 進行首次安裝。
 - 首次安裝完成後，使用者可以自由切換 CUDA 或是 CPU 模式，只要編輯`SnapOCR.bat` 設定 `mode` 成 `1`:

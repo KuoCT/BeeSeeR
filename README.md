@@ -21,13 +21,12 @@ https://github.com/user-attachments/assets/340bdbb9-ad20-4f22-bf8c-2db590b9c0d9
 - **Multi-language Support** – Based on the `Surya model`, adaptable to 90+ languages.  
 - **Optimized Speed** – Option to enable GPU acceleration for improved performance.
 
-## Installation
-### System Requirements
+## System Requirements
 - **Windows 10+** (Tested on Windows 10 with Python 3.10-3.13)
 - **Python 3.10+**
 - **NVIDIA GPU (Recommended)** – Uses CUDA acceleration for faster OCR processing.
 
-### Download
+## Download
 - Clone the repository to your computer:
    ```bash
    git clone https://github.com/KuoCT/SnapOCR.git
@@ -35,6 +34,7 @@ https://github.com/user-attachments/assets/340bdbb9-ad20-4f22-bf8c-2db590b9c0d9
    ```
    Or download it from [here](https://github.com/KuoCT/SnapOCR/archive/refs/heads/main.zip), then extract it and open the folder.
 
+## Installation
 ### `Compatibility Mode` with NVIDIA GPU Acceleration (Recommended)
 - Run `SnapOCR.bat` for the initial installation.
 - After the first installation, users can freely switch between CUDA and CPU mode by editing `SnapOCR.bat` and setting `mode` to `1`:
