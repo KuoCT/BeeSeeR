@@ -53,7 +53,7 @@ https://github.com/user-attachments/assets/340bdbb9-ad20-4f22-bf8c-2db590b9c0d9
 - 首次安裝完成後，在 `SnapOCR.bat` 中設定 `debug` 成 `0` 可以隱藏 terminal 視窗(確定可以正常運行後使用)
 - 存檔 `SnapOCR.bat` 供後續使用。
 
-首次運行可能需要一些時間，因為會自動安裝所需的依賴項。**請等到OCR小視窗彈出表示安裝完成**
+首次運行可能需要一些時間，因為會自動安裝所需的依賴項。**請等到OCR小視窗彈出表示安裝完成。**
 
 🛠 **工具:** `fix.bat` 可以幫你解除安裝 pytorch 相關的套件，當你需要修改初始安裝成 `兼容模式` 或是 `強制 CPU 模式` 時使用。
 
