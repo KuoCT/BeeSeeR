@@ -121,10 +121,10 @@ class overlayWindow(ctk.CTk):
         self.control_f1.grid_columnconfigure((0, 1, 2, 3, 4, 5, 6), weight = 1)
 
         # 字體調整按鈕
-        self.increase_bt = ctk.CTkButton(self.control_f1, text = "放大",
+        self.increase_bt = ctk.CTkButton(self.control_f1, text = "字放大",
                                              font = text_fix_font, command = self.increase_font_size)
         self.increase_bt.grid(row = 0, column = 0, padx = 5, pady = 5, sticky = "nsew")
-        self.decrease_bt = ctk.CTkButton(self.control_f1, text = "縮小",
+        self.decrease_bt = ctk.CTkButton(self.control_f1, text = "字縮小",
                                              font = text_fix_font, command = self.decrease_font_size)
         self.decrease_bt.grid(row = 0, column = 1, padx = 5, pady = 5, sticky = "nsew")
        
