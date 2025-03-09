@@ -1,5 +1,5 @@
 import customtkinter as ctk
-from PIL import Image, ImageTk
+from PIL import Image
 import json
 import os
 
@@ -127,38 +127,24 @@ class overlayWindow(ctk.CTk):
         self.decrease_bt = ctk.CTkButton(self.control_f1, text = "縮小",
                                              font = text_fix_font, command = self.decrease_font_size)
         self.decrease_bt.grid(row = 0, column = 1, padx = 5, pady = 5, sticky = "nsew")
-
-        # 視窗擴增按鈕
-        resize_v_bt_img = ImageTk.PhotoImage(
-            Image.open(
-                os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "icon/resize_v.png")
-            ).resize((35,17), Image.Resampling.LANCZOS))
-
-        resize_h_bt_img = ImageTk.PhotoImage(
-            Image.open(
-                os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "icon/resize_h.png")
-            ).resize((35,17), Image.Resampling.LANCZOS))
-        
-        resize_r_bt_img = ImageTk.PhotoImage(
-            Image.open(
-                os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "icon/resize_r.png")
-            ).resize((20,19), Image.Resampling.LANCZOS))
-        
+       
         increase_size = 50 # 預設增加幅度
-
-        self.resize_v_bt = ctk.CTkButton(self.control_f1, text = "", image = resize_v_bt_img, 
-                                         fg_color = ["#c48971", "#2a6475"], hover_color = ["#ed9744", "#3696b3"],
-                                         command = lambda: self.increase_v_size(increase_size))
+        self.resize_v_bt = ctk.CTkButton(
+            self.control_f1, text = "↕", font = text_fix_font, width = 90,
+            fg_color = ["#c48971", "#2a6475"], hover_color = ["#ed9744", "#3696b3"],
+            command = lambda: self.increase_v_size(increase_size))
         self.resize_v_bt.grid(row = 0, column = 2, padx = 5, pady = 5, sticky="nsew")
 
-        self.resize_h_bt = ctk.CTkButton(self.control_f1, text = "", image = resize_h_bt_img, 
-                                    fg_color = ["#c48971", "#2a6475"], hover_color = ["#ed9744", "#3696b3"],
-                                    command = lambda: self.increase_h_size(increase_size))
+        self.resize_h_bt = ctk.CTkButton(
+            self.control_f1, text = "↔", font = text_fix_font, width = 90,
+            fg_color = ["#c48971", "#2a6475"], hover_color = ["#ed9744", "#3696b3"],
+            command = lambda: self.increase_h_size(increase_size))
         self.resize_h_bt.grid(row = 0, column = 3, padx = 5, pady = 5, sticky="nsew")
 
-        self.resize_r_bt = ctk.CTkButton(self.control_f1, text = "", image = resize_r_bt_img, 
-                                    fg_color = ["#c48971", "#2a6475"], hover_color = ["#ed9744", "#3696b3"],
-                                    command = lambda: self.undo_size())
+        self.resize_r_bt = ctk.CTkButton(
+            self.control_f1, text = "⛶", font = text_fix_font, width = 90,
+            fg_color = ["#c48971", "#2a6475"], hover_color = ["#ed9744", "#3696b3"],
+            command = lambda: self.undo_size())
         self.resize_r_bt.grid(row = 0, column = 4, padx = 5, pady = 5, sticky="nsew")
 
         # 鎖定按鈕
@@ -231,11 +217,11 @@ class overlayWindow(ctk.CTk):
     
     def undo_size(self):
         """還原視窗大小與位置"""
-        # 還原為原始大小與位置
-        self.adj_width = self.width
-        self.adj_height = self.height
-        self.adj_x1 = self.x1
-        self.adj_y1 = self.y1
+        # **確保變數完全回歸原始狀態**
+        self.adj_width = None
+        self.adj_height = None
+        self.adj_x1 = None
+        self.adj_y1 = None
 
         # 更新視窗大小與位置
         self.geometry(f"{self.width}x{self.height}+{self.x1}+{self.y1}")
