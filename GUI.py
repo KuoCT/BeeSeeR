@@ -135,7 +135,7 @@ def run_wincap():
         resetchat_bt.configure(text = "AI 重製/記憶刪除", fg_color = ["#1e8bba", "#C7712D"])
 
         # 螢幕覆蓋顯示
-        overlay = overlayWindow(last_response, TEXTsize, cb_coords, current_theme = current_theme)
+        overlay = overlayWindow(last_response, TEXTsize, cb_coords)
         overlay.mainloop()
 
 def on_closing():

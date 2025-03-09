@@ -1,11 +1,12 @@
 import customtkinter as ctk
+from PIL import Image, ImageTk
 import json
 import os
 
 CONFIG_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "overlay_config.json") # 設定檔案名稱
 
 class overlayWindow(ctk.CTk):
-    def __init__(self, showTEXT = None, TEXTsize = 18, coords = None, opacity = 0.95, current_theme = None):
+    def __init__(self, showTEXT = None, TEXTsize = 18, coords = None, opacity = 0.95):
         super().__init__()
 
         # 讀取配置設定
@@ -18,14 +19,9 @@ class overlayWindow(ctk.CTk):
             showTEXT = "這是一個不可編輯的文字顯示區域，可以調整透明度，可以縮放字體大小，鎖定視窗後可以複製文字。\n" * 20
         self.showTEXT = showTEXT
 
-        # 設定背景顏色
-        if current_theme is None:
-            self.current_theme = "dark"
-        else: 
-            self.current_theme = current_theme
+        # 設定預設顏色 (主題讓主視窗決定)
         base_dir = os.path.dirname(os.path.abspath(__file__))  # 取得 overlay.py 的目錄
         theme_path = os.path.join(base_dir, "..", "theme", "nectar.json")
-        ctk.set_appearance_mode(self.current_theme)
         ctk.set_default_color_theme(theme_path)
 
         # 取得螢幕大小
@@ -33,7 +29,7 @@ class overlayWindow(ctk.CTk):
         self.screen_height = self.winfo_screenheight()
 
         # 預設視窗大小
-        default_width, default_height = 600, 400
+        default_width, default_height = 600, 400 # 最小視窗大小
         min_width, min_height = default_width, default_height  # 最小視窗大小
 
         # 設定視窗標題
@@ -69,6 +65,14 @@ class overlayWindow(ctk.CTk):
 
         # 設定視窗大小與位置
         self.geometry(f"{width}x{height}+{x1}+{y1}")
+        self.width, self.height, self.x1, self.y1 = width, height, x1, y1 # 存入目前視窗訊息
+
+        # 初始化調整用變數（避免 AttributeError）
+        self.adj_width = None
+        self.adj_height = None
+        self.adj_x1 = None
+        self.adj_y1 = None
+
         # 設定視窗透明度與無邊框
         self.opacity = self.settings.get("opacity", opacity)  # 設定預設透明度
         self.attributes("-alpha", self.opacity)
@@ -114,34 +118,60 @@ class overlayWindow(ctk.CTk):
         self.control_f1 = ctk.CTkFrame(self, fg_color = "green", bg_color = "green")
         self.control_f1.grid(row = 1, column = 0, padx = 0, pady = 0, sticky="nsew")
         self.control_f1.grid_rowconfigure(0, weight = 1)
-        self.control_f1.grid_columnconfigure((0, 1, 2, 3, 4), weight = 1)
+        self.control_f1.grid_columnconfigure((0, 1, 2, 3, 4, 5, 6), weight = 1)
 
         # 字體調整按鈕
-        self.increase_button = ctk.CTkButton(self.control_f1, text = "放大",
+        self.increase_bt = ctk.CTkButton(self.control_f1, text = "放大",
                                              font = text_fix_font, command = self.increase_font_size)
-        self.increase_button.grid(row = 0, column = 0, padx = 5, pady = 5, sticky = "nsew")
-        self.decrease_button = ctk.CTkButton(self.control_f1, text = "縮小",
+        self.increase_bt.grid(row = 0, column = 0, padx = 5, pady = 5, sticky = "nsew")
+        self.decrease_bt = ctk.CTkButton(self.control_f1, text = "縮小",
                                              font = text_fix_font, command = self.decrease_font_size)
-        self.decrease_button.grid(row = 0, column = 1, padx = 5, pady = 5, sticky = "nsew")
+        self.decrease_bt.grid(row = 0, column = 1, padx = 5, pady = 5, sticky = "nsew")
 
-        # 主題切換按鈕
-        self.theme_button = ctk.CTkButton(self.control_f1, text = "主題", font = text_fix_font, 
+        # 視窗擴增按鈕
+        resize_v_bt_img = ImageTk.PhotoImage(
+            Image.open(
+                os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "icon/resize_v.png")
+            ).resize((35,17), Image.Resampling.LANCZOS))
+
+        resize_h_bt_img = ImageTk.PhotoImage(
+            Image.open(
+                os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "icon/resize_h.png")
+            ).resize((35,17), Image.Resampling.LANCZOS))
+        
+        resize_r_bt_img = ImageTk.PhotoImage(
+            Image.open(
+                os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "icon/resize_r.png")
+            ).resize((20,19), Image.Resampling.LANCZOS))
+        
+        increase_size = 50 # 預設增加幅度
+
+        self.resize_v_bt = ctk.CTkButton(self.control_f1, text = "", image = resize_v_bt_img, 
                                          fg_color = ["#c48971", "#2a6475"], hover_color = ["#ed9744", "#3696b3"],
-                                         command = self.toggle_theme)
-        self.theme_button.grid(row = 0, column = 2, padx = 5, pady = 5, sticky="nsew")
+                                         command = lambda: self.increase_v_size(increase_size))
+        self.resize_v_bt.grid(row = 0, column = 2, padx = 5, pady = 5, sticky="nsew")
+
+        self.resize_h_bt = ctk.CTkButton(self.control_f1, text = "", image = resize_h_bt_img, 
+                                    fg_color = ["#c48971", "#2a6475"], hover_color = ["#ed9744", "#3696b3"],
+                                    command = lambda: self.increase_h_size(increase_size))
+        self.resize_h_bt.grid(row = 0, column = 3, padx = 5, pady = 5, sticky="nsew")
+
+        self.resize_r_bt = ctk.CTkButton(self.control_f1, text = "", image = resize_r_bt_img, 
+                                    fg_color = ["#c48971", "#2a6475"], hover_color = ["#ed9744", "#3696b3"],
+                                    command = lambda: self.undo_size())
+        self.resize_r_bt.grid(row = 0, column = 4, padx = 5, pady = 5, sticky="nsew")
 
         # 鎖定按鈕
         self.lock_movement = False  # 預設允許移動
-        self.lock_button = ctk.CTkButton(self.control_f1, text = "可移動", font = text_fix_font, 
+        self.lock_bt = ctk.CTkButton(self.control_f1, text = "可移動", font = text_fix_font, width = 160,
                                          fg_color = ["#2FA572", "#2FA572"], hover_color = ["#1e754f", "#1e754f"],
                                          command = self.toggle_lock)
-        self.lock_button.grid(row = 0, column = 3, padx = 5, pady = 5, sticky="nsew")
-
+        self.lock_bt.grid(row = 0, column = 5, padx = 5, pady = 5, sticky="nsew")
 
         # 退出按鈕
-        self.exit_button = ctk.CTkButton(self.control_f1, text = "退出", fg_color = "firebrick3", hover_color = "firebrick",
+        self.exit_bt = ctk.CTkButton(self.control_f1, text = "退出", fg_color = "firebrick3", hover_color = "firebrick",
                                          font = text_fix_font, command = self.safe_destroy)
-        self.exit_button.grid(row = 0, column = 4, padx = 5, pady = 5, sticky = "nsew")
+        self.exit_bt.grid(row = 0, column = 6, padx = 5, pady = 5, sticky = "nsew")
 
         # 控制區域 2
         self.control_f2 = ctk.CTkFrame(self, fg_color = "green", bg_color = "green")
@@ -161,15 +191,6 @@ class overlayWindow(ctk.CTk):
         self._offset_x = 0
         self._offset_y = 0
 
-    def toggle_theme(self):
-        """切換 Light/Dark 模式"""
-        if self.current_theme == "dark":
-            self.current_theme = "light"
-            ctk.set_appearance_mode("light")  # 切換為 Light 模式
-        else:
-            self.current_theme = "dark"
-            ctk.set_appearance_mode("dark")  # 切換為 Dark 模式
-
     def increase_font_size(self):
         """增加字體大小"""
         self.font_size += 2
@@ -183,10 +204,46 @@ class overlayWindow(ctk.CTk):
             self.textbox.configure(font=("Arial", self.font_size))
             self.save_config()
 
+    def increase_v_size(self, size: int):
+        """增加視窗垂直大小"""
+        # 確保變數初始化
+        self.adj_width = self.adj_width or self.width
+        self.adj_x1 = self.adj_x1 or self.winfo_x()  # 更新為當前視窗位置
+        
+        # 更新高度與 y1 座標
+        self.adj_height = (self.adj_height or self.height) + size
+        self.adj_y1 = (self.adj_y1 or self.winfo_y()) - size  # 更新為當前視窗位置
+        
+        self.geometry(f"{self.adj_width}x{self.adj_height}+{self.adj_x1}+{self.adj_y1}")
+
+    def increase_h_size(self, size: int):
+        """增加視窗水平大小"""
+        # 確保變數初始化
+        self.adj_height = self.adj_height or self.height
+        self.adj_y1 = self.adj_y1 or self.winfo_y()  # 更新為當前視窗位置
+
+        # 更新寬度與 x1 座標
+        self.adj_width = (self.adj_width or self.width) + size
+        self.adj_x1 = (self.adj_x1 or self.winfo_x()) - size // 2  # 更新為當前視窗位置
+
+        # 更新視窗大小與位置
+        self.geometry(f"{self.adj_width}x{self.adj_height}+{self.adj_x1}+{self.adj_y1}")
+    
+    def undo_size(self):
+        """還原視窗大小與位置"""
+        # 還原為原始大小與位置
+        self.adj_width = self.width
+        self.adj_height = self.height
+        self.adj_x1 = self.x1
+        self.adj_y1 = self.y1
+
+        # 更新視窗大小與位置
+        self.geometry(f"{self.width}x{self.height}+{self.x1}+{self.y1}")
+
     def toggle_lock(self):
         """切換視窗移動鎖定"""
         self.lock_movement = not self.lock_movement
-        self.lock_button.configure(
+        self.lock_bt.configure(
             text = "鎖定中" if self.lock_movement else "可移動",
             fg_color = "#454240" if self.lock_movement else  ["#2FA572", "#2CC985"],
             hover_color = "#878584" if self.lock_movement else ["#106A43", "#0C955A"]
