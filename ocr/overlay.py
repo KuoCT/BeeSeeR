@@ -5,7 +5,7 @@ import os
 CONFIG_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "overlay_config.json") # 設定檔案名稱
 
 class overlayWindow(ctk.CTk):
-    def __init__(self, showTEXT = None, TEXTsize = 18, coords = None, opacity = 0.95):
+    def __init__(self, showTEXT = None, TEXTsize = 18, coords = None, opacity = 0.95, current_theme = None):
         super().__init__()
 
         # 讀取配置設定
@@ -19,7 +19,10 @@ class overlayWindow(ctk.CTk):
         self.showTEXT = showTEXT
 
         # 設定背景顏色
-        self.current_theme = "dark"
+        if current_theme is None:
+            self.current_theme = "dark"
+        else: 
+            self.current_theme = current_theme
         base_dir = os.path.dirname(os.path.abspath(__file__))  # 取得 overlay.py 的目錄
         theme_path = os.path.join(base_dir, "..", "theme", "nectar.json")
         ctk.set_appearance_mode(self.current_theme)
