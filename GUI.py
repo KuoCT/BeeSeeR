@@ -78,9 +78,9 @@ def load_prompt(file):
         return prompt_path, None  # 讀取失敗時仍回傳絕對路徑，但內容為 None
         
 # 初始化提示詞
-system_prompt_path, system_prompt = load_prompt(system_prompt_file)
-memory_prompt_path, memory_prompt = load_prompt(memory_prompt_file)
 prompt_path, prompt = load_prompt(prompt_file)
+system_prompt_path, system_prompt = load_prompt(system_prompt_file) # 讀取系統提示詞
+memory_prompt_path, memory_prompt = load_prompt(memory_prompt_file) # 讀取記憶提示詞
 
 # 初始化 chat 物件
 if groq_available:
@@ -90,8 +90,7 @@ if groq_available:
         enable_short_term_memory, 
         max_history, 
         temperature,
-        system_prompt,
-        memory_prompt
+        silent = True
     )
 
 def run_wincap():
@@ -117,7 +116,13 @@ def run_wincap():
     # 自動翻譯
     if groq_available and ost_control:
         global last_response
-        response, prompt_tokens, completion_tokens = chat_session.send_to_groq(system_prompt, user_input)
+        global system_prompt
+        global system_prompt_path
+        global memory_prompt
+        global memory_prompt_path
+        system_prompt_path, system_prompt = load_prompt(system_prompt_file) # 讀取系統提示詞
+        memory_prompt_path, memory_prompt = load_prompt(memory_prompt_file) # 讀取記憶提示詞
+        response, prompt_tokens, completion_tokens = chat_session.send_to_groq(system_prompt, memory_prompt, user_input)
         last_response = response
 
         # 更新 token 計數器
@@ -279,22 +284,8 @@ def set_temperature(value):
 
 def reset_chat():
     """重置當前對話的輸入輸出，以及歷史模型記憶"""
-    global system_prompt
-    global memory_prompt
-    global prompt
- 
     chat_session.messages = []  # 清空對話歷史
     chat_session.summaries = [""]  # 重置摘要
-
-    # 重新讀取提示詞
-    system_prompt_path, system_prompt = load_prompt(system_prompt_file)
-    memory_prompt_path, memory_prompt = load_prompt(memory_prompt_file)
-    prompt_path, prompt = load_prompt(prompt_file)
-
-    # 更新提示詞
-    if groq_available:
-        chat_session.system_prompt = system_prompt
-        chat_session.memory_prompt = memory_prompt
 
     # 重置當前輸入輸出 token 計數
     t_input_wd.configure(text = "● 輸入: 0")
@@ -312,8 +303,21 @@ def set_model(choice):
     if groq_available:
         chat_session.update_config(model = model)  # 更新 chat_session 內部設定
 
+
+process = None # 初始化記錄 Popen 進程  
+
 def pop_chatroom(groq_available, groq_key, model, max_history, enable_short_term_memory, temperature, chat_session):
     """依現在的設定打開一個新的聊天室"""
+    global process
+    # 若已有正在運行的進程，先終結它
+    if process and process.poll() is None:
+        # print(f"終止舊進程 (PID: {process.pid})")
+        process.terminate()  # 嘗試優雅終止
+        try:
+            process.wait(timeout=3)  # 等待 3 秒
+        except subprocess.TimeoutExpired:
+            # print("舊進程未能及時終結，強制殺死")
+            process.kill()  # 強制終止
 
     # 建構程式碼
     CMD = ["env/Scripts/python", "llm/chat.py"]
@@ -336,7 +340,7 @@ def pop_chatroom(groq_available, groq_key, model, max_history, enable_short_term
         CMD.extend(["--summaries", json.dumps(chat_session.summaries)])
 
     # 執行 subprocess，確保使用虛擬環境，並設定 `cwd` 以確保執行位置正確
-    subprocess.Popen(CMD)
+    process = subprocess.Popen(CMD)
 
 # GUI    
 # 建立主視窗
@@ -433,7 +437,7 @@ chatroom_bt = ctk.CTkButton(master = f2, text = "AI 聊天室 (實驗)", font = 
                             command = lambda: pop_chatroom(groq_available, groq_key, model, max_history, enable_short_term_memory, temperature, chat_session))
 chatroom_bt.grid(row = 2, column = 0, padx = 5, pady = (0, 5), sticky = "we")
 
-resetchat_bt = ctk.CTkButton(master = f2, text = "重製對話/記憶/提示詞", font = text_font, height = 28,
+resetchat_bt = ctk.CTkButton(master = f2, text = "重製對話/記憶", font = text_font, height = 28,
                            anchor = "c", command = reset_chat)
 resetchat_bt.grid(row = 3, column = 0, padx = 5, pady = (0, 5), sticky = "we")
 

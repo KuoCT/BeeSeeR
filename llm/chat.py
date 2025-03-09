@@ -15,8 +15,7 @@ class GroqChatSession:
             enable_short_term_memory = True, 
             max_history = 3, 
             temperature = 0.6,
-            system_prompt = None,
-            memory_prompt = None
+            silent = True
     ):
         self.api_key = groq_key
         self.model = model
@@ -27,40 +26,41 @@ class GroqChatSession:
         self.total_completion_tokens = 0  # 初始化 AI 回應的 token 數
         self.enable_short_term_memory = enable_short_term_memory  # 記憶功能開關
         self.temperature = temperature  # 設定 AI 創意度
-        self.system_prompt = system_prompt # 系統提示詞
-        self.memory_prompt = memory_prompt # 記憶提示詞
         self.summaries = [""] # 儲存記憶
+        self.silent = silent # 控制輸出
+        
+        # 初始化
+        self.system_prompt = None # 系統提示詞
+        self.memory_prompt = None # 記憶提示詞
 
     def update_config(
             self, 
             model = None, 
             enable_short_term_memory = None, 
             max_history = None, 
-            temperature = None,
-            system_prompt = None,
-            memory_prompt = None
+            temperature = None
         ):
         """ 更新對話參數，允許透過 GUI 即時調整，避免重複更新 """
         
         # 檢查並更新模型
         if model is not None and model != self.model:
             self.model = model
-            print(f"\033[32m[INFO] 已變更模型為: {model}\033[0m")
+            not self.silent and print(f"\033[32m[INFO] 已變更模型為: {model}\033[0m")
         
         # 檢查並更新短期記憶開關
         if enable_short_term_memory is not None and enable_short_term_memory != self.enable_short_term_memory:
             self.enable_short_term_memory = enable_short_term_memory
-            print(f"\033[32m[INFO] 已修改記憶模組: {enable_short_term_memory}\033[0m")
+            not self.silent and print(f"\033[32m[INFO] 已修改記憶模組: {enable_short_term_memory}\033[0m")
 
         # 檢查並更新歷史對話長度
         if max_history is not None and max_history * 2 != self.max_history:
             self.max_history = max_history * 2  # 確保仍然是 2 倍長度
-            print(f"\033[32m[INFO] 已修改歷史長度: {max_history} 輪對話\033[0m")
+            not self.silent and print(f"\033[32m[INFO] 已修改歷史長度: {max_history} 輪對話\033[0m")
 
         # 檢查並更新溫度參數
         if temperature is not None and temperature != self.temperature:
             self.temperature = temperature
-            print(f"\033[32m[INFO] 已變更模型溫度: {temperature}\033[0m")
+            not self.silent and print(f"\033[32m[INFO] 已變更模型溫度: {temperature}\033[0m")
         
     def add_message(self, role, content):
         """將新的訊息加入對話歷史"""
@@ -68,7 +68,7 @@ class GroqChatSession:
     
     def summarize_history(self):
         """讓 AI 生成對話摘要，並保留最近 max_history 個對話 Pair"""
-        print("\033[32m[INFO] 開始壓縮記憶。\033[0m")
+        not self.silent and print("\033[32m[INFO] 觸發開始壓縮記憶。\033[0m")
         if not self.enable_short_term_memory:
             return  # 如果記憶功能關閉，則不執行
         
@@ -87,13 +87,13 @@ class GroqChatSession:
 
         # 讀取 system prompt 內容，若沒有則預設一個
         system_prompt = self.system_prompt
-        if self.system_prompt is None:
+        if system_prompt is None:
             system_prompt = "你是一個智能對話機器人，請用自然、清楚的方式回答問題，輸出語言為**繁體中文**。"
-            print("\033[32m[INFO] System prompt文件中沒有內容，使用預設提示詞\033[0m")
+            not self.silent and print("\033[32m[INFO] System prompt文件中沒有內容，使用預設提示詞\033[0m")
 
         # 讀取 memory prompt 內容，若沒有則預設一個
         memory_prompt = self.memory_prompt
-        if self.memory_prompt is None:
+        if memory_prompt is None:
             memory_prompt = (
             "請將以下對話內容整理成摘要，格式如下：\n"
             "- 用戶問題：\n  - (關鍵問題 1)\n  - (關鍵問題 2)...\n"
@@ -101,7 +101,7 @@ class GroqChatSession:
             "- 重要資訊：\n  - (對話中的關鍵資訊)...\n"
             "請保持摘要簡潔，並合併歷史摘要，不超過 250 字。"
         )
-            print("\033[32m[INFO] Memory prompt 文件中沒有內容，使用預設提示詞\033[0m")
+            not self.silent and print("\033[32m[INFO] Memory prompt 文件中沒有內容，使用預設提示詞\033[0m")
 
         # 組合待壓縮的歷史內容
         chat_content = (
@@ -135,22 +135,35 @@ class GroqChatSession:
             for pair in recent_conversations:
                 self.messages.extend(pair)
 
-            print("\033[32m[INFO] AI 生成了對話摘要，歷史已壓縮。\033[0m")
+            not self.silent and print("\033[32m[INFO] AI 生成了對話摘要，歷史已壓縮。\033[0m")
+            print("\033[32m記憶已更新\033[0m")
 
         except Exception as e:
-            print(f"\033[31m[ERROR] 總結對話時出錯：{e}\033[0m")
+            not self.silent and print(f"\033[31m[ERROR] 總結對話時出錯：{e}\033[0m")
 
-    def send_to_groq(self, system_prompt, user_input):
+    def send_to_groq(self, system_prompt, memory_prompt, user_input):
         """發送對話請求給 Groq API，並在歷史過長時進行摘要"""
         if not self.api_key:
             print("\033[31m[ERROR] GROQ_API_KEY 未提供。\033[0m")
             return "[ERROR] GROQ_API_KEY 未提供。"
 
-        # 讀取 system prompt 內容，若沒有則預設一個
-        system_prompt = self.system_prompt
+        # 更新 system prompt 內容，若沒有則預設一個
+        self.system_prompt = system_prompt
         if self.system_prompt is None:
             system_prompt = "你是一個智能對話機器人，請用自然、清楚的方式回答問題，輸出語言為**繁體中文**。"
-            print("\033[32m[INFO] System prompt文件中沒有內容，使用預設提示詞\033[0m")
+            not self.silent and print("\033[32m[INFO] System prompt文件中沒有內容，使用預設提示詞\033[0m")
+
+        # 更新 memory prompt 內容，若沒有則預設一個
+        self.memory_prompt = memory_prompt
+        if self.memory_prompt is None:
+            memory_prompt = (
+            "請將以下對話內容整理成摘要，格式如下：\n"
+            "- 用戶問題：\n  - (關鍵問題 1)\n  - (關鍵問題 2)...\n"
+            "- AI 回應：\n  - (重要回應 1)\n  - (重要回應 2)...\n"
+            "- 重要資訊：\n  - (對話中的關鍵資訊)...\n"
+            "請保持摘要簡潔，並合併歷史摘要，不超過 250 字。"
+        )
+            not self.silent and print("\033[32m[INFO] Memory prompt 文件中沒有內容，使用預設提示詞\033[0m")
 
         # 根據是否啟用短期記憶，決定對話歷史
         if self.enable_short_term_memory:
@@ -161,9 +174,12 @@ class GroqChatSession:
         else:
             # 僅使用當前對話，不保存歷史
             self.messages = [
-                {"role": "system", "content": self.system_prompt},
+                {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_input}
         ]
+        
+        # 模型標籤    
+        print(f"\n\033[33m{self.model}: \033[0m")
 
         try:
             chat_completion = self.client.chat.completions.create(
@@ -176,9 +192,6 @@ class GroqChatSession:
             # 將 AI 回應加入對話歷史
             if self.enable_short_term_memory:
                 self.add_message("assistant", response)
-
-            print("\033[33m[INFO] 語言模型回應：\033[0m")
-            print(response)
 
             # 提取「user-assistant 對話 Pair」
             self.conversation_pairs = []
@@ -205,24 +218,27 @@ class GroqChatSession:
             self.total_prompt_tokens += prompt_tokens
             self.total_completion_tokens += completion_tokens
 
+            # 顯示訊息
+            print(response)
+            print() # 空行
+
             # 顯示 token 資訊
-            print("\033[32m[INFO] Token 使用量:\033[0m")
-            print(f"輸入 token: {prompt_tokens}")
-            print(f"回應 token: {completion_tokens}")
-            # print(f"本次總共 token: {total_tokens}")
-            print(f"累計輸入 token: {self.total_prompt_tokens}")
-            print(f"累計回應 token: {self.total_completion_tokens}")
-            # print(f"累計總 token: {self.total_prompt_tokens + self.total_completion_tokens}")
+            not self.silent and print("\033[32m[INFO] Token 使用量:\033[0m")
+            not self.silent and print(f"輸入 token: {prompt_tokens}")
+            not self.silent and print(f"回應 token: {completion_tokens}")
+            not self.silent and print(f"本次總共 token: {total_tokens}")
+            not self.silent and print(f"累計輸入 token: {self.total_prompt_tokens}")
+            not self.silent and print(f"累計回應 token: {self.total_completion_tokens}")
+            not self.silent and print(f"累計總 token: {self.total_prompt_tokens + self.total_completion_tokens}")
             # print(f"完整內容 : \n {self.messages}")
 
-            # **回傳回應內容及 token 數據**
+            # 回傳回應內容及 token 數據
             return response, prompt_tokens, completion_tokens
         
         except Exception as e:
             print(f"\033[31m[ERROR] 調用 Groq API 時出錯：{e}\033[0m")
             response = f"[ERROR] 調用 Groq API 時出錯：{e}"
             return response
-
 
 if __name__ == "__main__":
     import json
@@ -242,6 +258,10 @@ if __name__ == "__main__":
     parser.add_argument("--messages", type = str, metavar = "MESSAGES", help = "傳遞對話歷史，格式為 JSON")
     parser.add_argument("--summaries", type = str, metavar = "SUMMARIES", help = "傳遞摘要內容")
     args = parser.parse_args()
+    
+    # 預設不顯示系統資訊
+    debug_mode = False
+    show_usage = False
 
     # 預設變數
     model = "llama-3.3-70b-versatile"
@@ -253,7 +273,7 @@ if __name__ == "__main__":
     system_prompt_file = "AI_system_prompt.txt"
     memory_prompt_file = "AI_memory_prompt.txt"
     groq_key = args.groq_key.strip() if args.groq_key else None # 移除多餘空白
-    groq_available = False # 預設 API 狀態為 False
+    groq_available = True
 
     def load_prompt(file):
         """ 從文件載入提示詞 """
@@ -270,10 +290,6 @@ if __name__ == "__main__":
         except Exception as e:
             print(f"\033[31m[INFO] 找不到 {prompt_path} 文件，將會使用預設的提示詞。\033[0m")
             return None  # 讀取失敗時返回 None
-        
-    # 初始化提示詞
-    system_prompt = load_prompt(system_prompt_file)
-    memory_prompt = load_prompt(memory_prompt_file)
 
     # 解析命令列參數
     if args.groq_key:
@@ -291,29 +307,26 @@ if __name__ == "__main__":
     if args.STM_limit:
         max_history = args.STM_limit
 
-    # 如果 API Key 非空，嘗試連線驗證
-    if groq_key:
-        try:
-            client = Groq(api_key = groq_key)
-            test_response = client.chat.completions.create(
-                model="mixtral-8x7b-32768",
-                messages=[{"role": "system", "content": "ping"}],  # 測試 API 可用性
-                max_tokens=10
-            )
-            if test_response:
-                print("\033[32m[INFO] Groq API 連線成功！\033[0m")
-                groq_available = True
-            else:
-                print("\033[31m[INFO] API Key 無效，請確認 Groq API Key。\033[0m")
-        except Exception as e:
-            print(f"\033[31m[ERROR] 無法連線到 Groq API：{e}\033[0m")
+    # # 如果 API Key 非空，嘗試連線驗證
+    # if groq_key:
+    #     try:
+    #         client = Groq(api_key = groq_key)
+    #         test_response = client.chat.completions.create(
+    #             model="mixtral-8x7b-32768",
+    #             messages=[{"role": "system", "content": "ping"}],  # 測試 API 可用性
+    #             max_tokens=10
+    #         )
+    #         if test_response:
+    #             print("\033[32m[INFO] Groq API 連線成功! \033[0m")
+    #             groq_available = True
+    #         else:
+    #             print("\033[31m[INFO] API Key 無效，請確認 Groq API Key。\033[0m")
+    #     except Exception as e:
+    #         print(f"\033[31m[ERROR] 無法連線到 Groq API：{e}\033[0m")
 
     def multi_line_input():
         """當使用者輸入 `/m` 時，開啟多行輸入模式"""
-        print("\033[36m[INFO] 多行輸入模式下空輸入 '/s' 會直接回到單行模式; '/bye' 則會直接結束對話。\033[0m")
-        print("\033[36m[INFO] 本模式中避免再次空輸入 '/m' ，有可能造成 AI 誤判，回答你關於 /m 的問題。\033[0m")
-        print("\033[32m[INFO] 多行輸入模式: 這個模式下換行不會送出！可以複製文章或打長文！\033[0m")
-        print("\033[32m[INFO] 輸入完成後請空行輸入 `/s` 後按 Enter 才會傳送訊息給 AI。\033[0m")
+        print("\033[36m多行輸入模式，輸入 /s 完成輸入。\033[0m")
         lines = []
         while True:
             try:
@@ -321,18 +334,29 @@ if __name__ == "__main__":
                 if line.strip().lower() == "/s":  # `/s` 結束多行輸入，返回內容
                     return "\n".join(lines).strip() if lines else ""
 
-                if line.strip().lower() == "/bye":  # `/bye` 立即觸發退出
-                    return "/bye"
-
                 lines.append(line)  # 正常加入內容
             except EOFError:  # 支援 `Ctrl+D`（Linux/macOS）或 `Ctrl+Z`（Windows）
-                print("\n\033[32m[INFO] 輸入結束。\033[0m")
                 break
 
         return "\n".join(lines).strip()
+    
+    def show_commands():
+        """指令列表"""
+        print("\n\033[36m[INFO] 指令列表：\033[0m")
+        print("\033[33m/m\033[0m        - 進入多行輸入模式")
+        print("\033[33m/s\033[0m        - 結束多行輸入模式並送出")
+        print("\033[33m/bye\033[0m      - 結束對話")
+        print("\033[33m/all\033[0m      - 開啟/關閉完整系統輸出")
+        print("\033[33m/use\033[0m      - 顯示/隱藏 token 使用量")
+        print("\033[33m/?\033[0m        - 顯示此指令列表")
+        print() # 空行
 
     # 創建對話會話
-    chat_session = GroqChatSession(groq_key, model, enable_short_term_memory, max_history, temperature, system_prompt, memory_prompt)
+    chat_session = GroqChatSession(groq_key, model, enable_short_term_memory, max_history, temperature, silent = True)
+
+    # 初始化訊息
+    print("\n\033[33m<<AI 臨時聊天室>>\033[0m")
+    print("\033[36m輸入 /m 進入多行輸入模式， /bye 退出對話(更多指令與說明請輸入 /? 查看)。\033[0m")
 
     # 傳遞對話內容與記憶
     if args.messages:
@@ -340,32 +364,47 @@ if __name__ == "__main__":
     if args.summaries:
         chat_session.summaries = json.loads(args.summaries)
 
-    print("\033[36m[INFO] 若要結束對話，可以輸入 '/bye'。\033[0m")
-    print("\033[36m[INFO] 可以輸入 '/m' 進入多行輸入模式。\033[0m")
-    print("\033[32m[INFO] 當前為一般輸入模式，按 Enter 傳送訊息給 AI\033[0m")
-
     is_multi_line = False  # 初始狀態為單行輸入模式
 
     while True:
-        if is_multi_line:
-            user_input = multi_line_input()
-            if user_input is None:  # 如果輸入內容為空，直接跳過，不發送給 AI
-                is_multi_line = False
-                continue
-            is_multi_line = False  # 切回單行模式
-        else:
-            user_input = input("\033[33m你: \033[0m").strip()  # 預設為單行輸入模式
+        user_input = input("\033[33m你: \033[0m").strip()
 
         if user_input.lower() == "/bye":
             print("\033[33m[INFO] 對話結束。\033[0m")
             break
         elif user_input.lower() == "/m":
-            is_multi_line = True
+            user_input = multi_line_input()
+            if user_input == "/bye":
+                print("\033[33m[INFO] 對話結束。\033[0m")
+                break
+        elif user_input.lower() == "/all":
+            debug_mode = not debug_mode
+            print("\033[36m[INFO] 完整系統輸出", "開啟" if debug_mode else "關閉", "。\033[0m")
             continue
-        elif user_input.lower() == "/s":
-            is_multi_line = False
+        elif user_input.lower() == "/use":
+            show_usage = not show_usage
+            print("\033[36m[INFO] Token 使用量顯示", "開啟" if show_usage else "關閉", "。\033[0m")
+            continue
+        elif user_input.lower() == "/?":
+            show_commands()
             continue
 
-        if user_input:  # 確保不發送空訊息
-            chat_session.send_to_groq(system_prompt, user_input)
-            # print(f"完整內容 : \n {chat_session.messages}")
+        if user_input:
+            # 讀取提示詞
+            system_prompt = load_prompt(system_prompt_file)
+            memory_prompt = load_prompt(memory_prompt_file)
+            reresponse, prompt_tokens, completion_tokens = chat_session.send_to_groq(system_prompt, memory_prompt, user_input)
+
+            # Debug 模式
+            if debug_mode:
+                chat_session.silent = False
+                print(f"\033[35m[DEBUG] 目前歷史記錄數量: {len(chat_session.messages)}\033[0m")
+            else:
+                chat_session.silent = True
+
+            # 顯示 token 使用量
+            if show_usage:
+                # 顯示 token 資訊
+                print(f"033[36m[INFO] 輸入 token: {prompt_tokens}\033[0m")
+                print(f"033[36m[INFO] 回應 token: {completion_tokens}\033[0m")
+
