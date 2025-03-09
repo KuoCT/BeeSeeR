@@ -102,7 +102,7 @@ class WindowCapture(tk.Tk):
 
         # 合併 prompt 與 OCR 結果
         if extracted_text:
-            final_text = f"{prompt_text}\n\n{extracted_text}" if prompt_text else extracted_text
+            final_text = f"{prompt_text}\n\n{extracted_text}" if self.prompt_control else extracted_text
             pyperclip.copy(final_text)
             print("\033[32m[INFO] OCR 辨識結果已複製到剪貼簿。\033[0m")
         else:
