@@ -1,4 +1,9 @@
-SnapOCR_env/
 __pycache__/
+*.pyc
+*.pyo
+env/
+dev/
+api/
 GUI_open.flag
-SnapOCR_user.bat
+BeeSeeR_user.bat
+groq_api_test.py

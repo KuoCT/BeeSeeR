@@ -1,8 +1,8 @@
-# SnapOCR
+# BeeSeeR
 這是一個螢幕 OCR 工具，用類似螢幕截圖的方法解析文字。
 
 ## 概述
-SnapOCR是一個方便使用的螢幕光學字符識別（OCR）工具，設計成可以快速地從螢幕上的任何區域提取文字訊息至剪貼簿中。
+BeeSeeR是一個方便使用的螢幕光學字符識別（OCR）工具，設計成可以快速地從螢幕上的任何區域提取文字訊息至剪貼簿中。
 
 ⚠ **重要提醒:** 這個腳本因為用到選擇電腦桌面特定區域等等的自動化功能，我不確定會不會觸發防外掛程式，如果要在線上遊戲中(特別是競技遊戲)使用要自行承擔後果喔！
 
@@ -27,15 +27,15 @@ https://github.com/user-attachments/assets/340bdbb9-ad20-4f22-bf8c-2db590b9c0d9
 ## 下載
 - 複製存儲庫到電腦
    ```bash
-   git clone https://github.com/KuoCT/SnapOCR.git
-   cd SnapOCR
+   git clone https://github.com/KuoCT/BeeSeeR.git
+   cd BeeSeeR
    ```
-   或從[這裡](https://github.com/KuoCT/SnapOCR/archive/refs/heads/main.zip)下載，解壓縮並打開。
+   或從[這裡](https://github.com/KuoCT/BeeSeeR/archive/refs/heads/main.zip)下載，解壓縮並打開。
 
 ## 安裝
 ### 使用 NVIDIA GPU 加速的 `兼容模式` (推薦使用)
-- 執行 `SnapOCR.bat` 進行首次安裝。
-- 首次安裝完成後，使用者可以自由切換成 CPU 模式，只要編輯`SnapOCR.bat` 設定 `mode` 成 `1`:
+- 執行 `BeeSeeR.bat` 進行首次安裝。
+- 首次安裝完成後，使用者可以自由切換成 CPU 模式，只要編輯`BeeSeeR.bat` 設定 `mode` 成 `1`:
    ```bat
    :: 設定模式（0 為兼容模式，1 為強制CPU模式）
    set mode=1
@@ -45,20 +45,20 @@ https://github.com/user-attachments/assets/340bdbb9-ad20-4f22-bf8c-2db590b9c0d9
    :: 設定 debug 變數（0 為背景執行模式，1 為除錯模式）
    set debug=0
    ```
-- 存檔 `SnapOCR.bat` 供後續使用。
+- 存檔 `BeeSeeR.bat` 供後續使用。
 
 ### 使用 `強制 CPU 模式` (占用空間較小，處理速度較慢，適合沒有 NVIDIA GPU 的使用者)
-- 編輯 `SnapOCR.bat` 設定 `mode` 成 `1`，然後不要更改它。
-- 執行 `SnapOCR.bat` 進行首次安裝。
-- 首次安裝完成後，在 `SnapOCR.bat` 中設定 `debug` 成 `0` 可以隱藏 terminal 視窗(確定可以正常運行後使用)
-- 存檔 `SnapOCR.bat` 供後續使用。
+- 編輯 `BeeSeeR.bat` 設定 `mode` 成 `1`，然後不要更改它。
+- 執行 `BeeSeeR.bat` 進行首次安裝。
+- 首次安裝完成後，在 `BeeSeeR.bat` 中設定 `debug` 成 `0` 可以隱藏 terminal 視窗(確定可以正常運行後使用)
+- 存檔 `BeeSeeR.bat` 供後續使用。
 
 首次運行可能需要一些時間，因為會自動安裝所需的依賴項。**請等到OCR小視窗彈出表示安裝完成。**
 
 🛠 **工具:** `fix.bat` 可以幫你解除安裝 pytorch 相關的套件，當你需要修改初始安裝成 `兼容模式` 或是 `強制 CPU 模式` 時使用。
 
 ## 使用方式
-1. 啟動 SnapOCR – 執行 `SnapOCR.bat`。
+1. 啟動 BeeSeeR – 執行 `BeeSeeR.bat`。
 2. 點擊 `Caprure` 按鈕 – 選擇螢幕上的任何區域。
 3. 文字將被即時提取且自動複製到剪貼簿 – 可直接貼上到任何地方 (例如 ChatGPT)。
 4. 在資料夾中可以找到並編輯 `Prompt.txt` 中的文字，它會作為提示詞一起被複製到剪貼簿！(不想要複製提示詞的話取消勾選提示詞的核取方塊即可)
