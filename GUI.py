@@ -25,7 +25,7 @@ import subprocess
 
 # 定義預設參數
 model = "llama-3.3-70b-versatile"
-enable_short_term_memory = True
+enable_short_term_memory = False
 max_history = 3
 temperature = 0.6
 cb_coords = None # 初始化座標
