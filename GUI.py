@@ -295,8 +295,14 @@ def ease_in_out_bezier(progress):
     """ 使用 Cubic Bezier 計算 ease 軌跡 """
     return cubic_bezier(progress, 0, 0.5, -0.5, 1)  # 參數可調整平滑程度
 
+def get_low_y():
+    """ 固定一個底部的 y 座標，計算新的 y1 """
+    current_y = window.winfo_y()
+    current_window_height = END_HEIGHT if is_expanded else START_HEIGHT
+    return current_y - current_window_height
+
 def smooth_expand(target_height, frame = 0):
-    """ 平滑展開視窗，讓底部位置不變 (使用貝茲曲線) """
+    """ 平滑展開視窗 (使用貝茲曲線) """
     if frame > TOTAL_FRAMES:
         return  # 動畫結束
 
@@ -305,18 +311,14 @@ def smooth_expand(target_height, frame = 0):
     new_height = int(START_HEIGHT + (target_height - START_HEIGHT) * ease_value)
 
     current_width = int(window.winfo_width() / scale_factor)
-    current_height = int(window.winfo_height() / scale_factor)
     current_x = window.winfo_x()
-    current_y = window.winfo_y() - (new_height - current_height)  # 確保底部固定
-
-    print(f"y_bot: {current_y + new_height}")
-    print(f"{current_width}x{new_height}+{current_x}+{current_y}")
+    current_y = window.winfo_y()
 
     window.geometry(f"{current_width}x{new_height}+{current_x}+{current_y}")
     window.after(FRAME_RATE, lambda: smooth_expand(target_height, frame + 1))
 
 def smooth_collapse(target_height, frame = 0):
-    """ 平滑縮小視窗，讓底部位置不變 (使用 Bezier 緩動) """
+    """ 平滑縮小視窗 (使用 Bezier 緩動) """
     if frame > TOTAL_FRAMES:
         return  # 動畫結束
 
@@ -325,12 +327,8 @@ def smooth_collapse(target_height, frame = 0):
     new_height = int(END_HEIGHT - (END_HEIGHT - target_height) * ease_value)
     
     current_width = int(window.winfo_width() / scale_factor)
-    current_height = int(window.winfo_height() / scale_factor)
     current_x = window.winfo_x()
-    current_y = window.winfo_y() + (current_height - new_height)  # 確保底部固定
-
-    print(f"y_bot: {current_y + new_height}")
-    print(f"{current_width}x{new_height}+{current_x}+{current_y}")
+    current_y = window.winfo_y()
 
     window.geometry(f"{current_width}x{new_height}+{current_x}+{current_y}")
     window.after(FRAME_RATE, lambda: smooth_collapse(target_height, frame + 1))
@@ -341,10 +339,10 @@ def toggle_window_size():
     if is_expanded:
         f2.grid_remove()  # 收起時隱藏 f2
         smooth_collapse(START_HEIGHT)
-        setting_bt.configure(text="▲ 展開額外功能")
+        setting_bt.configure(text="▼ 展開額外功能")
     else:
         smooth_expand(END_HEIGHT)
-        setting_bt.configure(text="▼ 收起額外功能")
+        setting_bt.configure(text="▲ 收起額外功能")
         window.after(ANIMATION_DURATION, lambda: f2.grid())  # 動畫結束後才顯示 f2
     is_expanded = not is_expanded
 
@@ -374,7 +372,7 @@ window_height = START_HEIGHT
 
 # 計算視窗位置
 x_position = screen_width - int(window_width * scale_factor) - int(50 * scale_factor)
-y_position = screen_height - int(window_height * scale_factor) - int(100 * scale_factor)
+y_position = int(50 * scale_factor)
 
 # 設定視窗位置
 window.geometry(f"{window_width}x{window_height}+{x_position}+{y_position}")
@@ -414,7 +412,7 @@ capture_bt = ctk.CTkButton(master = f1, text = "Capture", font = title_font, hei
 capture_bt.grid(row = 0, column = 0, padx = 5, pady = 5, sticky = "swe")
 
 # 建立按鈕 (開啟設定選單)
-setting_bt = ctk.CTkButton(master = f1, text = "▲ 展開額外功能", font = text_font,
+setting_bt = ctk.CTkButton(master = f1, text = "▼ 展開額外功能", font = text_font,
                            anchor = "c", command = toggle_window_size)
 setting_bt.grid(row = 3, column = 0, padx = 5, pady = 5, sticky = "we")
 
