@@ -109,7 +109,7 @@ class overlayWindow(ctk.CTk):
         self.text_f.grid_columnconfigure(0, weight = 1)
 
         # 可捲動文字框（唯讀但可複製）
-        self.textbox = ctk.CTkTextbox(self.text_f, font = text_font, wrap = "word", corner_radius = 10, border_color = "green", border_width = 0.1)
+        self.textbox = ctk.CTkTextbox(self.text_f, font = text_font, wrap = "word", corner_radius = 5, border_color = "green", border_width = 0.1)
         self.textbox.insert("1.0", self.showTEXT)
         self.textbox.configure(state="disabled") # 唯讀
         self.textbox.grid(row = 0, column = 0, padx = 5, pady = 5, sticky = "nsew")
@@ -121,42 +121,43 @@ class overlayWindow(ctk.CTk):
         self.control_f1.grid_columnconfigure((0, 1, 2, 3, 4, 5, 6), weight = 1)
 
         # 字體調整按鈕
-        self.increase_bt = ctk.CTkButton(self.control_f1, text = "字放大", border_color = "green", border_width = 0.1,
-                                             font = text_fix_font, command = self.increase_font_size)
+        self.increase_bt = ctk.CTkButton(self.control_f1, text = "字放大", corner_radius = 5, border_color = "green", border_width = 0.1,
+                                         font = text_fix_font, command = self.increase_font_size)
         self.increase_bt.grid(row = 0, column = 0, padx = 5, pady = 5, sticky = "nsew")
-        self.decrease_bt = ctk.CTkButton(self.control_f1, text = "字縮小", border_color = "green", border_width = 0.1,
+        self.decrease_bt = ctk.CTkButton(self.control_f1, text = "字縮小", corner_radius = 5, border_color = "green", border_width = 0.1,
                                              font = text_fix_font, command = self.decrease_font_size)
         self.decrease_bt.grid(row = 0, column = 1, padx = 5, pady = 5, sticky = "nsew")
        
         increase_size = 50 # 預設增加幅度
         self.resize_v_bt = ctk.CTkButton(
-            self.control_f1, text = "↕", font = text_fix_font, width = 90, border_color = "green", border_width = 0.1,
+            self.control_f1, text = "↕", font = text_fix_font, width = 90, corner_radius = 5, border_color = "green", border_width = 0.1,
             fg_color = ["#c48971", "#2a6475"], hover_color = ["#ed9744", "#3696b3"],
             command = lambda: self.increase_v_size(increase_size))
         self.resize_v_bt.grid(row = 0, column = 2, padx = 5, pady = 5, sticky="nsew")
 
         self.resize_h_bt = ctk.CTkButton(
-            self.control_f1, text = "↔", font = text_fix_font, width = 90, border_color = "green", border_width = 0.1,
+            self.control_f1, text = "↔", font = text_fix_font, width = 90, corner_radius = 5, border_color = "green", border_width = 0.1,
             fg_color = ["#c48971", "#2a6475"], hover_color = ["#ed9744", "#3696b3"],
             command = lambda: self.increase_h_size(increase_size))
         self.resize_h_bt.grid(row = 0, column = 3, padx = 5, pady = 5, sticky="nsew")
 
         self.resize_r_bt = ctk.CTkButton(
-            self.control_f1, text = "⛶", font = text_fix_font, width = 90, border_color = "green", border_width = 0.1,
+            self.control_f1, text = "⛶", font = text_fix_font, width = 90, corner_radius = 5, border_color = "green", border_width = 0.1,
             fg_color = ["#c48971", "#2a6475"], hover_color = ["#ed9744", "#3696b3"],
             command = lambda: self.undo_size())
         self.resize_r_bt.grid(row = 0, column = 4, padx = 5, pady = 5, sticky="nsew")
 
         # 鎖定按鈕
         self.lock_movement = False  # 預設允許移動
-        self.lock_bt = ctk.CTkButton(self.control_f1, text = "可移動", font = text_fix_font, width = 160, border_color = "green", border_width = 0.1,
-                                         fg_color = ["#2FA572", "#2FA572"], hover_color = ["#1e754f", "#1e754f"],
-                                         command = self.toggle_lock)
+        self.lock_bt = ctk.CTkButton(self.control_f1, text = "可移動", font = text_fix_font, width = 160, corner_radius = 5, border_color = "green", border_width = 0.1,
+                                     fg_color = ["#2FA572", "#2FA572"], hover_color = ["#1e754f", "#1e754f"],
+                                     command = self.toggle_lock)
         self.lock_bt.grid(row = 0, column = 5, padx = 5, pady = 5, sticky="nsew")
 
         # 退出按鈕
-        self.exit_bt = ctk.CTkButton(self.control_f1, text = "退出", fg_color = "firebrick3", hover_color = "firebrick", border_color = "green", border_width = 0.1,
-                                         font = text_fix_font, command = self.safe_destroy)
+        self.exit_bt = ctk.CTkButton(self.control_f1, text = "退出", fg_color = "firebrick3", hover_color = "firebrick", 
+                                     corner_radius = 5, border_color = "green", border_width = 0.1, 
+                                     font = text_fix_font, command = self.safe_destroy)
         self.exit_bt.grid(row = 0, column = 6, padx = 5, pady = 5, sticky = "nsew")
 
         # 控制區域 2
