@@ -2,13 +2,13 @@
 setlocal
 
 :: 設定 Groq API Keys 串接 AI 語言模型
-set api_key=
+set api_key=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
 
 :: 設定模式（0 為兼容模式，1 為強制CPU模式）
 set mode=0
 
 :: 設定 debug 變數（0 為背景執行模式，1 為除錯模式）
-set debug=1
+set debug=0
 
 :: 設定虛擬環境路徑
 set VENV_DIR=%~dp0env

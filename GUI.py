@@ -28,7 +28,7 @@ model = "llama-3.3-70b-versatile"
 enable_short_term_memory = True
 max_history = 3
 temperature = 0.6
-cb_coords = None
+cb_coords = None # 初始化座標
 last_response = None
 current_theme = "dark"
 TEXTsize = 18
@@ -459,7 +459,7 @@ sep1 = ctk.CTkFrame(master = f2, fg_color = "gray", height = 2)
 sep1.grid(row = 4, column = 0, padx = 5, pady = 5, sticky = "we")
 
 # AI 記憶模塊
-mem_cb_var = tk.StringVar(master = f2, value = "ON")
+mem_cb_var = tk.StringVar(master = f2, value = "OFF")
 mem_cb = ctk.CTkCheckBox(master = f2, text = "短期記憶力", font = text_font,
                            variable = mem_cb_var, onvalue = "ON", offvalue = "OFF",
                            command = toggle_memory)

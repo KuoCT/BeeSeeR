@@ -167,9 +167,12 @@ class WindowCapture(tk.Tk):
         return self.final_text
     
     def exit_WinCap(self):
-        """關閉視窗"""
-        self.destroy()
+        """關閉視窗，釋放綁定與資源"""
+        self.canvas.unbind("<ButtonPress-1>")
+        self.canvas.unbind("<B1-Motion>")
+        self.canvas.unbind("<ButtonRelease-1>")
         self.quit()
+        self.destroy()
 
 if __name__ == "__main__":
     import os
@@ -187,7 +190,7 @@ if __name__ == "__main__":
             with open(prompt_path, "r", encoding = "utf-8") as file:
                 return file.read().strip()
 
-        except Exception as e:
+        except:
             print(f"\033[31m[INFO] 找不到 {prompt_path} 文件，將會使用預設的提示詞。\033[0m")
             return None  # 讀取失敗時返回 None
     
