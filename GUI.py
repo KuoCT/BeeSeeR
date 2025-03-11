@@ -1,15 +1,6 @@
-import os
 import sys
-import json
+import os
 import argparse
-import tkinter as tk
-import customtkinter as ctk
-from ocr.WinCap import WindowCapture
-from ocr.overlay import overlayWindow
-import llm.chat as chat
-import ctypes
-from groq import Groq
-import subprocess
 
 # 解析命令列參數
 parser = argparse.ArgumentParser(description = "BeeSeeR 控制參數，支援 GPU/CPU 模式選擇及 Groq API 設定")
@@ -20,9 +11,17 @@ args = parser.parse_args()
 # 根據 `--force-cpu` 設置環境變數
 if args.force_cpu:
     if sys.platform.startswith("win"):
-        os.environ["CUDA_VISIBLE_DEVICES"] = ","  # Windows 空列表
-    else:
-        os.environ["CUDA_VISIBLE_DEVICES"] = ""   # Linux 空列表
+        os.environ["CUDA_VISIBLE_DEVICES"] = "-1"  # 設定 CUDA 無效化
+
+import json
+import tkinter as tk
+import customtkinter as ctk
+from ocr.WinCap import WindowCapture
+from ocr.overlay import overlayWindow
+import llm.chat as chat
+import ctypes
+from groq import Groq
+import subprocess
 
 # 定義預設參數
 model = "llama-3.3-70b-versatile"
@@ -171,71 +170,6 @@ def get_refresh_rate():
     user32.ReleaseDC(0, hdc)
     return refresh_rate
 
-# 視窗動畫
-# 設定動畫參數
-START_HEIGHT = 195
-START_WIDTH = 200
-END_HEIGHT = 695
-ANIMATION_DURATION = 800  # 總動畫時間 (毫秒)
-refresh_rate = get_refresh_rate()
-FRAME_RATE = round(1000 / refresh_rate)  # 同步幀率
-TOTAL_FRAMES = ANIMATION_DURATION // FRAME_RATE  # 計算總幀數
-is_expanded = False  # 初始化視窗狀態
-
-# 貝茲曲線函數 (Cubic Bezier)
-def cubic_bezier(t, p0, p1, p2, p3):
-    """ Cubic Bezier 曲線計算公式 """
-    return (1 - t) ** 3 * p0 + 3 * (1 - t) ** 2 * t * p1 + 3 * (1 - t) * t ** 2 * p2 + t ** 3 * p3
-
-def ease_in_out_bezier(progress):
-    """ 使用 Cubic Bezier 計算 ease 軌跡 """
-    return cubic_bezier(progress, 0, 0.5, -0.5, 1)  # 參數可調整平滑程度
-
-def smooth_expand(target_height, frame = 0):
-    """ 平滑展開視窗，讓底部位置不變 (使用貝茲曲線) """
-    if frame > TOTAL_FRAMES:
-        return  # 動畫結束
-
-    progress = frame / TOTAL_FRAMES  # 取得 0~1 之間的進度
-    ease_value = ease_in_out_bezier(progress)  # 使用貝茲曲線計算平滑進度
-    new_height = int(START_HEIGHT + (target_height - START_HEIGHT) * ease_value)
-
-    current_width = window.winfo_width()
-    current_x = window.winfo_x()
-    current_y = window.winfo_y() - (new_height - window.winfo_height())  # 確保底部固定
-
-    window.geometry(f"{current_width}x{new_height}+{current_x}+{current_y}")
-    window.after(FRAME_RATE, lambda: smooth_expand(target_height, frame + 1))
-
-def smooth_collapse(target_height, frame = 0):
-    """ 平滑縮小視窗，讓底部位置不變 (使用 Bezier 緩動) """
-    if frame > TOTAL_FRAMES:
-        return  # 動畫結束
-
-    progress = frame / TOTAL_FRAMES
-    ease_value = ease_in_out_bezier(progress)
-    new_height = int(END_HEIGHT - (END_HEIGHT - target_height) * ease_value)
-
-    current_width = window.winfo_width()
-    current_x = window.winfo_x()
-    current_y = window.winfo_y() + (window.winfo_height() - new_height)  # 確保底部固定
-
-    window.geometry(f"{current_width}x{new_height}+{current_x}+{current_y}")
-    window.after(FRAME_RATE, lambda: smooth_collapse(target_height, frame + 1))
-
-def toggle_window_size():
-    """ 切換視窗大小 (平滑展開/收縮) """
-    global is_expanded
-    if is_expanded:
-        f2.grid_remove()  # 收起時隱藏 f2
-        smooth_collapse(START_HEIGHT)
-        setting_bt.configure(text="▲ 展開額外功能")
-    else:
-        smooth_expand(END_HEIGHT)
-        setting_bt.configure(text="▼ 收起額外功能")
-        window.after(ANIMATION_DURATION, lambda: f2.grid())  # 動畫結束後才顯示 f2
-    is_expanded = not is_expanded
-
 def toggle_theme():
     """切換 Light/Dark 模式"""
     global current_theme  # 確保使用的是全域變數
@@ -303,7 +237,6 @@ def set_model(choice):
     if groq_available:
         chat_session.update_config(model = model)  # 更新 chat_session 內部設定
 
-
 process = None # 初始化記錄 Popen 進程  
 
 def pop_chatroom(groq_available, groq_key, model, max_history, enable_short_term_memory, temperature, chat_session):
@@ -342,6 +275,79 @@ def pop_chatroom(groq_available, groq_key, model, max_history, enable_short_term
     # 執行 subprocess，確保使用虛擬環境，並設定 `cwd` 以確保執行位置正確
     process = subprocess.Popen(CMD)
 
+# 視窗動畫
+# 設定動畫參數
+START_HEIGHT = 195
+START_WIDTH = 200
+END_HEIGHT = 695
+ANIMATION_DURATION = 800  # 總動畫時間 (毫秒)
+refresh_rate = get_refresh_rate()
+FRAME_RATE = round(1000 / refresh_rate)  # 同步幀率
+TOTAL_FRAMES = ANIMATION_DURATION // FRAME_RATE  # 計算總幀數
+is_expanded = False  # 初始化視窗狀態
+
+# 貝茲曲線函數 (Cubic Bezier)
+def cubic_bezier(t, p0, p1, p2, p3):
+    """ Cubic Bezier 曲線計算公式 """
+    return (1 - t) ** 3 * p0 + 3 * (1 - t) ** 2 * t * p1 + 3 * (1 - t) * t ** 2 * p2 + t ** 3 * p3
+
+def ease_in_out_bezier(progress):
+    """ 使用 Cubic Bezier 計算 ease 軌跡 """
+    return cubic_bezier(progress, 0, 0.5, -0.5, 1)  # 參數可調整平滑程度
+
+def smooth_expand(target_height, frame = 0):
+    """ 平滑展開視窗，讓底部位置不變 (使用貝茲曲線) """
+    if frame > TOTAL_FRAMES:
+        return  # 動畫結束
+
+    progress = frame / TOTAL_FRAMES  # 取得 0~1 之間的進度
+    ease_value = ease_in_out_bezier(progress)  # 使用貝茲曲線計算平滑進度
+    new_height = int(START_HEIGHT + (target_height - START_HEIGHT) * ease_value)
+
+    current_width = int(window.winfo_width() / scale_factor)
+    current_height = int(window.winfo_height() / scale_factor)
+    current_x = window.winfo_x()
+    current_y = window.winfo_y() - (new_height - current_height)  # 確保底部固定
+
+    print(f"y_bot: {current_y + new_height}")
+    print(f"{current_width}x{new_height}+{current_x}+{current_y}")
+
+    window.geometry(f"{current_width}x{new_height}+{current_x}+{current_y}")
+    window.after(FRAME_RATE, lambda: smooth_expand(target_height, frame + 1))
+
+def smooth_collapse(target_height, frame = 0):
+    """ 平滑縮小視窗，讓底部位置不變 (使用 Bezier 緩動) """
+    if frame > TOTAL_FRAMES:
+        return  # 動畫結束
+
+    progress = frame / TOTAL_FRAMES
+    ease_value = ease_in_out_bezier(progress)
+    new_height = int(END_HEIGHT - (END_HEIGHT - target_height) * ease_value)
+    
+    current_width = int(window.winfo_width() / scale_factor)
+    current_height = int(window.winfo_height() / scale_factor)
+    current_x = window.winfo_x()
+    current_y = window.winfo_y() + (current_height - new_height)  # 確保底部固定
+
+    print(f"y_bot: {current_y + new_height}")
+    print(f"{current_width}x{new_height}+{current_x}+{current_y}")
+
+    window.geometry(f"{current_width}x{new_height}+{current_x}+{current_y}")
+    window.after(FRAME_RATE, lambda: smooth_collapse(target_height, frame + 1))
+
+def toggle_window_size():
+    """ 切換視窗大小 (平滑展開/收縮) """
+    global is_expanded
+    if is_expanded:
+        f2.grid_remove()  # 收起時隱藏 f2
+        smooth_collapse(START_HEIGHT)
+        setting_bt.configure(text="▲ 展開額外功能")
+    else:
+        smooth_expand(END_HEIGHT)
+        setting_bt.configure(text="▼ 收起額外功能")
+        window.after(ANIMATION_DURATION, lambda: f2.grid())  # 動畫結束後才顯示 f2
+    is_expanded = not is_expanded
+
 # GUI    
 # 建立主視窗
 window = ctk.CTk()
@@ -349,17 +355,26 @@ window = ctk.CTk()
 # 設定關閉視窗的事件監聽
 window.protocol("WM_DELETE_WINDOW", on_closing)
 
+# 獲取螢幕的寬高和縮放比例
+def get_scale_factor():
+    """使用 Windows API 取得 Windows 設定的縮放比例"""
+    try:
+        shcore = ctypes.windll.shcore
+        return shcore.GetScaleFactorForDevice(0) / 100.0  # 例如 125% → 1.25
+    except Exception:
+        return 1.0  # 預設 100%
+
+scale_factor = get_scale_factor()
+screen_width = window.winfo_screenwidth()
+screen_height = window.winfo_screenheight()
+
 # 設定視窗大小
 window_width = START_WIDTH
 window_height = START_HEIGHT
 
-# 獲取螢幕的寬高
-screen_width = window.winfo_screenwidth()
-screen_height = window.winfo_screenheight()
-
-# 計算視窗應該出現的位置 (右下角)
-x_position = screen_width - window_width -50 # 與螢幕邊緣的間距
-y_position = screen_height - window_height  -100 # 注意避免擋住工作列
+# 計算視窗位置
+x_position = screen_width - int(window_width * scale_factor) - int(50 * scale_factor)
+y_position = screen_height - int(window_height * scale_factor) - int(100 * scale_factor)
 
 # 設定視窗位置
 window.geometry(f"{window_width}x{window_height}+{x_position}+{y_position}")

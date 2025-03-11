@@ -192,10 +192,10 @@ if __name__ == "__main__":
             return None  # 讀取失敗時返回 None
     
     def receive_coordinates(coords):
-            """回呼函數，獲取座標"""
-            global cb_coords
-            cb_coords = coords
-            print(f"\033[34m[INFO] 即時回傳選取範圍座標: {coords}\033[0m")
+        """回呼函數，獲取座標"""
+        global cb_coords
+        cb_coords = coords
+        print(f"\033[34m[INFO] 即時回傳選取範圍座標: {coords}\033[0m")
 
     prompt = load_prompt(prompt_file)
     prompt_control = True
