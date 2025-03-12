@@ -147,8 +147,10 @@ class overlayWindow(ctk.CTk):
         self.resize_r_bt.grid(row = 0, column = 4, padx = 5, pady = 5, sticky="nsew")
 
         # 鎖定按鈕
-        self.lock_bt = ctk.CTkButton(self.control_f1, text = "可移動", font = text_fix_font, width = 160, corner_radius = 4, border_color = "green", border_width = 0.1,
-                                     fg_color = ["#2FA572", "#2FA572"], hover_color = ["#1e754f", "#1e754f"],
+        self.lock_bt = ctk.CTkButton(self.control_f1, text="鎖定中" if self.lock_movement else "可移動", 
+                                     font = text_fix_font, width = 160, corner_radius = 4, border_color = "green", border_width = 0.1,
+                                     fg_color="#454240" if self.lock_movement else ["#2FA572", "#2CC985"],
+                                     hover_color="#878584" if self.lock_movement else ["#106A43", "#0C955A"],
                                      command = self.toggle_lock)
         self.lock_bt.grid(row = 0, column = 5, padx = 5, pady = 5, sticky="nsew")
 
