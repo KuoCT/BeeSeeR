@@ -23,14 +23,22 @@ import ctypes
 from groq import Groq
 import subprocess
 
+def load_config():
+    """讀取設定檔案"""
+    if os.path.exists("config.json"):
+        with open("config.json", "r") as f:
+            return json.load(f)
+    return {}  # 如果沒有設定檔，回傳空字典
+
 # 定義預設參數
+settings  = load_config()
 model = "llama-3.3-70b-versatile"
 enable_short_term_memory = False
 max_history = 3
 temperature = 0.6
 cb_coords = None # 初始化座標
 last_response = None
-current_theme = "dark"
+current_theme = settings.get("theme", "dark")
 total_prompt_tokens = 0  # 初始化發送的 token 數
 total_completion_tokens = 0  # 初始化 AI 回應的 token 數
 system_prompt_file = "AI_system_prompt.txt"
@@ -95,6 +103,7 @@ if groq_available:
         silent = True
     )
 
+# 關閉附屬 GUI 避免重複啟動
 def close_app(exitFlag_app, exitFlag_overlay):
     global app, overlay
     try:
@@ -132,6 +141,7 @@ def close_app(exitFlag_app, exitFlag_overlay):
     except Exception as e:
         print(f"\033[31m[WARNING] 關閉 overlay 時發生錯誤: {e}\033[0m")
 
+# 螢幕文字辨識 + AI 自動翻譯 + 螢幕覆蓋顯示結果
 def run_wincap():
     """啟動 WindowCapture 取得螢幕訊息"""
     global app, exitFlag_app, overlay, exitFlag_overlay # 儲存 GUI 物件
@@ -192,6 +202,13 @@ def run_wincap():
             overlay.mainloop()
             exitFlag_overlay = True
 
+def save_config():
+    """儲存設定到 JSON 檔案"""
+    with open("config.json", "w") as f:
+        json.dump({
+            "theme": current_theme
+        }, f)
+
 def on_closing():
     """確保關閉視窗時正常退出"""
     close_app(exitFlag_app, exitFlag_overlay)
@@ -226,12 +243,14 @@ def toggle_theme():
     global current_theme  # 確保使用的是全域變數
     if current_theme == "dark":
         current_theme = "light"
-        ctk.set_appearance_mode("light")  # 切換為 Light 模式
+        ctk.set_appearance_mode(current_theme)  # 切換為 Light 模式
         window.iconbitmap("icon/logo_light.ico")
+        save_config()
     else:
         current_theme = "dark"
-        ctk.set_appearance_mode("dark")  # 切換為 Dark 模式
+        ctk.set_appearance_mode(current_theme)  # 切換為 Dark 模式
         window.iconbitmap("icon/logo_dark.ico")
+    save_config()
 
 def open_prompt_folder():
     """打開 prompt 資料夾"""
@@ -431,7 +450,7 @@ window.geometry(f"{window_width}x{window_height}+{x_position}+{y_position}")
 # 設定標題與屬性
 window.title("BCR")
 window.resizable(True, True)
-window.iconbitmap("icon/logo_dark.ico")
+window.iconbitmap("icon/logo_dark.ico" if current_theme == "dark" else "icon/logo_light.ico")
 appid = 'KuoCT.BeeSeeR.BCR.v2.0.0'
 ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(appid)
 
@@ -439,7 +458,7 @@ ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(appid)
 window.attributes("-topmost", True) # 新增這行讓視窗顯示在最前面
 
 # 設定主題
-ctk.set_appearance_mode("dark")
+ctk.set_appearance_mode(current_theme)
 ctk.set_default_color_theme("theme/nectar.json")
 
 # 設定預設字體、顏色
