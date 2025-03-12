@@ -31,7 +31,6 @@ temperature = 0.6
 cb_coords = None # 初始化座標
 last_response = None
 current_theme = "dark"
-TEXTsize = 18
 total_prompt_tokens = 0  # 初始化發送的 token 數
 total_completion_tokens = 0  # 初始化 AI 回應的 token 數
 system_prompt_file = "AI_system_prompt.txt"
@@ -41,6 +40,10 @@ prompt_control = True
 ost_control = False
 groq_key = args.groq_key.strip() if args.groq_key else None # 移除多餘空白
 groq_available = False # 預設 API 狀態為 False
+app = None
+overlay = None
+exitFlag_app = True
+exitFlag_overlay = True
 
 # 如果 API Key 非空，嘗試連線驗證
 if groq_key:
@@ -92,8 +95,49 @@ if groq_available:
         silent = True
     )
 
+def close_app(exitFlag_app, exitFlag_overlay):
+    global app, overlay
+    try:
+        if not exitFlag_app:
+            print("\033[34m[INFO] 偵測到開啟的 WindowCapture 應用，關閉中...\033[0m")
+            app.canvas.unbind("<ButtonPress-1>")
+            app.canvas.unbind("<B1-Motion>")
+            app.canvas.unbind("<ButtonRelease-1>")
+            app.quit()
+            app.destroy()
+            app = None  # 確保變數被清空，避免再次訪問已銷毀的物件
+    except Exception as e:
+        print(f"\033[31m[WARNING] 關閉 app 時發生錯誤: {e}\033[0m")
+
+    try:
+        if not exitFlag_overlay:
+            print("\033[34m[INFO] 偵測到開啟的 Overlay 覆蓋視窗，關閉中...\033[0m")
+            overlay.withdraw()
+            # 檢查 after 事件並取消
+            try:
+                after_ids = overlay.tk.call("after", "info")
+                if isinstance(after_ids, tuple):
+                    for after_id in after_ids:
+                        try:
+                            overlay.after_cancel(after_id)
+                        except Exception as e:
+                            print(f"\033[31m[WARNING] 無法取消 after 事件 {after_id}: {e}\033[0m")
+            except Exception as e:
+                print(f"\033[31m[WARNING] 查詢 after 事件失敗: {e}\033[0m")
+            overlay.unbind("<ButtonPress-1>")
+            overlay.unbind("<B1-Motion>")
+            overlay.unbind("<ButtonRelease-1>")
+            overlay.quit()
+            overlay = None  # 確保變數被清空，避免再次訪問已銷毀的物件
+    except Exception as e:
+        print(f"\033[31m[WARNING] 關閉 overlay 時發生錯誤: {e}\033[0m")
+
 def run_wincap():
     """啟動 WindowCapture 取得螢幕訊息"""
+    global app, exitFlag_app, overlay, exitFlag_overlay # 儲存 GUI 物件
+
+    # 檢查是否有殘留的 app 和 overlay
+    close_app(exitFlag_app, exitFlag_overlay) # 偵測退出事件
 
     def receive_coordinates(coords):
         """回呼函數，獲取座標"""
@@ -101,51 +145,58 @@ def run_wincap():
         cb_coords = coords
         # print(f"\033[34m[INFO] 即時回傳選取範圍座標: {coords}\033[0m")
 
+    exitFlag_app = False
     app = WindowCapture(prompt_control = prompt_control, on_capture = receive_coordinates, prompt = prompt)
     app.mainloop()
-    # prompt = app.get_prompt_text()
-    # ext = app.get_extracted_text()
-    user_input = app.get_final_text()
-    if user_input:
-        print("\033[33m[INFO] 文字辨識結果：\033[0m")
-        print(user_input)
-    else:
-        print("\033[31m[INFO] 無法獲取文字辨識結果。\033[0m")
+    exitFlag_app = True
+
+    if app is not None:
+        # prompt = app.get_prompt_text()
+        # ext = app.get_extracted_text()
+        user_input = app.get_final_text()
+        if user_input:
+            print("\033[33m[INFO] 文字辨識結果：\033[0m")
+            print(user_input)
+        else:
+            print("\033[31m[INFO] 無法獲取文字辨識結果。\033[0m")
     
-    # 自動翻譯
-    if groq_available and ost_control:
-        global last_response
-        global system_prompt
-        global system_prompt_path
-        global memory_prompt
-        global memory_prompt_path
-        system_prompt_path, system_prompt = load_prompt(system_prompt_file) # 讀取系統提示詞
-        memory_prompt_path, memory_prompt = load_prompt(memory_prompt_file) # 讀取記憶提示詞
-        response, prompt_tokens, completion_tokens = chat_session.send_to_groq(system_prompt, memory_prompt, user_input)
-        last_response = response
+        # 自動翻譯
+        if groq_available and ost_control:
+            global last_response
+            global system_prompt
+            global system_prompt_path
+            global memory_prompt
+            global memory_prompt_path
+            system_prompt_path, system_prompt = load_prompt(system_prompt_file) # 讀取系統提示詞
+            memory_prompt_path, memory_prompt = load_prompt(memory_prompt_file) # 讀取記憶提示詞
+            response, prompt_tokens, completion_tokens = chat_session.send_to_groq(system_prompt, memory_prompt, user_input)
+            last_response = response
 
-        # 更新 token 計數器
-        global total_prompt_tokens
-        global total_completion_tokens
-        # 更新累計 token 數量
-        total_prompt_tokens += prompt_tokens
-        total_completion_tokens += completion_tokens
-        t_input_wd.configure(text = f"● 輸入: {prompt_tokens}")
-        t_output_wd.configure(text = f"● 輸出: {completion_tokens}")
-        t_in_total_wd.configure(text = f"● 累計輸入: {total_prompt_tokens}")
-        t_out_total_wd.configure(text = f"● 累計輸出: {total_completion_tokens}")
+            # 更新 token 計數器
+            global total_prompt_tokens
+            global total_completion_tokens
+            # 更新累計 token 數量
+            total_prompt_tokens += prompt_tokens
+            total_completion_tokens += completion_tokens
+            t_input_wd.configure(text = f"● 輸入: {prompt_tokens}")
+            t_output_wd.configure(text = f"● 輸出: {completion_tokens}")
+            t_in_total_wd.configure(text = f"● 累計輸入: {total_prompt_tokens}")
+            t_out_total_wd.configure(text = f"● 累計輸出: {total_completion_tokens}")
 
-        # 還原按鈕
-        resetchat_bt.configure(text = "AI 重製/記憶刪除", fg_color = ["#1e8bba", "#C7712D"])
+            # 還原按鈕
+            resetchat_bt.configure(text = "AI 重製/記憶刪除", fg_color = ["#1e8bba", "#C7712D"])
 
-        # 螢幕覆蓋顯示
-        overlay = overlayWindow(last_response, TEXTsize, cb_coords)
-        overlay.mainloop()
+            # 螢幕覆蓋顯示
+            exitFlag_overlay = False
+            overlay = overlayWindow(last_response, cb_coords)
+            overlay.mainloop()
+            exitFlag_overlay = True
 
 def on_closing():
     """確保關閉視窗時正常退出"""
-    window.destroy() # 關閉 Tkinter 視窗
-    window.quit() # 強制結束 Python 程式
+    close_app(exitFlag_app, exitFlag_overlay)
+    window.destroy()  # 關閉 Tkinter 視窗
+    window.quit()  # 結束 Python 程式
 
 def prompt_sw():
     """控制 Prompt 開關"""
