@@ -169,11 +169,8 @@ class WindowCapture(tk.Toplevel):
     
     def exit_WinCap(self):
         """關閉視窗，釋放綁定與資源"""
-        self.canvas.unbind("<ButtonPress-1>")
-        self.canvas.unbind("<B1-Motion>")
-        self.canvas.unbind("<ButtonRelease-1>")
-        self.quit()
         self.destroy()
+        self.quit()
 
 if __name__ == "__main__":
     import os

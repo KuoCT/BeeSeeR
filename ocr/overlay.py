@@ -336,7 +336,7 @@ class overlayWindow(ctk.CTkToplevel):
     def safe_destroy(self):
         """確保關閉視窗時不會有綁定事件錯誤"""
         try:
-            self.withdraw()
+            # self.withdraw()
             # 檢查 after 事件並取消 (捨棄)
             # after_ids = self.tk.call("after", "info")
             # if isinstance(after_ids, tuple):  # 確保它是 tuple
@@ -346,11 +346,11 @@ class overlayWindow(ctk.CTkToplevel):
             #             self.after_cancel(after_id)
             #         except Exception as e:
             #             print(f"\033[31m[WARNING] 無法取消 after 事件 {after_id}: {e}\033[0m")
-            self.unbind("<ButtonPress-1>")
-            self.unbind("<B1-Motion>")
-            self.unbind("<ButtonRelease-1>")
-            self.quit()
+            # self.unbind("<ButtonPress-1>")
+            # self.unbind("<B1-Motion>")
+            # self.unbind("<ButtonRelease-1>")
             self.destroy()
+            self.quit()
         except Exception as e:
             print(f"\033[31m[INFO] 視窗關閉時發生錯誤: {e}\033[0m")
 
