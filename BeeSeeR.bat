@@ -1,9 +1,6 @@
 @echo off
 setlocal
 
-:: 設定 Groq API Keys 串接 AI 語言模型
-set api_key=
-
 :: 設定模式（0 為兼容模式，1 為強制CPU模式）
 set mode=0
 
@@ -151,13 +148,6 @@ if %mode% equ 1 (
     )
 )
 
-:: 顯示參數最終執行參數
-@REM if %mode% equ 1 (
-@REM     echo Run argument: -c -k "%api_key%"
-@REM ) else (
-@REM     echo Run argument: -k "%api_key%"    
-@REM )
-
 :: 重製 GUI 啟動訊號
 if exist %~dp0GUI_open.flag (del %~dp0GUI_open.flag)
 
@@ -165,9 +155,9 @@ if exist %~dp0GUI_open.flag (del %~dp0GUI_open.flag)
 if %mode% equ 1 (
     echo Launching GUI in force-CPU mode...
     if %debug% equ 1 (
-        python "%GUI%" -a -c -k "%api_key%"
+        python "%GUI%" -a -c
     ) else (
-        start "" pythonw "%GUI%" -c -k "%api_key%"
+        start "" pythonw "%GUI%" -c
         for /L %%i in (1,1,60) do (
             if exist %~dp0GUI_open.flag (
                 del %~dp0GUI_open.flag
@@ -180,9 +170,9 @@ if %mode% equ 1 (
 ) else (
     echo Launching GUI in normal mode...
     if %debug% equ 1 (
-        python "%GUI%" -a -k "%api_key%" 
+        python "%GUI%" -a
     ) else (
-        start "" pythonw "%GUI%" -k "%api_key%" 
+        start "" pythonw "%GUI%"
         for /L %%i in (1,1,60) do (
             if exist %~dp0GUI_open.flag (
                 del %~dp0GUI_open.flag
