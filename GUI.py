@@ -592,6 +592,7 @@ model_change_op.grid(row = 16, column = 0, padx = 5, pady = (0, 5), sticky = "we
 if not groq_available:
     API_bt.configure(fg_color = ["gray60", "gray50"], hover_color = ["gray40", "gray40"])
     ost_cb.configure(state = "disabled")
+    ost_cb_var.set("OFF") 
     chatroom_bt.configure(state = "disabled")
     resetchat_bt.configure(state = "disabled")
     temperature_sd.configure(state = "disabled", button_color = ["#939BA2", "#AAB0B5"], progress_color = ["#939BA2", "#AAB0B5"])
