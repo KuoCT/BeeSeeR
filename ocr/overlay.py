@@ -5,7 +5,7 @@ import os
 CONFIG_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "config.json") # 設定檔案名稱
 
 class overlayWindow(ctk.CTkToplevel):
-    def __init__(self, showTEXT = None, coords = None):
+    def __init__(self, showTEXT = None, coords = None, scale_factor = 1.25):
         super().__init__()
 
         # 讀取配置設定
@@ -14,6 +14,7 @@ class overlayWindow(ctk.CTkToplevel):
         self.opacity = self.settings.get("opacity", 0.95)
         self.lock_movement = self.settings.get("lock_movement", False)
         self.hide = self.settings.get("hide", "show")
+        self.scale_factor = scale_factor
 
         # 設定要顯示的文字
         if showTEXT is None:
@@ -26,8 +27,8 @@ class overlayWindow(ctk.CTkToplevel):
         ctk.set_default_color_theme(theme_path)
 
         # 取得螢幕大小
-        self.screen_width = self.winfo_screenwidth()
-        self.screen_height = self.winfo_screenheight()
+        self.screen_width = int(self.winfo_screenwidth() * scale_factor)
+        self.screen_height = int(self.winfo_screenheight() * scale_factor)
 
         # 預設視窗大小
         default_width, default_height = 500, 90 # 最小視窗大小
@@ -42,7 +43,8 @@ class overlayWindow(ctk.CTkToplevel):
             x1, y1 = (self.screen_width - width) // 2, (self.screen_height - height) // 2  # 置中
         else:
             x1, y1, x2, y2 = coords
-            width, height = x2 - x1 + 30, y2 - y1 + 45
+            w, h = int((x2 - x1) / scale_factor), int((y2 - y1) / scale_factor)
+            width, height = int(w + (30 / scale_factor)), int(h + (45 / scale_factor)), 
 
             # **確保視窗大小不小於最小尺寸**
             if width < min_width:
@@ -179,7 +181,7 @@ class overlayWindow(ctk.CTkToplevel):
         # 控制區域 2
         self.slider = ctk.CTkToplevel(self)
         self.slider.title("調整透明度")
-        self.slider.geometry(f"50x{self.height}+{self.x1 + self.width}+{self.y1}")  # 設定滑桿視窗大小與位置
+        self.slider.geometry(f"50x{self.height}+{self.x1 + int(self.width * scale_factor)}+{self.y1}")  # 設定滑桿視窗大小與位置
         self.slider.overrideredirect(True)  # 移除標題欄
 
         # 確保背景透明
@@ -228,14 +230,14 @@ class overlayWindow(ctk.CTkToplevel):
         self.adj_x1 = self.adj_x1 or self.winfo_x()  # 更新為當前視窗位置
         
         # 更新高度與 y1 座標
-        self.adj_height = (self.adj_height or self.height) + size
+        self.adj_height = (self.adj_height or self.height) + int(size / self.scale_factor)
         self.adj_y1 = (self.adj_y1 or self.winfo_y()) - size  # 更新為當前視窗位置
         
         self.geometry(f"{self.adj_width}x{self.adj_height}+{self.adj_x1}+{self.adj_y1}")
 
         # 同步調整滑桿位置
         if hasattr(self, "slider") and self.slider.winfo_exists():
-            slider_x = self.adj_x1 + self.adj_width  # 滑桿仍在右側
+            slider_x = self.adj_x1 + int(self.adj_width * self.scale_factor) # 滑桿仍在右側
             slider_y = self.adj_y1  # 保持相同的 y 座標
             self.slider.geometry(f"50x{self.adj_height}+{slider_x}+{slider_y}")
 
@@ -246,7 +248,7 @@ class overlayWindow(ctk.CTkToplevel):
         self.adj_y1 = self.adj_y1 or self.winfo_y()  # 更新為當前視窗位置
 
         # 更新寬度與 x1 座標
-        self.adj_width = (self.adj_width or self.width) + size
+        self.adj_width = (self.adj_width or self.width) + int(size / self.scale_factor)
         self.adj_x1 = (self.adj_x1 or self.winfo_x()) - size  # 更新為當前視窗位置
 
         # 更新視窗大小與位置
@@ -254,7 +256,7 @@ class overlayWindow(ctk.CTkToplevel):
 
         # 同步調整滑桿位置
         if hasattr(self, "slider") and self.slider.winfo_exists():
-            slider_x = self.adj_x1 + self.adj_width  # 滑桿仍在右側
+            slider_x = self.adj_x1 + int(self.adj_width * self.scale_factor) # 滑桿仍在右側
             slider_y = self.adj_y1  # 保持相同的 y 座標
             self.slider.geometry(f"50x{self.adj_height}+{slider_x}+{slider_y}")
     
@@ -271,7 +273,7 @@ class overlayWindow(ctk.CTkToplevel):
 
         # 同步調整滑桿位置
         if hasattr(self, "slider") and self.slider.winfo_exists():
-            slider_x = self.x1 + self.width  # 滑桿仍在右側
+            slider_x = self.x1 + int(self.width * self.scale_factor)  # 滑桿仍在右側
             slider_y = self.y1  # 保持相同的 y 座標
             self.slider.geometry(f"50x{self.height}+{slider_x}+{slider_y}")
 
@@ -317,7 +319,7 @@ class overlayWindow(ctk.CTkToplevel):
         self.geometry(f"+{x}+{y}")
 
         if hasattr(self, "slider") and self.slider.winfo_exists():
-            slider_x = x + (self.adj_width if self.adj_width is not None else self.width)  # 滑桿視窗放在主視窗右側
+            slider_x = x + int((self.adj_width if self.adj_width is not None else self.width) * self.scale_factor)  # 滑桿視窗放在主視窗右側
             slider_y = y  # 保持相同的 y 座標
             self.slider.geometry(f"+{slider_x}+{slider_y}")
 
