@@ -29,7 +29,7 @@ class overlayWindow(ctk.CTkToplevel):
         self.screen_height = self.winfo_screenheight()
 
         # 預設視窗大小
-        default_width, default_height = 560, 180 # 最小視窗大小
+        default_width, default_height = 500, 90 # 最小視窗大小
         min_width, min_height = default_width, default_height  # 最小視窗大小
 
         # 設定視窗標題
@@ -92,9 +92,13 @@ class overlayWindow(ctk.CTkToplevel):
         self.bind("<ButtonPress-1>", self.start_move)
         self.bind("<B1-Motion>", self.on_move)
         self.bind("<ButtonRelease-1>", self.stop_move)
+        
+        # 初始化滑鼠點擊偏移位置
+        self._offset_x = 0
+        self._offset_y = 0
 
         # 設定按 ESC 鍵可關閉視窗
-        self.bind("<Escape>", lambda event: self.destroy())
+        # self.bind("<Escape>", lambda event: self.destroy())
 
         # 設定 Grid 佈局
         self.grid_rowconfigure(0, weight = 1)
@@ -162,31 +166,27 @@ class overlayWindow(ctk.CTkToplevel):
         # 控制區域 2
         self.slider = ctk.CTkToplevel(self)
         self.slider.title("調整透明度")
-        self.slider.geometry(f"50x{self.height}+{self.x1 + self.width}+{self.y1}")  # 設定滑桿視窗大小與位置
+        self.slider.geometry(f"30x{self.height}+{self.x1 + self.width}+{self.y1}")  # 設定滑桿視窗大小與位置
         self.slider.overrideredirect(True)  # 移除標題欄
 
         # 確保背景透明
-        self.slider.config(bg="green")  # 背景設為 key，這個顏色會被透明處理
+        self.slider.config(bg = "green")  # 背景設為 key，這個顏色會被透明處理
         self.slider.attributes("-transparentcolor", "green")
         self.slider.attributes("-topmost", True)  # 讓視窗顯示在最前面
         self.slider.attributes("-alpha", 1.0)  # 確保滑桿視窗本身不透明
+        self.slider.grid_columnconfigure(0, weight = 1)
         self.slider.grid_rowconfigure(0, weight = 1)
 
         self.slider_f = ctk.CTkFrame(self.slider, fg_color = "green", bg_color = "green") 
         self.slider_f.grid(row = 0, column = 0, padx = 0, pady = 0, sticky="nsew")
+        self.slider_f.grid_columnconfigure(0, weight = 1)
         self.slider_f.grid_rowconfigure(0, weight = 1)
       
         # 透明度調整滑桿
         self.opacity_sd = ctk.CTkSlider(self.slider_f, from_ = 0.0, to = 1.0, number_of_steps = 90, width = 20,
                                             orientation = "vertical", command = self.update_opacity)
         self.opacity_sd.set(self.opacity)  # 設定滑桿初始值
-        # self.slider.opacity_slider.bind("<ButtonPress-1>", self.on_slider_press)
-        # self.slider.opacity_slider.bind("<ButtonRelease-1>", self.on_slider_release)
-        self.opacity_sd.grid(row = 0, column = 0, padx = 5, pady = 5, sticky = "nsew")
-
-        # 記錄滑鼠點擊位置
-        self._offset_x = 0
-        self._offset_y = 0
+        self.opacity_sd.grid(row = 0, column = 0, padx = 5, pady = 5, sticky = "ns")
 
     def increase_font_size(self):
         """增加字體大小"""
@@ -289,18 +289,18 @@ class overlayWindow(ctk.CTkToplevel):
             slider_y = y  # 保持相同的 y 座標
             self.slider.geometry(f"+{slider_x}+{slider_y}")
 
-    def on_slider_press(self, event):
-        """當使用者開始拖曳滑桿時，暫時取消視窗拖動"""
-        self.unbind("<B1-Motion>")
-
-    def on_slider_release(self, event):
-        """當使用者釋放滑桿時，恢復視窗拖動"""
-        self.bind("<B1-Motion>", self.on_move)
-
     def stop_move(self, event):
         """釋放滑鼠後，停止移動"""
         self._offset_x = 0
         self._offset_y = 0
+
+    # def on_slider_press(self, event):
+    #     """當使用者開始拖曳滑桿時，暫時取消視窗拖動"""
+    #     self.unbind("<B1-Motion>")
+
+    # def on_slider_release(self, event):
+    #     """當使用者釋放滑桿時，恢復視窗拖動"""
+    #     self.bind("<B1-Motion>", self.on_move)
 
     def save_config(self):
         """儲存設定到 JSON 檔案"""

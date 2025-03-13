@@ -3,6 +3,7 @@ import gc
 import tkinter as tk
 import pyautogui
 import pyperclip # 剪貼簿
+import threading
 from PIL import Image
 from torch.cuda import is_available, empty_cache, ipc_collect
 from surya.recognition import RecognitionPredictor
@@ -85,7 +86,15 @@ class WindowCapture(tk.Toplevel):
             if self.on_capture:
                 self.on_capture(coordinates)
 
-        # 擷取螢幕畫面到記憶體
+        # 呼叫執行緒來執行 OCR
+        ocr_thread = threading.Thread(target = self.perform_ocr_process, args=(coordinates,))
+        ocr_thread.start()
+
+    def perform_ocr_process(self, coordinates):
+        """執行擷取 + OCR（背景執行緒）"""
+        x1, y1, x2, y2 = coordinates
+
+        # 擷取螢幕畫面
         img_bytes = io.BytesIO()
         screenshot = pyautogui.screenshot(region=(x1, y1, x2 - x1, y2 - y1))
         screenshot.save(img_bytes, format="PNG")
@@ -93,21 +102,17 @@ class WindowCapture(tk.Toplevel):
 
         # 讀取影像並進行 OCR
         image = Image.open(img_bytes)
-        extracted_text = self.perform_ocr(image)
+        extracted_text = self.perform_ocr(image)  # OCR 處理
 
-        # 讀取 prompt 內容，若沒有則預設一個
-        prompt_text = self.prompt
-        if self.prompt is None:
-            prompt_text = "以下文字為光學字元辨識後的文字結果，若出現瑕疵請輕度修復文字確保用詞貼近原文，使用**繁體中文**完整翻譯文字並適度使用**台灣常用詞辭典**在地化，稍微使語法自然通順。**只輸出翻譯結果**："
-            print("\033[32m[INFO] Prompt文件中沒有內容，使用預設提示詞\033[0m")
+        # 讀取 prompt 內容
+        prompt_text = self.prompt if self.prompt else "以下文字為光學字元辨識後的文字結果，若出現瑕疵請輕度修復文字確保用詞貼近原文，使用**繁體中文**完整翻譯文字並適度使用**台灣常用詞辭典**在地化，稍微使語法自然通順。**只輸出翻譯結果**："
 
         # 合併 prompt 與 OCR 結果
-        if extracted_text:
-            final_text = f"{prompt_text}\n\n{extracted_text}" if self.prompt_control else extracted_text
+        final_text = f"{prompt_text}\n\n{extracted_text}" if self.prompt_control else extracted_text
+        if final_text:
             pyperclip.copy(final_text)
             print("\033[32m[INFO] OCR 辨識結果已複製到剪貼簿。\033[0m")
         else:
-            final_text = None
             print("\033[31m[INFO] 未偵測到文字內容\033[0m。")
 
         # 儲存辨識結果
@@ -117,10 +122,47 @@ class WindowCapture(tk.Toplevel):
 
         # 清理資源
         image.close()
-        self.cleanup_memory()  # 釋放記憶體
+        self.cleanup_memory()
 
-        # 確保 OCR 執行完畢後再關閉視窗
-        self.exit_WinCap()
+        # 確保 OCR 完成後關閉視窗（回到 UI 執行緒執行）
+        self.after(0, self.exit_WinCap)
+
+        # # 擷取螢幕畫面到記憶體
+        # img_bytes = io.BytesIO()
+        # screenshot = pyautogui.screenshot(region=(x1, y1, x2 - x1, y2 - y1))
+        # screenshot.save(img_bytes, format="PNG")
+        # img_bytes.seek(0)
+
+        # # 讀取影像並進行 OCR
+        # image = Image.open(img_bytes)
+        # extracted_text = self.perform_ocr(image)
+
+        # # 讀取 prompt 內容，若沒有則預設一個
+        # prompt_text = self.prompt
+        # if self.prompt is None:
+        #     prompt_text = "以下文字為光學字元辨識後的文字結果，若出現瑕疵請輕度修復文字確保用詞貼近原文，使用**繁體中文**完整翻譯文字並適度使用**台灣常用詞辭典**在地化，稍微使語法自然通順。**只輸出翻譯結果**："
+        #     print("\033[32m[INFO] Prompt文件中沒有內容，使用預設提示詞\033[0m")
+
+        # # 合併 prompt 與 OCR 結果
+        # if extracted_text:
+        #     final_text = f"{prompt_text}\n\n{extracted_text}" if self.prompt_control else extracted_text
+        #     pyperclip.copy(final_text)
+        #     print("\033[32m[INFO] OCR 辨識結果已複製到剪貼簿。\033[0m")
+        # else:
+        #     final_text = None
+        #     print("\033[31m[INFO] 未偵測到文字內容\033[0m。")
+
+        # # 儲存辨識結果
+        # self.prompt_text = prompt_text
+        # self.extracted_text = extracted_text
+        # self.final_text = final_text
+
+        # # 清理資源
+        # image.close()
+        # self.cleanup_memory()  # 釋放記憶體
+
+        # # 確保 OCR 執行完畢後再關閉視窗
+        # self.exit_WinCap()
 
     def perform_ocr(self, image):
         """使用 Surya-OCR 進行辨識 (延遲加載)"""
