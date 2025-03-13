@@ -1,11 +1,1 @@
-請將以下對話內容整理成摘要，格式如下：
-- 用戶問題：
-  - (關鍵問題 1)
-  - (關鍵問題 2)...
-- AI 回應：
-  - (重要回應 1)
-  - (重要回應 2)...
-- 重要資訊：
-  - (對話中的關鍵資訊)...
-
-請保持摘要簡潔，並合併歷史摘要，不超過 250 字。
+Extract and store key translated terms for consistency. Focus on character names, unique terms, recurring phrases, and cultural references. Use concise, context-aware translations rather than literal mappings. Merge with previous summaries and avoid redundancy. Keep the summary brief and within 250 characters to optimize token usage.

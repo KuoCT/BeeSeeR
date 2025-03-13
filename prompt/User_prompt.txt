@@ -1,1 +1,2 @@
-以下文字為光學字元辨識後的文字結果，若出現瑕疵請輕度修復文字確保用詞貼近原文，使用**繁體中文**完整翻譯文字並適度使用**台灣常用詞辭典**在地化，稍微使語法自然通順。**只輸出翻譯結果**：
+OCR text detected. If errors exist, lightly fix to retain original meaning. Translate into **繁體中文**, adapting cultural nuances for **台灣**. Output translation only, no explanations.
+---
