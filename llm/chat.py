@@ -1,7 +1,6 @@
-import os
-import argparse
 import colorama
 from groq import Groq
+import json
 
 colorama.init() # 讓文字在命令提示字元中有顏色
 
@@ -66,17 +65,11 @@ class GroqChatSession:
         """將新的訊息加入對話歷史"""
         self.messages.append({"role": role, "content": content})
     
-    def summarize_history(self):
+    def summarize_history(self, recent_conversations, to_summarize):
         """讓 AI 生成對話摘要，並保留最近 max_history 個對話 Pair"""
         not self.silent and print("\033[32m[INFO] 觸發開始壓縮記憶。\033[0m")
         if not self.enable_short_term_memory:
             return  # 如果記憶功能關閉，則不執行
-        
-        # 保留最近 max_history 個對話 Pair
-        recent_conversations = self.conversation_pairs[-self.max_history // 3:]
-
-        # 需要被摘要的對話（超過 max_history 的部分）
-        to_summarize = self.conversation_pairs[:-self.max_history // 3]
 
         if not to_summarize:
             return  # 若沒有要摘要的內容則直接返回
@@ -105,7 +98,7 @@ class GroqChatSession:
 
         # 組合待壓縮的歷史內容
         chat_content = (
-            f"以下是[新的對話內容]:\n\n用戶問題:\n{user_inputs}\n\nAI 回應:\n{ai_responses}"
+            f"Here is the [new conversation content]:\n\nUser Questions:\n{user_inputs}\n\nAI Responses:\n{ai_responses}"
         )
 
         try:
@@ -113,11 +106,11 @@ class GroqChatSession:
             summary_response = self.client.chat.completions.create(
                 messages = [
                     {"role": "system", "content": memory_prompt},
-                    {"role": "system", "content": "歷史摘要：\n{}".format(self.summaries[-1])},
+                    {"role": "system", "content": "Previous summaries：\n{}".format(self.summaries[-1])},
                     {"role": "user", "content": chat_content},
                 ],
                 model = self.model,
-                temperature = 0.2  # 降低創意度確保摘要更精確
+                temperature = 0.25  # 降低創意度確保摘要更精確
             )
             
             summary = summary_response.choices[0].message.content.strip()
@@ -204,9 +197,15 @@ class GroqChatSession:
                     self.conversation_pairs.append(self.temp_pair)
                     self.temp_pair = []
 
+            # 保留最近 max_history 個對話 Pair
+            recent_conversations = self.conversation_pairs[-self.max_history // 3:]
+
+            # 需要被摘要的對話（超過 max_history 的部分）
+            to_summarize = self.conversation_pairs[:-self.max_history // 3]
+
             # 當對話長度超過 max_history，讓 AI 進行摘要
-            if len(self.conversation_pairs) > self.max_history//2:
-                self.summarize_history()
+            if len(self.conversation_pairs) > self.max_history // 2:
+                self.summarize_history(recent_conversations, to_summarize)
 
             # 取得 token 使用資訊
             usage = chat_completion.usage
@@ -222,7 +221,7 @@ class GroqChatSession:
             print(response)
             print() # 空行
 
-            # 顯示 token 資訊
+            # 顯示完整資訊
             not self.silent and print("\033[32m[INFO] Token 使用量:\033[0m")
             not self.silent and print(f"輸入 token: {prompt_tokens}")
             not self.silent and print(f"回應 token: {completion_tokens}")
@@ -230,7 +229,11 @@ class GroqChatSession:
             not self.silent and print(f"累計輸入 token: {self.total_prompt_tokens}")
             not self.silent and print(f"累計回應 token: {self.total_completion_tokens}")
             not self.silent and print(f"累計總 token: {self.total_prompt_tokens + self.total_completion_tokens}")
-            # print(f"完整內容 : \n {self.messages}")
+            not self.silent and print(f"\033[34m[INFO] 當前對話輪數: {len(self.conversation_pairs)}\033[0m")
+            not self.silent and print(f"\033[34m[INFO] 最近對話: {recent_conversations}\033[0m")
+            not self.silent and print(f"\033[34m[INFO] 需要被摘要的對話: {to_summarize}\033[0m")
+            not self.silent and print("\033[32m[INFO] 完整輸出:\033[0m")
+            not self.silent and print(json.dumps(self.messages, indent = 2, ensure_ascii = False))
 
             # 回傳回應內容及 token 數據
             return response, prompt_tokens, completion_tokens
@@ -241,7 +244,8 @@ class GroqChatSession:
             return response
 
 if __name__ == "__main__":
-    import json
+    import argparse
+    import os
 
     # 命令列參數
     parser = argparse.ArgumentParser(description = "Groq API 設定")
@@ -345,6 +349,7 @@ if __name__ == "__main__":
         print("\n\033[36m[INFO] 指令列表：\033[0m")
         print("\033[33m/m\033[0m        - 進入多行輸入模式")
         print("\033[33m/s\033[0m        - 結束多行輸入模式並送出")
+        print("\033[33m/mem\033[0m      - 短期記憶抽出")
         print("\033[33m/bye\033[0m      - 結束對話")
         print("\033[33m/all\033[0m      - 開啟/關閉完整系統輸出")
         print("\033[33m/use\033[0m      - 顯示/隱藏 token 使用量")
@@ -398,7 +403,6 @@ if __name__ == "__main__":
             # Debug 模式
             if debug_mode:
                 chat_session.silent = False
-                print(f"\033[35m[DEBUG] 目前歷史記錄數量: {len(chat_session.messages)}\033[0m")
             else:
                 chat_session.silent = True
 

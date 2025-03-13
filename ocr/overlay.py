@@ -1,11 +1,10 @@
 import customtkinter as ctk
-from PIL import Image
 import json
 import os
 
-CONFIG_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "overlay_config.json") # 設定檔案名稱
+CONFIG_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "config.json") # 設定檔案名稱
 
-class overlayWindow(ctk.CTk):
+class overlayWindow(ctk.CTkToplevel):
     def __init__(self, showTEXT = None, coords = None):
         super().__init__()
 
@@ -83,7 +82,7 @@ class overlayWindow(ctk.CTk):
         text_fix_font = ctk.CTkFont(family = "Helvetica", size = 20, weight = "bold")
 
         # 讓視窗保持最上層
-        self.attributes("-topmost", True) # 新增這行讓視窗顯示在最前面
+        self.attributes("-topmost", True) # 讓視窗顯示在最前面
 
         # 設定視窗完全透明
         self.config(bg = "green")  # 背景設為 key，這個顏色會被透明處理
@@ -161,18 +160,29 @@ class overlayWindow(ctk.CTk):
         self.exit_bt.grid(row = 0, column = 6, padx = 5, pady = 5, sticky = "nsew")
 
         # 控制區域 2
-        self.control_f2 = ctk.CTkFrame(self, fg_color = "green", bg_color = "green", border_color = "green")
-        self.control_f2.grid(row = 0, rowspan = 2, column = 1, padx = 0, pady = 0, sticky="nsew")
-        self.control_f2.grid_rowconfigure(0, weight = 1)
-        self.control_f2.grid_columnconfigure(0, weight = 1)
-        
+        self.slider = ctk.CTkToplevel(self)
+        self.slider.title("調整透明度")
+        self.slider.geometry(f"50x{self.height}+{self.x1 + self.width}+{self.y1}")  # 設定滑桿視窗大小與位置
+        self.slider.overrideredirect(True)  # 移除標題欄
+
+        # 確保背景透明
+        self.slider.config(bg="green")  # 背景設為 key，這個顏色會被透明處理
+        self.slider.attributes("-transparentcolor", "green")
+        self.slider.attributes("-topmost", True)  # 讓視窗顯示在最前面
+        self.slider.attributes("-alpha", 1.0)  # 確保滑桿視窗本身不透明
+        self.slider.grid_rowconfigure(0, weight = 1)
+
+        self.slider_f = ctk.CTkFrame(self.slider, fg_color = "green", bg_color = "green") 
+        self.slider_f.grid(row = 0, column = 0, padx = 0, pady = 0, sticky="nsew")
+        self.slider_f.grid_rowconfigure(0, weight = 1)
+      
         # 透明度調整滑桿
-        self.opacity_slider = ctk.CTkSlider(self.control_f2, from_ = 0.3, to = 1.0, number_of_steps = 70, width = 20,
+        self.opacity_sd = ctk.CTkSlider(self.slider_f, from_ = 0.0, to = 1.0, number_of_steps = 90, width = 20,
                                             orientation = "vertical", command = self.update_opacity)
-        self.opacity_slider.set(self.opacity)  # 設定滑桿初始值
-        self.opacity_slider.bind("<ButtonPress-1>", self.on_slider_press)
-        self.opacity_slider.bind("<ButtonRelease-1>", self.on_slider_release)
-        self.opacity_slider.grid(row = 0, column = 0, padx = 5, pady = 5, sticky = "ns")
+        self.opacity_sd.set(self.opacity)  # 設定滑桿初始值
+        # self.slider.opacity_slider.bind("<ButtonPress-1>", self.on_slider_press)
+        # self.slider.opacity_slider.bind("<ButtonRelease-1>", self.on_slider_release)
+        self.opacity_sd.grid(row = 0, column = 0, padx = 5, pady = 5, sticky = "nsew")
 
         # 記錄滑鼠點擊位置
         self._offset_x = 0
@@ -203,6 +213,12 @@ class overlayWindow(ctk.CTk):
         
         self.geometry(f"{self.adj_width}x{self.adj_height}+{self.adj_x1}+{self.adj_y1}")
 
+        # 同步調整滑桿位置
+        if hasattr(self, "slider") and self.slider.winfo_exists():
+            slider_x = self.adj_x1 + self.adj_width  # 滑桿仍在右側
+            slider_y = self.adj_y1  # 保持相同的 y 座標
+            self.slider.geometry(f"50x{self.adj_height}+{slider_x}+{slider_y}")
+
     def increase_h_size(self, size: int):
         """增加視窗水平大小"""
         # 確保變數初始化
@@ -215,6 +231,12 @@ class overlayWindow(ctk.CTk):
 
         # 更新視窗大小與位置
         self.geometry(f"{self.adj_width}x{self.adj_height}+{self.adj_x1}+{self.adj_y1}")
+
+        # 同步調整滑桿位置
+        if hasattr(self, "slider") and self.slider.winfo_exists():
+            slider_x = self.adj_x1 + self.adj_width  # 滑桿仍在右側
+            slider_y = self.adj_y1  # 保持相同的 y 座標
+            self.slider.geometry(f"50x{self.adj_height}+{slider_x}+{slider_y}")
     
     def undo_size(self):
         """還原視窗大小與位置"""
@@ -226,6 +248,12 @@ class overlayWindow(ctk.CTk):
 
         # 更新視窗大小與位置
         self.geometry(f"{self.width}x{self.height}+{self.x1}+{self.y1}")
+
+        # 同步調整滑桿位置
+        if hasattr(self, "slider") and self.slider.winfo_exists():
+            slider_x = self.x1 + self.width  # 滑桿仍在右側
+            slider_y = self.y1  # 保持相同的 y 座標
+            self.slider.geometry(f"50x{self.height}+{slider_x}+{slider_y}")
 
     def toggle_lock(self):
         """切換視窗移動鎖定"""
@@ -239,7 +267,7 @@ class overlayWindow(ctk.CTk):
 
     def update_opacity(self, value):
         """調整視窗透明度"""
-        self.opacity = float(value)  # 轉換成浮點數
+        self.opacity = round(float(value), 2)  # 轉換成浮點數並保留 2 位小數
         self.attributes("-alpha", self.opacity)  # 更新透明度
         self.save_config()
 
@@ -255,6 +283,11 @@ class overlayWindow(ctk.CTk):
         x = self.winfo_x() + (event.x - self._offset_x)
         y = self.winfo_y() + (event.y - self._offset_y)
         self.geometry(f"+{x}+{y}")
+
+        if hasattr(self, "slider") and self.slider.winfo_exists():
+            slider_x = x + (self.adj_width if self.adj_width is not None else self.width)  # 滑桿視窗放在主視窗右側
+            slider_y = y  # 保持相同的 y 座標
+            self.slider.geometry(f"+{slider_x}+{slider_y}")
 
     def on_slider_press(self, event):
         """當使用者開始拖曳滑桿時，暫時取消視窗拖動"""
@@ -284,35 +317,43 @@ class overlayWindow(ctk.CTk):
             with open(CONFIG_FILE, "r") as f:
                 return json.load(f)
         return {}  # 如果沒有設定檔，回傳空字典
+    
+    def save_config(self):
+        """讀取現有設定，更新後再存入 JSON 檔案"""
+        config = self.load_config()  # 先載入現有設定
+
+        # 更新設定
+        config.update({
+            "font_size": self.font_size,
+            "opacity": self.opacity,
+            "lock_movement": self.lock_movement
+        })
+
+        # 將更新後的設定存回 JSON
+        with open(CONFIG_FILE, "w") as f:
+            json.dump(config, f, indent = 4)  # `indent=4` 讓 JSON 易讀
 
     def safe_destroy(self):
         """確保關閉視窗時不會有綁定事件錯誤"""
         try:
             self.withdraw()
-            after_ids = self.tk.call("after", "info")
-            if isinstance(after_ids, tuple):  # 確保它是 tuple
-                for after_id in after_ids:
-                    try:
-                        # print(after_id) # 測試用
-                        self.after_cancel(after_id)
-                    except Exception as e:
-                        print(f"\033[31m[WARNING] 無法取消 after 事件 {after_id}: {e}\033[0m")
+            # 檢查 after 事件並取消 (捨棄)
+            # after_ids = self.tk.call("after", "info")
+            # if isinstance(after_ids, tuple):  # 確保它是 tuple
+            #     for after_id in after_ids:
+            #         try:
+            #             # print(after_id) # 測試用
+            #             self.after_cancel(after_id)
+            #         except Exception as e:
+            #             print(f"\033[31m[WARNING] 無法取消 after 事件 {after_id}: {e}\033[0m")
             self.unbind("<ButtonPress-1>")
             self.unbind("<B1-Motion>")
             self.unbind("<ButtonRelease-1>")
             self.quit()
-            # self.destroy()  # 會報錯 can't delete Tcl command!!
+            self.destroy()
         except Exception as e:
             print(f"\033[31m[INFO] 視窗關閉時發生錯誤: {e}\033[0m")
 
 if __name__ == "__main__":
     app = overlayWindow()
     app.mainloop()
-    # prompt = app.get_prompt_text()
-    # ext = app.get_extracted_text()
-    # user_input = app.get_final_text()
-    # if user_input:
-    #     print("\033[33m[INFO] 文字辨識結果：\033[0m")
-    #     print(user_input)
-    # else:
-    #     print("\033[31m[INFO] 無法獲取文字辨識結果。\033[0m")

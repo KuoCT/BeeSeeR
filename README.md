@@ -32,7 +32,6 @@ https://github.com/user-attachments/assets/340bdbb9-ad20-4f22-bf8c-2db590b9c0d9
    git clone https://github.com/KuoCT/BeeSeeR.git
    cd BeeSeeR
    ```
-   Or download it from [here](https://github.com/KuoCT/BeeSeeR/archive/refs/heads/main.zip), then extract it and open the folder.
 
 ## Installation
 ### `Compatibility Mode` with NVIDIA GPU Acceleration (Recommended)
@@ -63,7 +62,7 @@ The first run may take some time as required dependencies are automatically inst
 1. Launch BeeSeeR – Run `BeeSeeR.bat`.
 2. Click the `Caprure` button – Select any area on the screen.
 3. The text will be extracted and automatically copied to the clipboard – Ready to paste anywhere (e.g., ChatGPT).
-4. You can find and edit `Prompt.txt` within the folder - this text will be copied along with the extracted text! (If you don’t want to copy the prompt, simply uncheck the prompt checkbox.)
+4. You can find and edit `User_prompt.txt` within the folder - this text will be copied along with the extracted text! (If you don’t want to copy the prompt, simply uncheck the prompt checkbox.)
 
 ## Credit
 A huge thanks to the following open-source projects:

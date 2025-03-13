@@ -30,7 +30,6 @@ https://github.com/user-attachments/assets/340bdbb9-ad20-4f22-bf8c-2db590b9c0d9
    git clone https://github.com/KuoCT/BeeSeeR.git
    cd BeeSeeR
    ```
-   或從[這裡](https://github.com/KuoCT/BeeSeeR/archive/refs/heads/main.zip)下載，解壓縮並打開。
 
 ## 安裝
 ### 使用 NVIDIA GPU 加速的 `兼容模式` (推薦使用)
@@ -61,7 +60,7 @@ https://github.com/user-attachments/assets/340bdbb9-ad20-4f22-bf8c-2db590b9c0d9
 1. 啟動 BeeSeeR – 執行 `BeeSeeR.bat`。
 2. 點擊 `Caprure` 按鈕 – 選擇螢幕上的任何區域。
 3. 文字將被即時提取且自動複製到剪貼簿 – 可直接貼上到任何地方 (例如 ChatGPT)。
-4. 在資料夾中可以找到並編輯 `Prompt.txt` 中的文字，它會作為提示詞一起被複製到剪貼簿！(不想要複製提示詞的話取消勾選提示詞的核取方塊即可)
+4. 在資料夾中可以找到並編輯 `User_prompt.txt` 中的文字，它會作為提示詞一起被複製到剪貼簿！(不想要複製提示詞的話取消勾選提示詞的核取方塊即可)
 
 ## 致謝
 特別感謝以下開源專案的支持：

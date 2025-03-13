@@ -1,17 +1,16 @@
-import sys
 import os
+import sys
 import argparse
 
 # 解析命令列參數
 parser = argparse.ArgumentParser(description = "BeeSeeR 控制參數，支援 GPU/CPU 模式選擇及 Groq API 設定")
 parser.add_argument("-c", "--force-cpu", action = "store_true", help = "強制使用 CPU 模式（預設為 GPU，如適用）")
-parser.add_argument("-k", "--groq-key", type = str, metavar = "API_KEY", help="設定 Groq API Key（用於 API 連線驗證）")
+parser.add_argument("-a", "--all", action = "store_false", help = "完整輸出模式 (只在終端機中生效)")
 args = parser.parse_args()
 
 # 根據 `--force-cpu` 設置環境變數
 if args.force_cpu:
-    if sys.platform.startswith("win"):
-        os.environ["CUDA_VISIBLE_DEVICES"] = "-1"  # 設定 CUDA 無效化
+    os.environ["CUDA_VISIBLE_DEVICES"] = "-1"  # 設定 CUDA 無效化
 
 import json
 import tkinter as tk
@@ -19,8 +18,8 @@ import customtkinter as ctk
 from ocr.WinCap import WindowCapture
 from ocr.overlay import overlayWindow
 import llm.chat as chat
-import ctypes
 from groq import Groq
+import ctypes
 import subprocess
 
 def load_config():
@@ -32,8 +31,9 @@ def load_config():
 
 # 定義預設參數
 settings  = load_config()
-model = "llama-3.3-70b-versatile"
-enable_short_term_memory = False
+model = settings.get("model", "llama-3.3-70b-versatile")
+enable_short_term_memory = settings.get("enable_short_term_memory", False)
+silent = args.all
 max_history = 3
 temperature = 0.6
 cb_coords = None # 初始化座標
@@ -43,10 +43,10 @@ total_prompt_tokens = 0  # 初始化發送的 token 數
 total_completion_tokens = 0  # 初始化 AI 回應的 token 數
 system_prompt_file = "AI_system_prompt.txt"
 memory_prompt_file = "AI_memory_prompt.txt"
-prompt_file = "Prompt.txt"
+prompt_file = "User_prompt.txt"
 prompt_control = True
-ost_control = False
-groq_key = args.groq_key.strip() if args.groq_key else None # 移除多餘空白
+ost_control = settings.get("ost_control", False)
+groq_key = settings.get("groq_key", None)
 groq_available = False # 預設 API 狀態為 False
 app = None
 overlay = None
@@ -100,7 +100,7 @@ if groq_available:
         enable_short_term_memory, 
         max_history, 
         temperature,
-        silent = True
+        silent
     )
 
 # 關閉附屬 GUI 避免重複啟動
@@ -122,21 +122,22 @@ def close_app(exitFlag_app, exitFlag_overlay):
         if not exitFlag_overlay:
             print("\033[34m[INFO] 偵測到開啟的 Overlay 覆蓋視窗，關閉中...\033[0m")
             overlay.withdraw()
-            # 檢查 after 事件並取消
-            try:
-                after_ids = overlay.tk.call("after", "info")
-                if isinstance(after_ids, tuple):
-                    for after_id in after_ids:
-                        try:
-                            overlay.after_cancel(after_id)
-                        except Exception as e:
-                            print(f"\033[31m[WARNING] 無法取消 after 事件 {after_id}: {e}\033[0m")
-            except Exception as e:
-                print(f"\033[31m[WARNING] 查詢 after 事件失敗: {e}\033[0m")
+            # 檢查 after 事件並取消 (捨棄)
+            # try:
+            #     after_ids = overlay.tk.call("after", "info")
+            #     if isinstance(after_ids, tuple):
+            #         for after_id in after_ids:
+            #             try:
+            #                 overlay.after_cancel(after_id)
+            #             except Exception as e:
+            #                 print(f"\033[31m[WARNING] 無法取消 after 事件 {after_id}: {e}\033[0m")
+            # except Exception as e:
+            #     print(f"\033[31m[WARNING] 查詢 after 事件失敗: {e}\033[0m")
             overlay.unbind("<ButtonPress-1>")
             overlay.unbind("<B1-Motion>")
             overlay.unbind("<ButtonRelease-1>")
             overlay.quit()
+            overlay.destroy()
             overlay = None  # 確保變數被清空，避免再次訪問已銷毀的物件
     except Exception as e:
         print(f"\033[31m[WARNING] 關閉 overlay 時發生錯誤: {e}\033[0m")
@@ -203,11 +204,21 @@ def run_wincap():
             exitFlag_overlay = True
 
 def save_config():
-    """儲存設定到 JSON 檔案"""
+    """讀取現有設定，更新後再存入 JSON 檔案"""
+    config = load_config()  # 先載入現有設定
+
+    # 更新設定
+    config.update({
+        "groq_key": groq_key,
+        "ost_control": ost_control,
+        "theme": current_theme,
+        "model": model,
+        "enable_short_term_memory": enable_short_term_memory
+    })
+
+    # 將更新後的設定存回 JSON
     with open("config.json", "w") as f:
-        json.dump({
-            "theme": current_theme
-        }, f)
+        json.dump(config, f, indent = 4)  # `indent = 4` 讓 JSON 易讀
 
 def on_closing():
     """確保關閉視窗時正常退出"""
@@ -227,16 +238,62 @@ def ost_sw():
     sw = ost_cb_var.get()
     global ost_control
     ost_control = True if sw == "ON" else False
+    save_config()
     print(f"\033[33m[INFO] AI 自動翻譯開關: {sw}\033[0m")
 
-# 獲取螢幕真實刷新率
-def get_refresh_rate():
-    """ 透過 Windows API 獲取真實的螢幕刷新率 """
-    user32 = ctypes.windll.user32
-    hdc = user32.GetDC(0)
-    refresh_rate = ctypes.windll.gdi32.GetDeviceCaps(hdc, 116)  # 116 = VREFRESH (垂直刷新率)
-    user32.ReleaseDC(0, hdc)
-    return refresh_rate
+def restart_app():
+    """重新啟動應用程式"""
+    python = sys.executable  # 取得當前 Python 解釋器的路徑
+    os.execl(python, python, *sys.argv)  # 重新執行當前腳本
+
+def get_API():
+    """獲取 API 並儲存"""
+    dialog = ctk.CTkToplevel()
+    dialog.title("輸入 API Key")
+    dialog.geometry(f"400x40+{window.winfo_x() - 410}+{window.winfo_y()}")
+    dialog.grid_columnconfigure(1, weight = 1)
+    dialog.grid_rowconfigure(0, weight = 0)
+    dialog.attributes("-topmost", True) # 讓視窗顯示在最前面
+    dialog.grab_set()
+    dialog.after(250, dialog.iconbitmap, "icon/logo_dark.ico" if current_theme == "dark" else "icon/logo_light.ico")
+
+    def select_all():
+        """全選輸入框內的 API Key"""
+        entry.select_range(0, "end")  # 選取所有文字
+        entry.focus_set()  # 設定輸入框焦點，確保全選有效
+
+    def confirm_API():
+        global groq_key
+        user_input = entry.get().strip()
+
+        if user_input != groq_key:
+            groq_key = user_input  # 更新 API Key
+            save_config()  # 儲存到 JSON
+            from tkinter import messagebox
+            # 顯示警告並詢問是否重啟
+            response = messagebox.askyesno("系統提示", "API Key 已更新，需要重新啟動應用程式才會生效。\n是否立即重新啟動？")
+            if response:  # 如果使用者選擇 "是"
+                restart_app()  # 重新啟動應用程式
+
+        dialog.destroy()  # 關閉對話框
+
+    # 標題文字
+    API_wd = ctk.CTkLabel(dialog, text = "API Key:", font = text_font, anchor = "w")
+    API_wd.grid(row = 0, column = 0, padx = (5, 0), pady = 5, sticky = "nswe")
+
+    # 輸入框
+    entry = ctk.CTkEntry(dialog)
+    entry.grid(row = 0, column = 1, padx = (5, 0), pady = 5, sticky = "nswe")
+    if groq_key:  # 如果有舊的 API Key，則填入
+        entry.insert(0, groq_key)
+
+    # 全選按鈕
+    confirm_API_bt = ctk.CTkButton(dialog, text = "[ ]", font = text_font, width = 20, anchor = "c", command = select_all)
+    confirm_API_bt.grid(row = 0, column = 2, padx = (5, 0), pady = 5, sticky = "e")
+
+    # 載入按鈕
+    confirm_API_bt = ctk.CTkButton(dialog, text = "確定", font = text_font, width = 40, anchor = "c", command = confirm_API)
+    confirm_API_bt.grid(row = 0, column = 3, padx = 5, pady = 5, sticky = "e")
 
 def toggle_theme():
     """切換 Light/Dark 模式"""
@@ -245,7 +302,6 @@ def toggle_theme():
         current_theme = "light"
         ctk.set_appearance_mode(current_theme)  # 切換為 Light 模式
         window.iconbitmap("icon/logo_light.ico")
-        save_config()
     else:
         current_theme = "dark"
         ctk.set_appearance_mode(current_theme)  # 切換為 Dark 模式
@@ -262,9 +318,14 @@ def toggle_memory():
     if enable_short_term_memory:
         enable_short_term_memory = False
         mem_cb_var.set("OFF")
+        mem_limit_sd.configure(state = "disabled", button_color = ["#939BA2", "#AAB0B5"], progress_color = ["#939BA2", "#AAB0B5"])
+        mem_limit_wd.configure(text_color = ["gray60", "gray40"])
     else:
         enable_short_term_memory = True
         mem_cb_var.set("ON")
+        mem_limit_sd.configure(state = "normal", button_color = ["#1e8bba", "#C06E2F"], progress_color = ["#1e8bba", "#C06E2F"])
+        mem_limit_wd.configure(text_color = ["gray14", "#D4D2CF"])
+    save_config()
 
     if groq_available:
         chat_session.update_config(enable_short_term_memory = enable_short_term_memory) # 更新 chat_session 內部設定
@@ -306,6 +367,8 @@ def set_model(choice):
     
     if groq_available:
         chat_session.update_config(model = model)  # 更新 chat_session 內部設定
+    
+    save_config()
 
 process = None # 初始化記錄 Popen 進程  
 
@@ -345,12 +408,20 @@ def pop_chatroom(groq_available, groq_key, model, max_history, enable_short_term
     # 執行 subprocess，確保使用虛擬環境，並設定 `cwd` 以確保執行位置正確
     process = subprocess.Popen(CMD)
 
-# 視窗動畫
+# 獲取螢幕資訊
+def get_refresh_rate():
+    """ 透過 Windows API 獲取真實的螢幕刷新率 """
+    user32 = ctypes.windll.user32
+    hdc = user32.GetDC(0)
+    refresh_rate = ctypes.windll.gdi32.GetDeviceCaps(hdc, 116)  # 116 = VREFRESH (垂直刷新率)
+    user32.ReleaseDC(0, hdc)
+    return refresh_rate
+
 # 設定動畫參數
 START_HEIGHT = 195
 START_WIDTH = 200
 END_HEIGHT = 695
-ANIMATION_DURATION = 800  # 總動畫時間 (毫秒)
+ANIMATION_DURATION = 700  # 總動畫時間 (毫秒)
 refresh_rate = get_refresh_rate()
 FRAME_RATE = round(1000 / refresh_rate)  # 同步幀率
 TOTAL_FRAMES = ANIMATION_DURATION // FRAME_RATE  # 計算總幀數
@@ -371,6 +442,7 @@ def get_low_y():
     current_window_height = END_HEIGHT if is_expanded else START_HEIGHT
     return current_y - current_window_height
 
+# 視窗動畫
 def smooth_expand(target_height, frame = 0):
     """ 平滑展開視窗 (使用貝茲曲線) """
     if frame > TOTAL_FRAMES:
@@ -451,11 +523,11 @@ window.geometry(f"{window_width}x{window_height}+{x_position}+{y_position}")
 window.title("BCR")
 window.resizable(True, True)
 window.iconbitmap("icon/logo_dark.ico" if current_theme == "dark" else "icon/logo_light.ico")
-appid = 'KuoCT.BeeSeeR.BCR.v2.0.0'
+appid = 'KuoCT.BeeSeeR.BCR.v2.0.2'
 ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(appid)
 
 # 讓視窗保持最上層
-window.attributes("-topmost", True) # 新增這行讓視窗顯示在最前面
+window.attributes("-topmost", True) # 讓視窗顯示在最前面
 
 # 設定主題
 ctk.set_appearance_mode(current_theme)
@@ -466,7 +538,7 @@ title_font = ctk.CTkFont(family = "Helvetica", size = 24, weight = "bold")
 text_font = ctk.CTkFont(family = "Helvetica", size = 14, weight = "bold")
 
 # 建立主視窗框架
-window.grid_columnconfigure((0), weight = 1)
+window.grid_columnconfigure(0, weight = 1)
 window.grid_rowconfigure(0, weight = 0)
 window.grid_rowconfigure(1, weight = 1)
 
@@ -476,31 +548,35 @@ f1.grid(row = 0, column = 0, padx = 5, pady = 5, sticky = "new")
 f1.grid_columnconfigure((0), weight = 1)
 f1.grid_rowconfigure((0), weight = 1)
 
-# 建立按鈕 (螢幕截圖)
+# 螢幕截圖按鈕
 capture_bt = ctk.CTkButton(master = f1, text = "Capture", font = title_font, height = 70,
                            anchor = "c", command = run_wincap)
 capture_bt.grid(row = 0, column = 0, padx = 5, pady = 5, sticky = "swe")
 
-# 建立按鈕 (開啟設定選單)
-setting_bt = ctk.CTkButton(master = f1, text = "▼ 展開額外功能", font = text_font,
-                           anchor = "c", command = toggle_window_size)
-setting_bt.grid(row = 3, column = 0, padx = 5, pady = 5, sticky = "we")
-
-# 建立核取方塊 (Prompt)
+# User Prompt 開關
 prompt_cb_var = tk.StringVar(master = f1, value = "ON")
 prompt_cb = ctk.CTkCheckBox(master = f1, text = "Prompt (提示詞)", font = text_font,
                            variable = prompt_cb_var, onvalue = "ON", offvalue = "OFF",
                            command = prompt_sw)
-prompt_cb.grid(row = 1, column = 0, padx = 5, pady = 5, sticky = "nswe")
+prompt_cb.grid(row = 1, column = 0, padx = 5, pady = 5, sticky = "w")
 
-# 建立核取方塊 (AI 自動翻譯)
-ost_cb_var = tk.StringVar(master = f1, value = "OFF")
+# AI 自動翻譯
+ost_cb_var = tk.StringVar(master = f1, value = "OFF" if not ost_control else "ON")
 ost_cb = ctk.CTkCheckBox(master = f1, text = "AI 自動翻譯", font = text_font,
                            variable = ost_cb_var, onvalue = "ON", offvalue = "OFF",
                            command = ost_sw)
-ost_cb.grid(row = 2, column = 0, padx = 5, pady = 5, sticky = "nswe")
+ost_cb.grid(row = 2, column = 0, padx = 5, pady = 5, sticky = "w")
 
-# 建立底板 (擴充設定列)
+API_bt = ctk.CTkButton(master = f1, text = "API", font = text_font, width = 40,
+                           anchor = "c", command = get_API)
+API_bt.grid(row = 2, column = 0, padx = 5, pady = 5, sticky = "e")
+
+# 展開額外功能按鈕
+setting_bt = ctk.CTkButton(master = f1, text = "▼ 展開額外功能", font = text_font,
+                           anchor = "c", command = toggle_window_size)
+setting_bt.grid(row = 3, column = 0, padx = 5, pady = 5, sticky = "we")
+
+# 建立底板 (額外功能)
 f2 = ctk.CTkFrame(master = window, corner_radius = 10)
 f2.grid(row = 1, column = 0, padx = 5, pady = 8, sticky = "nswe")
 f2.grid_columnconfigure((0), weight = 1)
@@ -529,11 +605,11 @@ sep1 = ctk.CTkFrame(master = f2, fg_color = "gray", height = 2)
 sep1.grid(row = 4, column = 0, padx = 5, pady = 5, sticky = "we")
 
 # AI 記憶模塊
-mem_cb_var = tk.StringVar(master = f2, value = "OFF")
+mem_cb_var = tk.StringVar(master = f2, value = "OFF" if not enable_short_term_memory else "ON")
 mem_cb = ctk.CTkCheckBox(master = f2, text = "短期記憶力", font = text_font,
                            variable = mem_cb_var, onvalue = "ON", offvalue = "OFF",
                            command = toggle_memory)
-mem_cb.grid(row = 5, column = 0, padx = 5, pady = 5, sticky = "nswe")
+mem_cb.grid(row = 5, column = 0, padx = 5, pady = 5, sticky = "w")
 
 # AI 記憶壓縮器
 mem_limit_wd = ctk.CTkLabel(master = f2, text = "記憶壓縮器: 3 輪對話", font = text_font, anchor = "w", height = 10)
@@ -570,20 +646,19 @@ model_change_op = ctk.CTkOptionMenu(
     master = f2, 
     values = ["llama-3.3-70b-versatile", "llama-3.3-70b-specdec", "llama-3.1-8b-instant", "gemma2-9b-it"], 
     command = set_model)
-model_change_op.set("llama-3.3-70b-versatile")
+model_change_op.set(model)
 model_change_op.grid(row = 16, column = 0, padx = 5, pady = (0, 5), sticky = "we")
 
 # 若 groq 不可用則禁用相關功能
 if not groq_available:
+    API_bt.configure(fg_color = ["gray60", "gray50"], hover_color = ["gray40", "gray40"])
     ost_cb.configure(state = "disabled")
     chatroom_bt.configure(state = "disabled")
     resetchat_bt.configure(state = "disabled")
-    mem_limit_sd.configure(state = "disabled")
-    temperature_sd.configure(state = "disabled")
+    temperature_sd.configure(state = "disabled", button_color = ["#939BA2", "#AAB0B5"], progress_color = ["#939BA2", "#AAB0B5"])
     mem_cb_var.set("OFF") 
     mem_cb.configure(state = "disabled")
     model_change_op.configure(state = "disabled")
-    mem_limit_wd.configure(text_color = ["gray60", "gray40"])
     temperature_wd.configure(text_color = ["gray60", "gray40"])
     token_wd.configure(text_color = ["gray60", "gray40"])
     t_input_wd.configure(text_color = ["gray60", "gray40"])
@@ -592,8 +667,13 @@ if not groq_available:
     t_out_total_wd.configure(text_color = ["gray60", "gray40"])
     model_change_wd.configure(text_color = ["gray60", "gray40"])
 
+if mem_cb_var.get() == "OFF":
+    mem_limit_sd.configure(state = "disabled", button_color = ["#939BA2", "#AAB0B5"], progress_color = ["#939BA2", "#AAB0B5"])
+    mem_limit_wd.configure(text_color = ["gray60", "gray40"])
+
 # 啟動 GUI
-with open("GUI_open.flag", "w") as f:
-    f.write("GUI_is_opened")
-print("\033[32m[INFO] BeeSeeR GUI 已啟動，系統正常運行\033[0m")
-window.mainloop()
+if __name__ == "__main__":
+    with open("GUI_open.flag", "w") as f:
+        f.write("GUI_is_opened")
+    print("\033[32m[INFO] BeeSeeR GUI 已啟動，系統正常運行\033[0m")
+    window.mainloop()

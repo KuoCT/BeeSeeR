@@ -8,7 +8,7 @@ from torch.cuda import is_available, empty_cache, ipc_collect
 from surya.recognition import RecognitionPredictor
 from surya.detection import DetectionPredictor
 
-class WindowCapture(tk.Tk):
+class WindowCapture(tk.Toplevel):
     def __init__(self, prompt_control = True, on_capture = None, prompt = None):
         super().__init__()
         self.prompt_control = prompt_control
@@ -25,6 +25,7 @@ class WindowCapture(tk.Tk):
         self.config(bg="black")
         self.attributes('-alpha', 0.6)
         self.overrideredirect(True)
+        self.attributes("-topmost", True) # 讓視窗顯示在最前面
         self.bind("<Escape>", lambda event: self.exit_WinCap())
         self.set_transparent_color("green")
 
@@ -176,7 +177,7 @@ class WindowCapture(tk.Tk):
 
 if __name__ == "__main__":
     import os
-    prompt_file = "Prompt.txt"
+    prompt_file = "User_prompt.txt"
 
     def load_prompt(file):
         """ 從文件載入提示詞 """

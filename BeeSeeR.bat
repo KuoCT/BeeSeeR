@@ -126,7 +126,7 @@ if not exist "%REQUIREMENT_FLAG%" (
 if %mode% equ 1 (
     if not exist "%MODEL_CPU_FLAG%" (
         echo Running MODEL in force-CPU mode...
-        python "%MODEL%" --force-cpu
+        python "%MODEL%" -c
         if %errorlevel% neq 0 (
             echo [ERROR] MODEL failed in CPU mode.
             pause
@@ -153,9 +153,9 @@ if %mode% equ 1 (
 
 :: 顯示參數最終執行參數
 @REM if %mode% equ 1 (
-@REM     echo Run argument: --force-cpu --groq-key "%api_key%"
+@REM     echo Run argument: -c -k "%api_key%"
 @REM ) else (
-@REM     echo Run argument: --groq-key "%api_key%"    
+@REM     echo Run argument: -k "%api_key%"    
 @REM )
 
 :: 重製 GUI 啟動訊號
@@ -165,9 +165,9 @@ if exist %~dp0GUI_open.flag (del %~dp0GUI_open.flag)
 if %mode% equ 1 (
     echo Launching GUI in force-CPU mode...
     if %debug% equ 1 (
-        python "%GUI%" --force-cpu --groq-key "%api_key%"
+        python "%GUI%" -a -c -k "%api_key%"
     ) else (
-        start "" pythonw "%GUI%" --force-cpu --groq-key "%api_key%"
+        start "" pythonw "%GUI%" -c -k "%api_key%"
         for /L %%i in (1,1,60) do (
             if exist %~dp0GUI_open.flag (
                 del %~dp0GUI_open.flag
@@ -180,9 +180,9 @@ if %mode% equ 1 (
 ) else (
     echo Launching GUI in normal mode...
     if %debug% equ 1 (
-        python "%GUI%" --groq-key "%api_key%" 
+        python "%GUI%" -a -k "%api_key%" 
     ) else (
-        start "" pythonw "%GUI%" --groq-key "%api_key%" 
+        start "" pythonw "%GUI%" -k "%api_key%" 
         for /L %%i in (1,1,60) do (
             if exist %~dp0GUI_open.flag (
                 del %~dp0GUI_open.flag
