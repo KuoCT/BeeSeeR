@@ -5,7 +5,7 @@ import os
 CONFIG_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "config.json") # 設定檔案名稱
 
 class overlayWindow(ctk.CTkToplevel):
-    def __init__(self, showTEXT = None, coords = None, scale_factor = 1.25):
+    def __init__(self, showTEXT = None, coords = None, scale_factor = 1):
         super().__init__()
 
         # 讀取配置設定
@@ -206,7 +206,6 @@ class overlayWindow(ctk.CTkToplevel):
         # 隱藏選項按鈕
         hide_bt_var = ctk.StringVar(value = self.hide)
         self.hide_bt = ctk.CTkSwitch(self.slider_f, text = "", height = 28, corner_radius = 4, button_length = 10,
-                                     fg_color = "gray70", progress_color = "gray40",
                                      variable = hide_bt_var, onvalue = "hide", offvalue = "show", command = self.toggle_control_f1)
         self.hide_bt.grid(row = 1, column = 0, padx = 5, pady = 5, sticky = "ns")
 
@@ -381,5 +380,7 @@ class overlayWindow(ctk.CTkToplevel):
             print(f"\033[31m[INFO] 視窗關閉時發生錯誤: {e}\033[0m")
 
 if __name__ == "__main__":
+    ctk.set_appearance_mode("light")
+    # ctk.set_appearance_mode("dark")
     app = overlayWindow()
     app.mainloop()
