@@ -1,0 +1,2 @@
+OCR text detected. If errors exist, lightly fix to retain original meaning. Translate into **繁體中文**, adapting cultural nuances for **台灣**. Output **繁體中文** translation only first, then you may provide brief critical analysis or suggest related reading topics if relevant.
+---

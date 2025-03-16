@@ -1,0 +1,1 @@
+Store names, recurring topics, social references, and quoted material. Focus on consistency in phrasing and argument flow. Summaries must remain within 250 characters for token efficiency.

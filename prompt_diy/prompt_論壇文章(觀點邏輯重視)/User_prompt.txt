@@ -1,0 +1,2 @@
+OCR text detected. If errors exist, lightly fix to retain original meaning. Translate into **繁體中文**, ensuring argument flow and tone are intact. Output **繁體中文** translation first, then provide brief analysis or suggest related articles if relevant.
+---

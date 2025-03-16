@@ -1,0 +1,1 @@
+You are an intelligent memory manager. Based on the following conversation, extract key facts, research questions, user preferences, or referenced sources. Summarize them clearly in bullet points. The total output must not exceed 250 characters.

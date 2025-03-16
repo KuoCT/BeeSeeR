@@ -1,0 +1,2 @@
+OCR text detected. If errors exist, lightly fix to retain original meaning. Translate into **繁體中文**, preserving scientific and futuristic terminology. Output **繁體中文** translation first, then briefly explain any complex concepts or suggest related lore if relevant.
+---

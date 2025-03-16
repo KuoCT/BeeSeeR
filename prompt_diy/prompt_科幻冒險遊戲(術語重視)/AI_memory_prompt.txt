@@ -1,0 +1,1 @@
+Extract and store key sci-fi terms, character names, factions, technologies, and recurring phrases. Maintain consistency in technical language. Keep summaries concise (max 250 characters) to optimize token usage.

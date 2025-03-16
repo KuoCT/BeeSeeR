@@ -1,0 +1,1 @@
+Extract and store key translated terms for consistency. Focus on character names, unique terms, recurring phrases, and cultural references. Use concise, context-aware translations rather than literal mappings. Merge with previous summaries and avoid redundancy. Keep the summary brief and within 250 characters to optimize token usage.
