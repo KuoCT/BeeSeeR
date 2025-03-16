@@ -360,6 +360,9 @@ class overlayWindow(ctk.CTkToplevel):
         y = self.winfo_y() + (event.y - self._offset_y)
         self.geometry(f"+{x}+{y}")
 
+        self.adj_x1 = x
+        self.adj_y1 = y
+
         if hasattr(self, "slider") and self.slider.winfo_exists():
             slider_x = x + int((self.adj_width if self.adj_width is not None else self.width) * self.scale_factor)  # 滑桿視窗放在主視窗右側
             slider_y = y  # 保持相同的 y 座標
