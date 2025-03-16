@@ -32,7 +32,7 @@ def load_config():
 # 定義預設參數
 settings  = load_config()
 model = settings.get("model", "llama-3.3-70b-versatile")
-enable_short_term_memory = settings.get("enable_short_term_memory", False)
+enable_short_term_memory = settings.get("enable_short_term_memory", True)
 silent = args.all
 max_history = 3
 temperature = 0.6
