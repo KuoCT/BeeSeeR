@@ -163,6 +163,9 @@ class GroqChatSession:
             # 使用完整歷史
             if len(self.messages) == 0:
                 self.add_message("system", system_prompt)  # 第一輪對話時加入 system 提示詞
+            else:
+                # 動態更新 system_prompt（即便歷史存在）
+                self.messages[0] = {"role": "system", "content": system_prompt}
             self.add_message("user", user_input) # 新增使用者輸入
         else:
             # 僅使用當前對話，不保存歷史
@@ -274,8 +277,8 @@ if __name__ == "__main__":
     temperature = 0.6
     total_prompt_tokens = 0  # 初始化發送的 token 數
     total_completion_tokens = 0  # 初始化 AI 回應的 token 數
-    system_prompt_file = "AI_system_prompt.txt"
-    memory_prompt_file = "AI_memory_prompt.txt"
+    system_prompt_file = "Chat_system_prompt.txt"
+    memory_prompt_file = "Chat_memory_prompt.txt"
     groq_key = args.groq_key.strip() if args.groq_key else None # 移除多餘空白
     groq_available = True
 

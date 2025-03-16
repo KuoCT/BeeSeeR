@@ -31,7 +31,7 @@ class overlayWindow(ctk.CTkToplevel):
         self.screen_height = int(self.winfo_screenheight() * scale_factor)
 
         # 預設視窗大小
-        default_width, default_height = 500, 90 # 最小視窗大小
+        default_width, default_height = 350, 90 
         min_width, min_height = default_width, default_height  # 最小視窗大小
 
         # 設定視窗標題
@@ -82,7 +82,7 @@ class overlayWindow(ctk.CTkToplevel):
 
         # 設定預設字體、顏色
         text_font = ctk.CTkFont(family = "Helvetica", size = self.font_size, weight = "bold")
-        text_fix_font = ctk.CTkFont(family = "Helvetica", size = 20, weight = "bold")
+        text_fix_font = ctk.CTkFont(family = "Helvetica", size = 16, weight = "bold")
 
         # 讓視窗保持最上層
         self.attributes("-topmost", True) # 讓視窗顯示在最前面
@@ -101,7 +101,7 @@ class overlayWindow(ctk.CTkToplevel):
         self._offset_y = 0
 
         # 設定按 ESC 鍵可關閉視窗
-        # self.bind("<Escape>", lambda event: self.destroy())
+        self.bind("<Escape>", lambda event: self.destroy())
 
         # 設定 Grid 佈局
         self.grid_rowconfigure(0, weight = 1)
@@ -117,54 +117,59 @@ class overlayWindow(ctk.CTkToplevel):
         self.textbox = ctk.CTkTextbox(self.text_f, font = text_font, wrap = "word", corner_radius = 4, border_color = "green", border_width = 0.1)
         self.textbox.insert("1.0", self.showTEXT)
         self.textbox.configure(state="disabled") # 唯讀
-        self.textbox.grid(row = 0, column = 0, padx = 5, pady = 5, sticky = "nsew")
+        self.textbox.grid(row = 0, column = 0, padx = 5, pady = (5, 0), sticky = "nsew")
 
-        # 控制區域 1
+        # 控制區域
         self.control_f1 = ctk.CTkFrame(self, fg_color = "green", bg_color = "green")
-        self.control_f1.grid(row = 1, column = 0, padx = 0, pady = 0, sticky="we")
-        self.control_f1.grid_rowconfigure(0, weight = 1)
-        self.control_f1.grid_columnconfigure(2, weight = 1)
+        self.control_f1.grid(row = 1, column = 0, padx = 5, pady = 0, sticky="we")
+        self.control_f1.grid_rowconfigure((0, 1), weight = 0)
+        self.control_f1.grid_columnconfigure((0,1,2), weight = 0)
+        self.control_f1.grid_columnconfigure((3), weight = 1)
+        self.control_f1.grid_columnconfigure((4,5,6,7), weight = 0)
 
         # 字體調整按鈕
-        self.increase_bt = ctk.CTkButton(self.control_f1, text = "字放大", width = 60, corner_radius = 4, border_color = "green", border_width = 0.1,
+        self.increase_bt = ctk.CTkButton(self.control_f1, text = "字放大", width = 60, height = 20, corner_radius = 4, border_color = "green", border_width = 0.1,
                                          font = text_fix_font, command = self.increase_font_size)
-        self.increase_bt.grid(row = 0, column = 0, padx = (5, 0), pady = 5, sticky = "w")
-        self.decrease_bt = ctk.CTkButton(self.control_f1, text = "字縮小", width = 60, corner_radius = 4, border_color = "green", border_width = 0.1,
+        self.increase_bt.grid(row = 0, column = 0, padx = 0, pady = 2, sticky = "w")
+        self.decrease_bt = ctk.CTkButton(self.control_f1, text = "字縮小", width = 60, height = 20, corner_radius = 4, border_color = "green", border_width = 0.1,
                                          font = text_fix_font, command = self.decrease_font_size)
-        self.decrease_bt.grid(row = 0, column = 1, padx = (5, 0), pady = 5, sticky = "w")
-       
-        increase_size = 50 # 預設增加幅度
-        self.resize_v_bt = ctk.CTkButton(
-            self.control_f1, text = "↕", font = text_fix_font, width = 30, corner_radius = 4, border_color = "green", border_width = 0.1,
-            fg_color = ["#c48971", "#2a6475"], hover_color = ["#ed9744", "#3696b3"],
-            command = lambda: self.increase_v_size(increase_size))
-        self.resize_v_bt.grid(row = 0, column = 2, padx = (5, 0), pady = 5, sticky="e")
-
-        self.resize_h_bt = ctk.CTkButton(
-            self.control_f1, text = "↔", font = text_fix_font, width = 30, corner_radius = 4, border_color = "green", border_width = 0.1,
-            fg_color = ["#c48971", "#2a6475"], hover_color = ["#ed9744", "#3696b3"],
-            command = lambda: self.increase_h_size(increase_size))
-        self.resize_h_bt.grid(row = 0, column = 3, padx = (5, 0), pady = 5, sticky="e")
-
-        self.resize_r_bt = ctk.CTkButton(
-            self.control_f1, text = "⛶", font = text_fix_font, width = 30, corner_radius = 4, border_color = "green", border_width = 0.1,
-            fg_color = ["#c48971", "#2a6475"], hover_color = ["#ed9744", "#3696b3"],
-            command = lambda: self.undo_size())
-        self.resize_r_bt.grid(row = 0, column = 4, padx = (5, 0), pady = 5, sticky="e")
+        self.decrease_bt.grid(row = 0, column = 1, padx = (2, 0), pady = 2, sticky = "w")
 
         # 鎖定按鈕
-        self.lock_bt = ctk.CTkButton(self.control_f1, text="鎖定中" if self.lock_movement else "可移動", width = 60,
+        self.lock_bt = ctk.CTkButton(self.control_f1, text="鎖定中" if self.lock_movement else "可移動", width = 60, height = 20,
                                      font = text_fix_font, corner_radius = 4, border_color = "green", border_width = 0.1,
                                      fg_color="#454240" if self.lock_movement else ["#2FA572", "#2CC985"],
                                      hover_color="#878584" if self.lock_movement else ["#106A43", "#0C955A"],
                                      command = self.toggle_lock)
-        self.lock_bt.grid(row = 0, column = 5, padx = (5, 0), pady = 5, sticky="e")
+        self.lock_bt.grid(row = 0, column = 2, padx = (2, 0), pady = 2, sticky="w")
+       
+        # 視窗調整按鈕
+        adj_size = 50 # 預設幅度
+        self.resize_v_bt = ctk.CTkButton(
+            self.control_f1, text = "↕", font = text_fix_font, width = 30, height = 20, corner_radius = 4, border_color = "green", border_width = 0.1,
+            fg_color = ["#c48971", "#2a6475"], hover_color = ["#ed9744", "#3696b3"],
+            command = lambda: self.increase_v_size(adj_size))
+        self.resize_v_bt.bind("<Button-3>", lambda e: self.decrease_v_size(adj_size))
+        self.resize_v_bt.grid(row = 0, column = 4, padx = (2, 0), pady = 2, sticky="e")
+
+        self.resize_h_bt = ctk.CTkButton(
+            self.control_f1, text = "↔", font = text_fix_font, width = 30, height = 20, corner_radius = 4, border_color = "green", border_width = 0.1,
+            fg_color = ["#c48971", "#2a6475"], hover_color = ["#ed9744", "#3696b3"],
+            command = lambda: self.increase_h_size(adj_size))
+        self.resize_h_bt.bind("<Button-3>", lambda e: self.decrease_h_size(adj_size))
+        self.resize_h_bt.grid(row = 0, column = 5, padx = (2, 0), pady = 2, sticky="e")
+
+        self.resize_r_bt = ctk.CTkButton(
+            self.control_f1, text = "⛶", font = text_fix_font, width = 30, height = 20, corner_radius = 4, border_color = "green", border_width = 0.1,
+            fg_color = ["#c48971", "#2a6475"], hover_color = ["#ed9744", "#3696b3"],
+            command = lambda: self.undo_size())
+        self.resize_r_bt.grid(row = 0, column = 6, padx = (2, 0), pady = 2, sticky="e")
 
         # 退出按鈕
         self.exit_bt = ctk.CTkButton(self.control_f1, text = "退出", fg_color = "firebrick3", hover_color = "firebrick", 
-                                     corner_radius = 4, width = 60, border_color = "green", border_width = 0.1, 
+                                     corner_radius = 4, width = 40, height = 20, border_color = "green", border_width = 0.1, 
                                      font = text_fix_font, command = self.safe_destroy)
-        self.exit_bt.grid(row = 0, column = 6, padx = 5, pady = 5, sticky = "e")
+        self.exit_bt.grid(row = 0, column = 7, padx = (2, 0), pady = 2, sticky = "e")
 
         # 隱藏
         self.buttons = [
@@ -203,11 +208,11 @@ class overlayWindow(ctk.CTkToplevel):
         self.opacity_sd.set(self.opacity)  # 設定滑桿初始值
         self.opacity_sd.grid(row = 0, column = 0, padx = 5, pady = (5, 0), sticky = "ns")
 
-        # 隱藏選項按鈕
-        hide_bt_var = ctk.StringVar(value = self.hide)
-        self.hide_bt = ctk.CTkSwitch(self.slider_f, text = "", height = 28, corner_radius = 4, button_length = 10,
-                                     variable = hide_bt_var, onvalue = "hide", offvalue = "show", command = self.toggle_control_f1)
-        self.hide_bt.grid(row = 1, column = 0, padx = 5, pady = 5, sticky = "ns")
+        # 隱藏選項開關
+        hide_sw_var = ctk.StringVar(value = self.hide)
+        self.hide_sw = ctk.CTkSwitch(self.slider_f, text = "", height = 28, corner_radius = 4, button_length = 10,
+                                     variable = hide_sw_var, onvalue = "hide", offvalue = "show", command = self.toggle_control_f1)
+        self.hide_sw.grid(row = 1, column = 0, padx = 5, pady = 5, sticky = "ns")
 
     def increase_font_size(self):
         """增加字體大小"""
@@ -240,6 +245,24 @@ class overlayWindow(ctk.CTkToplevel):
             slider_y = self.adj_y1  # 保持相同的 y 座標
             self.slider.geometry(f"50x{self.adj_height}+{slider_x}+{slider_y}")
 
+    def decrease_v_size(self, size: int):
+        """增加視窗垂直大小"""
+        # 確保變數初始化
+        self.adj_width = self.adj_width or self.width
+        self.adj_x1 = self.adj_x1 or self.winfo_x()  # 更新為當前視窗位置
+        
+        # 更新高度與 y1 座標
+        self.adj_height = (self.adj_height or self.height) - int(size / self.scale_factor)
+        self.adj_y1 = (self.adj_y1 or self.winfo_y()) + size  # 更新為當前視窗位置
+        
+        self.geometry(f"{self.adj_width}x{self.adj_height}+{self.adj_x1}+{self.adj_y1}")
+
+        # 同步調整滑桿位置
+        if hasattr(self, "slider") and self.slider.winfo_exists():
+            slider_x = self.adj_x1 + int(self.adj_width * self.scale_factor) # 滑桿仍在右側
+            slider_y = self.adj_y1  # 保持相同的 y 座標
+            self.slider.geometry(f"50x{self.adj_height}+{slider_x}+{slider_y}")
+
     def increase_h_size(self, size: int):
         """增加視窗水平大小"""
         # 確保變數初始化
@@ -249,6 +272,25 @@ class overlayWindow(ctk.CTkToplevel):
         # 更新寬度與 x1 座標
         self.adj_width = (self.adj_width or self.width) + int(size / self.scale_factor)
         self.adj_x1 = (self.adj_x1 or self.winfo_x()) - size  # 更新為當前視窗位置
+
+        # 更新視窗大小與位置
+        self.geometry(f"{self.adj_width}x{self.adj_height}+{self.adj_x1}+{self.adj_y1}")
+
+        # 同步調整滑桿位置
+        if hasattr(self, "slider") and self.slider.winfo_exists():
+            slider_x = self.adj_x1 + int(self.adj_width * self.scale_factor) # 滑桿仍在右側
+            slider_y = self.adj_y1  # 保持相同的 y 座標
+            self.slider.geometry(f"50x{self.adj_height}+{slider_x}+{slider_y}")
+
+    def decrease_h_size(self, size: int):
+        """減少視窗水平大小"""
+        # 確保變數初始化
+        self.adj_height = self.adj_height or self.height
+        self.adj_y1 = self.adj_y1 or self.winfo_y()  # 更新為當前視窗位置
+
+        # 更新寬度與 x1 座標
+        self.adj_width = (self.adj_width or self.width) - int(size / self.scale_factor)
+        self.adj_x1 = (self.adj_x1 or self.winfo_x()) + size  # 更新為當前視窗位置
 
         # 更新視窗大小與位置
         self.geometry(f"{self.adj_width}x{self.adj_height}+{self.adj_x1}+{self.adj_y1}")
@@ -269,6 +311,7 @@ class overlayWindow(ctk.CTkToplevel):
 
         # 更新視窗大小與位置
         self.geometry(f"{self.width}x{self.height}+{self.x1}+{self.y1}")
+        # self.overrideredirect(False)  # 恢復標題欄
 
         # 同步調整滑桿位置
         if hasattr(self, "slider") and self.slider.winfo_exists():

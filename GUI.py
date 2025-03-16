@@ -48,6 +48,9 @@ prompt_control = True
 ost_control = settings.get("ost_control", False)
 groq_key = settings.get("groq_key", None)
 groq_available = False # 預設 API 狀態為 False
+auto_dtype = settings.get("auto_dtype", "ON")
+dtype = settings.get("dtype", None)
+if args.force_cpu or auto_dtype == "NO": dtype = None
 
 # 如果 API Key 非空，嘗試連線驗證
 if groq_key:
@@ -109,7 +112,12 @@ def run_wincap():
         cb_coords = coords
         # print(f"\033[34m[INFO] 即時回傳選取範圍座標: {coords}\033[0m")
 
-    app = WindowCapture(prompt_control = prompt_control, on_capture = receive_coordinates, prompt = prompt)
+    app = WindowCapture(
+        prompt_control = prompt_control, 
+        on_capture = receive_coordinates, 
+        prompt = prompt, 
+        dtype = dtype
+    )
     app.mainloop()
     # prompt = app.get_prompt_text()
     # ext = app.get_extracted_text()
@@ -150,6 +158,73 @@ def run_wincap():
         overlay = overlayWindow(last_response, cb_coords, scale_factor)
         overlay.mainloop()
 
+def set_OCR_config():
+    dialog = ctk.CTkToplevel()
+    dialog.title("OCR 設定")
+    dialog.geometry(f"220x40+{window.winfo_x() - 230}+{window.winfo_y()}")
+    dialog.grid_columnconfigure(0, weight = 0)
+    dialog.grid_rowconfigure(0, weight = 0)
+    dialog.attributes("-topmost", True) # 讓視窗顯示在最前面
+    dialog.grab_set()
+    dialog.after(250, dialog.iconbitmap, "icon/logo_dark.ico" if current_theme == "dark" else "icon/logo_light.ico")
+
+    def toggle_auto_dtype():
+        """dtype 自動/手動切換"""
+        global auto_dtype, dtype
+        if auto_dtype == "ON":
+            auto_dtype = "OFF"
+            dtype = current_dtype
+            dtype_sw.configure(state = "normal")
+            auto_dtype_bt.configure(fg_color = "gray60", hover_color = ["#325882", "#A85820"])
+            dtype_sw.configure(
+                fg_color = ["#325882", "#A85820"],
+                progress_color = ["gray70", "gray60"],
+                button_color = ["#1e8bba", "#C7712D"]
+            )
+        else:
+            auto_dtype = "ON"
+            dtype = None # 自動偵測
+            dtype_sw_var.set(current_dtype)
+            dtype_sw.configure(state = "disabled", text = "辨識模型: 全精度" if current_dtype == "float32" else "辨識模型: 半精度")
+            auto_dtype_bt.configure(fg_color = ["#1e8bba", "#C7712D"], hover_color = ["#325882", "#A85820"])
+            dtype_sw.configure(fg_color = "gray60", progress_color = "gray60", button_color = "gray60")
+        save_config()
+
+    def toggle_dtype():
+        """dtype 切換"""
+        global dtype
+        if dtype == "float32":
+            dtype = "float16"
+            dtype_sw.configure(text = "辨識模型: 半精度")
+        else:
+            dtype = "float32"
+            dtype_sw.configure(text = "辨識模型: 全精度")
+        save_config()
+        
+    # 自動/手動按鈕
+    auto_dtype_bt = ctk.CTkButton(dialog, text = "自動", font = text_font, width = 20, anchor = "c", command = toggle_auto_dtype,)
+    auto_dtype_bt.grid(row = 0, column = 0, padx = (5, 0), pady = 5, sticky = "e")
+
+    # 精度設定
+    dtype_sw_var = ctk.StringVar(value = "float32" if args.force_cpu else "float16")
+    current_dtype = dtype_sw_var.get()
+    dtype_sw = ctk.CTkSwitch(dialog, text = "辨識模型: 全精度" if current_dtype == "float32" else "辨識模型: 半精度", 
+                             height = 28, corner_radius = 4, button_length = 10, font = text_font,
+                             variable = dtype_sw_var, onvalue = "float32", offvalue = "float16", command = toggle_dtype)
+    dtype_sw.grid(row = 0, column = 1, padx = 5, pady = 5, sticky = "ns")
+    dtype_sw.configure(state = "disabled" if auto_dtype == "ON" else "normal")
+
+    if args.force_cpu: auto_dtype_bt.configure(state = "disabled")
+    if auto_dtype == "OFF": 
+        auto_dtype_bt.configure(fg_color = ["gray60", "gray60"], hover_color = ["#325882", "#A85820"])
+        dtype_sw_var.set(dtype)
+        dtype_sw.configure(text = "辨識模型: 全精度" if dtype == "float32" else "辨識模型: 半精度")
+    else: 
+        auto_dtype_bt.configure(fg_color = ["#1e8bba", "#C7712D"], hover_color = ["#325882", "#A85820"])
+        dtype_sw_var.set("float32" if args.force_cpu else "float16")
+        dtype_sw.configure(fg_color = "gray60", progress_color = "gray60", button_color = "gray60",
+                           text = "辨識模型: 全精度" if current_dtype == "float32" else "辨識模型: 半精度")
+        dtype_sw.configure(state = "disabled")
 
 def save_config():
     """讀取現有設定，更新後再存入 JSON 檔案"""
@@ -161,7 +236,9 @@ def save_config():
         "ost_control": ost_control,
         "theme": current_theme,
         "model": model,
-        "enable_short_term_memory": enable_short_term_memory
+        "enable_short_term_memory": enable_short_term_memory,
+        "auto_dtype": auto_dtype,
+        "dtype": dtype
     })
 
     # 將更新後的設定存回 JSON
@@ -205,6 +282,7 @@ def get_API():
         entry.focus_set()  # 設定輸入框焦點，確保全選有效
 
     def confirm_API():
+        """送出 API Key"""
         global groq_key
         user_input = entry.get().strip()
 
@@ -462,7 +540,7 @@ window.geometry(f"{window_width}x{window_height}+{x_position}+{y_position}")
 window.title("BCR")
 window.resizable(True, True)
 window.iconbitmap("icon/logo_dark.ico" if current_theme == "dark" else "icon/logo_light.ico")
-appid = 'KuoCT.BeeSeeR.BCR.v2.0.2'
+appid = 'KuoCT.BeeSeeR.BCR.v2.0.3'
 ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(appid)
 
 # 讓視窗保持最上層
@@ -490,6 +568,7 @@ f1.grid_rowconfigure((0), weight = 1)
 # 螢幕截圖按鈕
 capture_bt = ctk.CTkButton(master = f1, text = "Capture", font = title_font, height = 70,
                            anchor = "c", command = run_wincap)
+capture_bt.bind("<Button-3>", lambda e: set_OCR_config())
 capture_bt.grid(row = 0, column = 0, padx = 5, pady = 5, sticky = "swe")
 
 # User Prompt 開關

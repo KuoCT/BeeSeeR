@@ -10,11 +10,12 @@ from surya.recognition import RecognitionPredictor
 from surya.detection import DetectionPredictor
 
 class WindowCapture(tk.Toplevel):
-    def __init__(self, prompt_control = True, on_capture = None, prompt = None):
+    def __init__(self, prompt_control = True, on_capture = None, prompt = None, dtype = None):
         super().__init__()
         self.prompt_control = prompt_control
         self.on_capture = on_capture  # 回呼函數
         self.prompt = prompt
+        self.dtype = dtype
 
         # 初始化辨識結果
         self.prompt_text = None
@@ -131,8 +132,8 @@ class WindowCapture(tk.Toplevel):
         """使用 Surya-OCR 進行辨識 (延遲加載)"""
         if self.recognition_predictor is None or self.detection_predictor is None:
             print(f"\033[32m[INFO] 載入 OCR 模型（使用裝置: {device}）...\033[0m")
-            self.recognition_predictor = RecognitionPredictor()
-            self.detection_predictor = DetectionPredictor()
+            self.recognition_predictor = RecognitionPredictor(dtype = self.dtype)
+            self.detection_predictor = DetectionPredictor(dtype = self.dtype)
 
         predictions = self.recognition_predictor([image], [None], self.detection_predictor)
 
