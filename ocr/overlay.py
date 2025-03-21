@@ -11,7 +11,8 @@ class overlayWindow(ctk.CTkToplevel):
         # 讀取配置設定
         self.settings  = self.load_config()
         self.font_size = self.settings.get("font_size", 20)
-        self.opacity = self.settings.get("opacity", 0.95)
+        # self.opacity = self.settings.get("opacity", 0.92)
+        self.opacity = 0.92
         self.lock_movement = self.settings.get("lock_movement", False)
         self.hide = self.settings.get("hide", "show")
         self.scale_factor = scale_factor
@@ -333,7 +334,7 @@ class overlayWindow(ctk.CTkToplevel):
         """調整視窗透明度"""
         self.opacity = round(float(value), 2)  # 轉換成浮點數並保留 2 位小數
         self.attributes("-alpha", self.opacity)  # 更新透明度
-        self.save_config()
+        # self.save_config()
 
     def toggle_control_f1(self):
         """控制區的顯示與隱藏"""
@@ -395,7 +396,7 @@ class overlayWindow(ctk.CTkToplevel):
         # 更新設定
         config.update({
             "font_size": self.font_size,
-            "opacity": self.opacity,
+            # "opacity": self.opacity,
             "lock_movement": self.lock_movement,
             "hide": self.hide
         })
