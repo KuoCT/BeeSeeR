@@ -133,6 +133,7 @@ class GroqChatSession:
 
         except Exception as e:
             not self.silent and print(f"\033[31m[ERROR] 總結對話時出錯：{e}\033[0m")
+            raise Exception(f"錯誤出現在記憶力模組：{e}")  # 拋出異常到 send_to_groq()
 
     def send_to_groq(self, system_prompt, memory_prompt, user_input):
         """發送對話請求給 Groq API，並在歷史過長時進行摘要"""
@@ -243,7 +244,7 @@ class GroqChatSession:
         
         except Exception as e:
             print(f"\033[31m[ERROR] 調用 Groq API 時出錯：{e}\033[0m")
-            response = f"[ERROR] 調用 Groq API 時出錯：{e}"
+            response = f"[ERROR] 與 AI 連線時出錯：{e}"
             return response
 
 if __name__ == "__main__":

@@ -18,7 +18,6 @@ import customtkinter as ctk
 from ocr.WinCap import WindowCapture
 from ocr.overlay import overlayWindow
 import llm.chat as chat
-from groq import Groq
 import ctypes
 import subprocess
 
@@ -52,22 +51,25 @@ auto_dtype = settings.get("auto_dtype", "ON")
 dtype = settings.get("dtype", None)
 if args.force_cpu or auto_dtype == "NO": dtype = None
 
-# 如果 API Key 非空，嘗試連線驗證
+# 如果 API Key 非空，解鎖 API 功能
 if groq_key:
-    try:
-        client = Groq(api_key = groq_key)
-        test_response = client.chat.completions.create(
-            model="mixtral-8x7b-32768",
-            messages=[{"role": "system", "content": "ping"}],  # 測試 API 可用性
-            max_tokens=10
-        )
-        if test_response:
-            print("\033[32m[INFO] Groq API 連線成功！\033[0m")
-            groq_available = True
-        else:
-            print("\033[31m[INFO] API Key 無效，請確認 Groq API Key。\033[0m")
-    except Exception as e:
-        print(f"\033[31m[ERROR] 無法連線到 Groq API：{e}\033[0m")
+    groq_available = True
+    # 驗證機制有機率不過 (暫時棄用)
+    # from groq import Groq
+    # try:
+    #     client = Groq(api_key = groq_key)
+    #     test_response = client.chat.completions.create(
+    #         model="mixtral-8x7b-32768",
+    #         messages=[{"role": "system", "content": "ping"}],  # 測試 API 可用性
+    #         max_tokens=10
+    #     )
+    #     if test_response:
+    #         print("\033[32m[INFO] Groq API 連線成功！\033[0m")
+    #         groq_available = True
+    #     else:
+    #         print("\033[31m[INFO] API Key 無效，請確認 Groq API Key。\033[0m")
+    # except Exception as e:
+    #     print(f"\033[31m[ERROR] 無法連線到 Groq API：{e}\033[0m")
 
 def load_prompt(file):
     """ 從文件載入提示詞，並回傳 (絕對路徑, 內容) """
