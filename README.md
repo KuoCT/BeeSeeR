@@ -54,10 +54,17 @@ BeeSeeR 是一個整合螢幕截圖 + OCR + AI 的 GUI 工具，使用者能透�
 首次運行可能需要一些時間，因為會自動安裝所需的依賴項。**請等到OCR小視窗彈出表示安裝完成。** 🛠 **工具:** `fix.bat` 可以幫你解除安裝 pytorch 相關的套件，需要修改初始安裝成 `兼容模式` 或是 `強制 CPU 模式` 時使用。
 
 ## 版本更新
-- 備份編輯過的文件 (prompt資料夾, config.json 等等...) 
-- 刪除 `BeeSeeR.bat`，在 `BeeSeeR` 資料夾中執行以下命令
+- 先備份你的文件到 `其他資料夾` (例如你自己做的 prompt, API金鑰, config.json(使用者偏好設定存檔), 聊天紀錄等等...) 
+- 在 `BeeSeeR` 資料夾中逐行執行以下命令:
    ```bash
-   git pull
+   git fetch origin  # 取得 GitHub 上最新的內容
+   git reset --hard origin/main  # 將本機檔案更新至最新
+   git clean -dfn # 查看多餘檔案 (列出的檔案將會被刪除)
+   git clean -df # 刪除多餘檔案
+   ```
+   若你想要完全回復乾淨狀態重新安裝，繼續執行以下指令(選擇性):
+   ```bash
+   git clean -dfX  # 移除未追蹤的檔案 (注意安裝過的依賴將全部清除)
    ```
 - 用 `debug=1` 模式啟動 `BeeSeeR.bat` 到程式順利彈出。
 - 切回 `debug=0` 繼續使用。
