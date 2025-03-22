@@ -115,7 +115,7 @@ if not exist "%REQUIREMENT_FLAG%" (
     if %mode% equ 0 (
         pip install torch==2.6.0+cu118 --index-url https://download.pytorch.org/whl/cu118
     )
-    pip install customtkinter==5.2.2 pyautogui==0.9.54 surya-ocr==0.13.0 groq==0.18.0
+    pip install customtkinter==5.2.2 pyautogui==0.9.54 surya-ocr==0.13.0 groq==0.18.0 beautifulsoup4==4.13.3 Markdown==3.7
     echo Required packages installed > "%REQUIREMENT_FLAG%"
 )
 
