@@ -18,6 +18,7 @@ import customtkinter as ctk
 from ocr.WinCap import WindowCapture
 from ocr.overlay import overlayWindow
 import llm.chat as chat
+from llm.chatroom import chatroomWindow
 import ctypes
 import subprocess
 
@@ -82,16 +83,17 @@ def load_prompt(file):
     try:
         with open(prompt_path, "r", encoding="utf-8") as f:
             content = f.read().strip()
-        return prompt_path, content  # 回傳 (絕對路徑, 內容)
+        return content  # 回傳
+        # return prompt_path, content  # 回傳 (絕對路徑, 內容)
 
     except Exception as e:
         print(f"\033[31m[INFO] 找不到 {prompt_path} 文件，將會使用預設的提示詞。\033[0m")
-        return prompt_path, None  # 讀取失敗時仍回傳絕對路徑，但內容為 None
+        return None  # 讀取失敗時回傳 None
         
 # 初始化提示詞
-prompt_path, prompt = load_prompt(prompt_file)
-system_prompt_path, system_prompt = load_prompt(system_prompt_file) # 讀取系統提示詞
-memory_prompt_path, memory_prompt = load_prompt(memory_prompt_file) # 讀取記憶提示詞
+prompt = load_prompt(prompt_file)
+# system_prompt = load_prompt(system_prompt_file) # 讀取系統提示詞
+# memory_prompt = load_prompt(memory_prompt_file) # 讀取記憶提示詞
 
 # 初始化 chat 物件
 if groq_available:
@@ -133,12 +135,12 @@ def run_wincap():
     # 自動翻譯
     if groq_available and ost_control and user_input:
         global last_response
-        global system_prompt
-        global system_prompt_path
-        global memory_prompt
-        global memory_prompt_path
-        system_prompt_path, system_prompt = load_prompt(system_prompt_file) # 讀取系統提示詞
-        memory_prompt_path, memory_prompt = load_prompt(memory_prompt_file) # 讀取記憶提示詞
+        # global system_prompt
+        # global system_prompt_path
+        # global memory_prompt
+        # global memory_prompt_path
+        system_prompt = load_prompt(system_prompt_file) # 讀取系統提示詞
+        memory_prompt = load_prompt(memory_prompt_file) # 讀取記憶提示詞
         response, prompt_tokens, completion_tokens = chat_session.send_to_groq(system_prompt, memory_prompt, user_input)
         last_response = response
 
@@ -163,7 +165,7 @@ def run_wincap():
 def set_OCR_config():
     dialog = ctk.CTkToplevel()
     dialog.title("OCR 設定")
-    dialog.geometry(f"220x40+{window.winfo_x() - 230}+{window.winfo_y()}")
+    dialog.geometry(f"240x40+{window.winfo_x() - 250}+{window.winfo_y()}")
     dialog.grid_columnconfigure(0, weight = 0)
     dialog.grid_rowconfigure(0, weight = 0)
     dialog.attributes("-topmost", True) # 讓視窗顯示在最前面
@@ -319,15 +321,17 @@ def get_API():
 
 def toggle_theme():
     """切換 Light/Dark 模式"""
-    global current_theme  # 確保使用的是全域變數
+    global current_theme, chatroom # 確保使用的是全域變數
     if current_theme == "dark":
         current_theme = "light"
         ctk.set_appearance_mode(current_theme)  # 切換為 Light 模式
         window.iconbitmap("icon/logo_light.ico")
+        chatroom.iconbitmap("icon/logo_light.ico")
     else:
         current_theme = "dark"
         ctk.set_appearance_mode(current_theme)  # 切換為 Dark 模式
         window.iconbitmap("icon/logo_dark.ico")
+        chatroom.iconbitmap("icon/logo_dark.ico")
     save_config()
 
 def open_prompt_folder():
@@ -394,7 +398,11 @@ def set_model(choice):
 
 process = None # 初始化記錄 Popen 進程  
 
-def pop_chatroom(groq_available, groq_key, model, max_history, enable_short_term_memory, temperature, chat_session):
+def pop_chatroom():
+    chatroom.geometry(f"+{window.winfo_x() - 610}+{window.winfo_y()}")
+    chatroom.deiconify()
+
+def pop_chatroom_cmd(groq_available, groq_key, model, max_history, enable_short_term_memory, temperature, chat_session):
     """依現在的設定打開一個新的聊天室"""
     global process
     # 若已有正在運行的進程，先終結它
@@ -511,8 +519,11 @@ def toggle_window_size():
     is_expanded = not is_expanded
 
 # GUI    
-# 建立主視窗
-window = ctk.CTk()
+window = ctk.CTk() # 建立主視窗
+if groq_available:
+    chatroom = chatroomWindow(current_theme, chat_session, groq_key) # 建立聊天室視窗
+    chatroom.withdraw() # 聊天室視窗預設隱藏
+    chatroom.protocol("WM_DELETE_WINDOW", chatroom.withdraw) # 攔截關閉行為 → 改為隱藏（withdraw）
 
 # 獲取螢幕的寬高和縮放比例
 def get_scale_factor():
@@ -612,8 +623,11 @@ pfolder_bt = ctk.CTkButton(master = f2, text = "Prompt 資料夾", font = text_f
                            anchor = "c", command = open_prompt_folder)
 pfolder_bt.grid(row = 1, column = 0, padx = 5, pady = (0, 5), sticky = "we")
 
-chatroom_bt = ctk.CTkButton(master = f2, text = "AI 聊天室 (實驗)", font = text_font, height = 28, anchor = "c", 
-                            command = lambda: pop_chatroom(groq_available, groq_key, model, max_history, enable_short_term_memory, temperature, chat_session))
+chatroom_bt = ctk.CTkButton(
+    master = f2, text = "AI 聊天室 (實驗)", font = text_font, height = 28, anchor = "c", 
+    command = lambda: pop_chatroom_cmd(groq_available, groq_key, model, max_history, enable_short_term_memory, temperature, chat_session),
+    # command = lambda: pop_chatroom()
+)
 chatroom_bt.grid(row = 2, column = 0, padx = 5, pady = (0, 5), sticky = "we")
 
 resetchat_bt = ctk.CTkButton(master = f2, text = "重製對話/記憶", font = text_font, height = 28,

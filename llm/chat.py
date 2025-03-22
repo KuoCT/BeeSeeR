@@ -245,7 +245,7 @@ class GroqChatSession:
         except Exception as e:
             print(f"\033[31m[ERROR] 調用 Groq API 時出錯：{e}\033[0m")
             response = f"[ERROR] 與 AI 連線時出錯：{e}"
-            return response
+            return response, None, None
 
 if __name__ == "__main__":
     import argparse

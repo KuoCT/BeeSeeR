@@ -3,16 +3,19 @@ import json
 import os
 
 CONFIG_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "config.json") # 設定檔案名稱
+PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..") # 設定相對路徑
 
 class overlayWindow(ctk.CTkToplevel):
     def __init__(self, showTEXT = None, coords = None, scale_factor = 1):
         super().__init__()
 
+        ctk.set_default_color_theme(os.path.join(PATH, "theme/nectar.json"))
+
         # 讀取配置設定
         self.settings  = self.load_config()
         self.font_size = self.settings.get("font_size", 20)
         # self.opacity = self.settings.get("opacity", 0.92)
-        self.opacity = 0.92
+        self.opacity = 1
         self.lock_movement = self.settings.get("lock_movement", False)
         self.hide = self.settings.get("hide", "show")
         self.scale_factor = scale_factor
@@ -427,7 +430,10 @@ class overlayWindow(ctk.CTkToplevel):
             print(f"\033[31m[INFO] 視窗關閉時發生錯誤: {e}\033[0m")
 
 if __name__ == "__main__":
-    ctk.set_appearance_mode("light")
-    # ctk.set_appearance_mode("dark")
+    theme = 1
+    if theme == 1:
+        ctk.set_appearance_mode("light")
+    else:
+        ctk.set_appearance_mode("dark")
     app = overlayWindow()
     app.mainloop()
