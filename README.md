@@ -62,7 +62,7 @@ BeeSeeR 是一個整合螢幕截圖 + OCR + AI 的 GUI 工具，使用者能透�
 - 用 `debug=1` 模式啟動 `BeeSeeR.bat` 到程式順利彈出。
 - 切回 `debug=0` 繼續使用。
 
-版本更新詳細請參考[更新日誌](./Update_log.md)。
+版本更新詳細請參考[更新日誌](./update_log.md)。
 
 ## 使用方式
 執行 `BeeSeeR.bat`即可。
