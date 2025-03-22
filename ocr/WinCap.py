@@ -224,4 +224,3 @@ if __name__ == "__main__":
         print(user_input)
     else:
         print("\033[31m[INFO] 無法獲取文字辨識結果。\033[0m")
-

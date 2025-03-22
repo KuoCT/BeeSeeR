@@ -415,4 +415,3 @@ if __name__ == "__main__":
                 # 顯示 token 資訊
                 print(f"033[36m[INFO] 輸入 token: {prompt_tokens}\033[0m")
                 print(f"033[36m[INFO] 回應 token: {completion_tokens}\033[0m")
-
