@@ -51,6 +51,7 @@ groq_available = False # 預設 API 狀態為 False
 auto_dtype = settings.get("auto_dtype", "ON")
 dtype = settings.get("dtype", None)
 if args.force_cpu or auto_dtype == "NO": dtype = None
+langs = settings.get("langs", None) # 限定語言參數
 
 # 如果 API Key 非空，解鎖 API 功能
 if groq_key:
@@ -120,7 +121,8 @@ def run_wincap():
         prompt_control = prompt_control, 
         on_capture = receive_coordinates, 
         prompt = prompt, 
-        dtype = dtype
+        dtype = dtype,
+        langs = langs
     )
     app.mainloop()
     # prompt = app.get_prompt_text()
@@ -147,6 +149,7 @@ def run_wincap():
         # 更新 token 計數器
         global total_prompt_tokens
         global total_completion_tokens
+
         # 更新累計 token 數量
         total_prompt_tokens += prompt_tokens
         total_completion_tokens += completion_tokens
@@ -155,6 +158,12 @@ def run_wincap():
         t_in_total_wd.configure(text = f"● 累計輸入: {total_prompt_tokens}")
         t_out_total_wd.configure(text = f"● 累計輸出: {total_completion_tokens}")
 
+        # 更新 chatroom
+        chatroom.append_chatbubble(role = "User", message = user_input)
+        chatroom.append_chatbubble(role = chat_session.model, message = last_response)
+        chatroom.append_chatlog(role = "User", message = user_input)
+        chatroom.append_chatlog(role = chat_session.model, message = last_response)
+
         # 還原按鈕
         resetchat_bt.configure(text = "AI 重製/記憶刪除", fg_color = ["#1e8bba", "#C7712D"])
 
@@ -162,10 +171,20 @@ def run_wincap():
         overlay = overlayWindow(last_response, cb_coords, scale_factor)
         overlay.mainloop()
 
+def update_token_display(prompt_tokens, completion_tokens):
+    """更新主視窗 token 顯示"""
+    total_prompt_tokens += prompt_tokens
+    total_completion_tokens += completion_tokens
+
+    t_input_wd.configure(text=f"● 輸入: {prompt_tokens}")
+    t_output_wd.configure(text=f"● 輸出: {completion_tokens}")
+    t_in_total_wd.configure(text=f"● 累計輸入: {total_prompt_tokens}")
+    t_out_total_wd.configure(text=f"● 累計輸出: {total_completion_tokens}")
+
 def set_OCR_config():
     dialog = ctk.CTkToplevel()
     dialog.title("OCR 設定")
-    dialog.geometry(f"240x40+{window.winfo_x() - 250}+{window.winfo_y()}")
+    dialog.geometry(f"240x180+{window.winfo_x() - 250}+{window.winfo_y()}")
     dialog.grid_columnconfigure(0, weight = 0)
     dialog.grid_rowconfigure(0, weight = 0)
     dialog.attributes("-topmost", True) # 讓視窗顯示在最前面
@@ -204,6 +223,24 @@ def set_OCR_config():
             dtype = "float32"
             dtype_sw.configure(text = "辨識模型: 全精度")
         save_config()
+
+    def update_langs():
+        """根據 Checkbox 狀態更新 self.langs"""
+        global langs
+        selected = []
+
+        if langs_zh_sw_var.get() == "ON":
+            selected.append("zh")
+        if langs_en_cb_var.get() == "ON":
+            selected.append("en")
+        if langs_ja_sw_var.get() == "ON":
+            selected.append("ja")
+        if langs_ko_sw_var.get() == "ON":
+            selected.append("ko")
+
+        # 如果有選取語言，更新 self.langs，否則設為 None
+        langs = selected if selected else None
+        save_config()
         
     # 自動/手動按鈕
     auto_dtype_bt = ctk.CTkButton(dialog, text = "自動", font = text_font, width = 20, anchor = "c", command = toggle_auto_dtype,)
@@ -215,7 +252,7 @@ def set_OCR_config():
     dtype_sw = ctk.CTkSwitch(dialog, text = "辨識模型: 全精度" if current_dtype == "float32" else "辨識模型: 半精度", 
                              height = 28, corner_radius = 4, button_length = 10, font = text_font,
                              variable = dtype_sw_var, onvalue = "float32", offvalue = "float16", command = toggle_dtype)
-    dtype_sw.grid(row = 0, column = 1, padx = 5, pady = 5, sticky = "ns")
+    dtype_sw.grid(row = 0, column = 1, padx = 5, pady = (5, 0), sticky = "ns")
     dtype_sw.configure(state = "disabled" if auto_dtype == "ON" else "normal")
 
     if args.force_cpu: auto_dtype_bt.configure(state = "disabled")
@@ -230,6 +267,48 @@ def set_OCR_config():
                            text = "辨識模型: 全精度" if current_dtype == "float32" else "辨識模型: 半精度")
         dtype_sw.configure(state = "disabled")
 
+    # 限定語言模式
+    langs_zh_sw_var = ctk.StringVar(value = "OFF")
+    langs_zh_sw = ctk.CTkCheckBox(
+        dialog, text = "限定語言(可複選): 中文", height = 28, font = text_font, variable = langs_zh_sw_var, 
+        onvalue = "ON", offvalue = "OFF", command = update_langs
+    )
+    langs_zh_sw.grid(row = 1, column = 0, columnspan = 2, padx = 5, pady = (5, 0), sticky = "w")
+
+    langs_en_cb_var = ctk.StringVar(value = "OFF")
+    langs_en_cb = ctk.CTkCheckBox(
+        dialog, text = "限定語言(可複選): 英文", height = 28, font = text_font, variable = langs_en_cb_var, 
+        onvalue = "ON", offvalue = "OFF", command = update_langs
+    )
+    langs_en_cb.grid(row = 2, column = 0, columnspan = 2, padx = 5, pady = (5, 0), sticky = "w")
+
+    langs_ja_sw_var = ctk.StringVar(value = "OFF")
+    langs_ja_sw = ctk.CTkCheckBox(
+        dialog, text = "限定語言(可複選): 日文", height = 28, font = text_font, variable = langs_ja_sw_var, 
+        onvalue = "ON", offvalue = "OFF", command = update_langs
+    )
+    langs_ja_sw.grid(row = 3, column = 0, columnspan = 2, padx = 5, pady = (5, 0), sticky = "w")
+
+    langs_ko_sw_var = ctk.StringVar(value = "OFF")
+    langs_ko_sw = ctk.CTkCheckBox(
+        dialog, text = "限定語言(可複選): 韓文", height = 28, font = text_font, variable = langs_ko_sw_var, 
+        onvalue = "ON", offvalue = "OFF", command = update_langs
+    )
+    langs_ko_sw.grid(row = 4, column = 0, columnspan = 2, padx = 5, pady = (5, 0), sticky = "w")
+
+    # 初始化 CheckBox 狀態
+    if langs is not None:
+        langs_zh_sw_var.set("ON" if "zh" in langs else "OFF")
+        langs_en_cb_var.set("ON" if "en" in langs else "OFF")
+        langs_ja_sw_var.set("ON" if "ja" in langs else "OFF")
+        langs_ko_sw_var.set("ON" if "ko" in langs else "OFF")
+    else:
+        # 沒設定，全部 OFF
+        langs_zh_sw_var.set("OFF")
+        langs_en_cb_var.set("OFF")
+        langs_ja_sw_var.set("OFF")
+        langs_ko_sw_var.set("OFF")
+
 def save_config():
     """讀取現有設定，更新後再存入 JSON 檔案"""
     config = load_config()  # 先載入現有設定
@@ -242,7 +321,8 @@ def save_config():
         "model": model,
         "enable_short_term_memory": enable_short_term_memory,
         "auto_dtype": auto_dtype,
-        "dtype": dtype
+        "dtype": dtype,
+        "langs": langs
     })
 
     # 將更新後的設定存回 JSON
@@ -399,7 +479,7 @@ def set_model(choice):
 process = None # 初始化記錄 Popen 進程  
 
 def pop_chatroom():
-    chatroom.geometry(f"+{window.winfo_x() - 610}+{window.winfo_y()}")
+    chatroom.geometry(f"630x750+{window.winfo_x() - 640}+{window.winfo_y()}")
     chatroom.deiconify()
 
 def pop_chatroom_cmd(groq_available, groq_key, model, max_history, enable_short_term_memory, temperature, chat_session):
@@ -521,7 +601,7 @@ def toggle_window_size():
 # GUI    
 window = ctk.CTk() # 建立主視窗
 if groq_available:
-    chatroom = chatroomWindow(current_theme, chat_session, groq_key) # 建立聊天室視窗
+    chatroom = chatroomWindow(current_theme, chat_session, groq_key, token_update_callback = update_token_display) # 建立聊天室視窗
     chatroom.withdraw() # 聊天室視窗預設隱藏
     chatroom.protocol("WM_DELETE_WINDOW", chatroom.withdraw) # 攔截關閉行為 → 改為隱藏（withdraw）
 
@@ -553,7 +633,7 @@ window.geometry(f"{window_width}x{window_height}+{x_position}+{y_position}")
 window.title("BCR")
 window.resizable(True, True)
 window.iconbitmap("icon/logo_dark.ico" if current_theme == "dark" else "icon/logo_light.ico")
-appid = 'KuoCT.BeeSeeR.BCR.v2.0.3'
+appid = 'KuoCT.BeeSeeR.BCR.v2.0.4'
 ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(appid)
 
 # 讓視窗保持最上層
@@ -624,9 +704,9 @@ pfolder_bt = ctk.CTkButton(master = f2, text = "Prompt 資料夾", font = text_f
 pfolder_bt.grid(row = 1, column = 0, padx = 5, pady = (0, 5), sticky = "we")
 
 chatroom_bt = ctk.CTkButton(
-    master = f2, text = "AI 聊天室 (實驗)", font = text_font, height = 28, anchor = "c", 
-    command = lambda: pop_chatroom_cmd(groq_available, groq_key, model, max_history, enable_short_term_memory, temperature, chat_session),
-    # command = lambda: pop_chatroom()
+    master = f2, text = "AI 聊天室", font = text_font, height = 28, anchor = "c", 
+    # command = lambda: pop_chatroom_cmd(groq_available, groq_key, model, max_history, enable_short_term_memory, temperature, chat_session),
+    command = lambda: pop_chatroom()
 )
 chatroom_bt.grid(row = 2, column = 0, padx = 5, pady = (0, 5), sticky = "we")
 

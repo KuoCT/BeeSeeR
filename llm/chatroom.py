@@ -15,19 +15,22 @@ class chatroomWindow(ctk.CTkToplevel):
             self, 
             current_theme, 
             chat_session = None,
-            groq_key = None
+            groq_key = None,
+            token_update_callback = None
         ):
         super().__init__()
 
         ctk.set_default_color_theme(os.path.join(PATH, "theme/nectar.json"))
 
         self.settings  = self.load_config()
-        self.font_size = 18 # 文字大小
+        self.chat_font_size = self.settings.get("chat_font_size", 18) # 文字大小
         self.prompt_tokens = 0 # 初始化 token 計數器
         self.completion_tokens = 0 # 初始化 token 計數器
         self.chatlog =  "" # 初始化對話紀錄
         self.user_input = "" # 初始化聊天輸入
-        self.message_font = ctk.CTkFont(family = "Helvetica", size = self.font_size, weight = "bold")
+        self.token_update_callback = token_update_callback # 回乎函數
+        self.last_save_path = self.settings.get("last_save_path", None) # 初始化儲存位置
+        self.message_font = ctk.CTkFont(family = "Helvetica", size = self.chat_font_size, weight = "bold")
         text_fix_font = ctk.CTkFont(family = "Helvetica", size = 16, weight = "bold")
 
         self.groq_key = groq_key
@@ -51,7 +54,7 @@ class chatroomWindow(ctk.CTkToplevel):
 
         # 設定視窗
         self.title("聊天室")
-        self.geometry("600x750")
+        self.geometry("630x750")
         self.attributes("-topmost", False) # 讓視窗顯示在最前面
         self.after( # icon 一致化
             250, 
@@ -61,7 +64,7 @@ class chatroomWindow(ctk.CTkToplevel):
 
         # 設定 Grid 佈局
         self.grid_rowconfigure(0, weight = 20)
-        self.grid_rowconfigure(1, weight = 1, minsize = 50)
+        self.grid_rowconfigure(1, weight = 0, minsize = 150)
         self.grid_columnconfigure(0, weight = 1)
 
         # 訊息泡泡區域
@@ -90,7 +93,7 @@ class chatroomWindow(ctk.CTkToplevel):
             height = 20, 
             corner_radius = 4,
             font = text_fix_font, 
-            command = None
+            command = self.increase_font_size
         )
         self.increase_bt.grid(row = 0, column = 1, padx = 5, pady = (5, 0), sticky = "ns")
 
@@ -101,7 +104,7 @@ class chatroomWindow(ctk.CTkToplevel):
             height = 20, 
             corner_radius = 4,
             font = text_fix_font, 
-            command = None
+            command = self.decrease_font_size
         )
         self.decrease_bt.grid(row = 1, column = 1, padx = 5, pady = (2, 0), sticky = "ns")
 
@@ -112,7 +115,7 @@ class chatroomWindow(ctk.CTkToplevel):
                     height = 20, 
                     corner_radius = 4,
                     font = text_fix_font, 
-                    command = None
+                    command = self.save_chatlog
                 )
         self.savelog_bt.grid(row = 2, column = 1, padx = 5, pady = (2, 0), sticky = "ns")
 
@@ -133,6 +136,20 @@ class chatroomWindow(ctk.CTkToplevel):
             with open(CONFIG_FILE, "r") as f:
                 return json.load(f)
         return {}  # 如果沒有設定檔，回傳空字典
+    
+    def save_config(self):
+        """讀取現有設定，更新後再存入 JSON 檔案"""
+        config = self.load_config()  # 先載入現有設定
+
+        # 更新設定
+        config.update({
+            "chat_font_size": self.chat_font_size,
+            "last_save_path": self.last_save_path
+        })
+
+        # 將更新後的設定存回 JSON
+        with open(CONFIG_FILE, "w") as f:
+            json.dump(config, f, indent = 4)  # `indent=4` 讓 JSON 易讀
 
     def append_chatbubble(self, role, message):
         """新增對話泡泡"""
@@ -146,7 +163,7 @@ class chatroomWindow(ctk.CTkToplevel):
             b_expand = False
         else:
             anchor_side = "c"
-            wraplength = 540
+            wraplength = 560
             border_width = 0
             color = ["#d9d9e8", "#252930"]
             b_fill = "x"
@@ -191,6 +208,7 @@ class chatroomWindow(ctk.CTkToplevel):
                 p.insert(0, "• ")  # 插入符號
             else:
                 li.insert(0, "• ")
+            li.append("\n")
 
         # 段落 <p> 統一加換行（跳過 <li> 內部）
         for p in soup.find_all("p"):
@@ -202,8 +220,28 @@ class chatroomWindow(ctk.CTkToplevel):
             br.replace_with("\n")
 
         plain_text = soup.get_text()
-
         return plain_text.strip()
+    
+    def increase_font_size(self):
+        """增加字體大小"""
+        self.chat_font_size += 2
+        self.message_font.configure(family = "Helvetica", size = self.chat_font_size, weight = "bold")
+        self.save_config()
+
+    def decrease_font_size(self):
+        """減少字體大小"""
+        if self.chat_font_size > 10:  # 避免字體過小
+            self.chat_font_size -= 2
+            self.message_font.configure(family = "Helvetica", size = self.chat_font_size, weight = "bold")
+            self.save_config()
+
+    def update_all_chat_bubbles_font(self):
+        """遍歷所有泡泡區中的 Label，更新其字體大小"""
+        for child in self.text_f.winfo_children():
+            # child 是 bubble_frame
+            for grandchild in child.winfo_children():
+                if isinstance(grandchild, ctk.CTkLabel):
+                    grandchild.configure(font = ("Helvetica", self.chat_font_size))
     
     def load_prompt(self, file):
         """ 從文件載入提示詞，並回傳 (絕對路徑, 內容) """
@@ -227,17 +265,56 @@ class chatroomWindow(ctk.CTkToplevel):
         self.user_input = self.textbox.get("0.0", "end").strip()
         if self.user_input:  # 避免空輸入
             self.append_chatbubble(role = "User", message = self.user_input)
+            self.append_chatlog(role = "User", message = self.user_input)
             self.textbox.delete("0.0", "end")  # 清空輸入框內容
             system_prompt = self.load_prompt("Chat_system_prompt.txt") # 讀取系統提示詞
             memory_prompt = self.load_prompt("Chat_memory_prompt.txt") # 讀取記憶提示詞
             response, prompt_tokens, completion_tokens = self.chat_session.send_to_groq(system_prompt, memory_prompt, user_input = self.user_input)
             self.prompt_tokens = prompt_tokens
             self.completion_tokens = completion_tokens
-            self.append_chatbubble(role = "AI", message = response)
-
-    def call_token_usage(self):
-        return self.prompt_tokens, self.completion_tokens
+            self.append_chatbubble(role = self.chat_session.model, message = response)
+            self.append_chatlog(role = self.chat_session.model, message = response)
+            # 呼叫 callback → 通知主視窗更新 token 顯示
+            if self.token_update_callback:
+                self.token_update_callback(prompt_tokens, completion_tokens)
     
+    def append_chatlog(self, role, message):
+        """將單筆對話追加到 chatlog"""
+        # 格式化為 Markdown 格式並加上換行
+        log_entry = f"##{role}: \n{message}\n\n"
+        self.chatlog += log_entry
+    
+    def save_chatlog(self):
+        """將 chatlog 儲存為 Markdown 檔案"""
+        import tkinter.filedialog as fd
+        from datetime import datetime
+         # 取得當前日期時間字串
+        timestamp = datetime.now().strftime("%Y-%m-%d-%H%M%S")
+        
+        # 組合預設檔名
+        default_filename = f"{timestamp}_對話紀錄.md"
+
+        # 調出儲存對話框
+        filepath = fd.asksaveasfilename(
+            defaultextension = ".md",
+            filetypes = [("Markdown files", "*.md"), ("All files", "*.*")],
+            title = "Save Chatlog",
+            initialfile = default_filename,
+            initialdir = getattr(self, "last_save_path", PATH)
+        )
+
+        if filepath:  # 若使用者有選擇檔案
+            try:
+                with open(filepath, 'w', encoding = 'utf-8') as file:
+                    file.write(self.chatlog)
+                self.last_save_path = os.path.dirname(filepath) # 記錄新儲存路徑
+                self.save_config()
+                print(f"Chatlog successfully saved to {filepath}")
+            except Exception as e:
+                print(f"Failed to save chatlog: {e}")
+        else:
+            print("Save operation cancelled.")
+
 if __name__ == "__main__":
     import chat
     # 輸入 groq_key

@@ -10,12 +10,13 @@ from surya.recognition import RecognitionPredictor
 from surya.detection import DetectionPredictor
 
 class WindowCapture(tk.Toplevel):
-    def __init__(self, prompt_control = True, on_capture = None, prompt = None, dtype = None):
+    def __init__(self, prompt_control = True, on_capture = None, prompt = None, dtype = None, langs = None):
         super().__init__()
         self.prompt_control = prompt_control
         self.on_capture = on_capture  # 回呼函數
         self.prompt = prompt
         self.dtype = dtype
+        self.langs = langs
 
         # 初始化辨識結果
         self.prompt_text = None
@@ -135,7 +136,9 @@ class WindowCapture(tk.Toplevel):
             self.recognition_predictor = RecognitionPredictor(dtype = self.dtype)
             self.detection_predictor = DetectionPredictor(dtype = self.dtype)
 
-        predictions = self.recognition_predictor([image], [None], self.detection_predictor)
+        langs = self.langs
+        predictions = self.recognition_predictor([image], [langs], self.detection_predictor)
+        print(predictions)
 
         if predictions and hasattr(predictions[0], 'text_lines'):
             return "\n".join([line.text for line in predictions[0].text_lines])
