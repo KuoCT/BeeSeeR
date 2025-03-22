@@ -28,7 +28,7 @@ class chatroomWindow(ctk.CTkToplevel):
         self.completion_tokens = 0 # 初始化 token 計數器
         self.chatlog =  "" # 初始化對話紀錄
         self.user_input = "" # 初始化聊天輸入
-        self.token_update_callback = token_update_callback # 回乎函數
+        self.token_update_callback = token_update_callback # 回呼函數
         self.last_save_path = self.settings.get("last_save_path", None) # 初始化儲存位置
         self.message_font = ctk.CTkFont(family = "Helvetica", size = self.chat_font_size, weight = "bold")
         text_fix_font = ctk.CTkFont(family = "Helvetica", size = 16, weight = "bold")

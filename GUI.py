@@ -92,7 +92,7 @@ def load_prompt(file):
         return None  # 讀取失敗時回傳 None
         
 # 初始化提示詞
-prompt = load_prompt(prompt_file)
+# prompt = load_prompt(prompt_file)
 # system_prompt = load_prompt(system_prompt_file) # 讀取系統提示詞
 # memory_prompt = load_prompt(memory_prompt_file) # 讀取記憶提示詞
 
@@ -116,6 +116,8 @@ def run_wincap():
         global cb_coords
         cb_coords = coords
         # print(f"\033[34m[INFO] 即時回傳選取範圍座標: {coords}\033[0m")
+
+    prompt = load_prompt(prompt_file) # 讀取使用者提示詞
 
     app = WindowCapture(
         prompt_control = prompt_control, 
@@ -173,6 +175,10 @@ def run_wincap():
 
 def update_token_display(prompt_tokens, completion_tokens):
     """更新主視窗 token 顯示"""
+    # 更新 token 計數器
+    global total_prompt_tokens
+    global total_completion_tokens
+    
     total_prompt_tokens += prompt_tokens
     total_completion_tokens += completion_tokens
 
@@ -184,12 +190,60 @@ def update_token_display(prompt_tokens, completion_tokens):
 def set_OCR_config():
     dialog = ctk.CTkToplevel()
     dialog.title("OCR 設定")
-    dialog.geometry(f"240x180+{window.winfo_x() - 250}+{window.winfo_y()}")
+    dialog.geometry(f"240x220+{window.winfo_x() - 250}+{window.winfo_y()}")
     dialog.grid_columnconfigure(0, weight = 0)
     dialog.grid_rowconfigure(0, weight = 0)
     dialog.attributes("-topmost", True) # 讓視窗顯示在最前面
     dialog.grab_set()
     dialog.after(250, dialog.iconbitmap, "icon/logo_dark.ico" if current_theme == "dark" else "icon/logo_light.ico")
+
+    def make_ink():
+        from tkinter import filedialog, messagebox
+        import win32com.client
+        bat_path = filedialog.askopenfilename(
+            filetypes = [("Batch Files", "*.bat")], 
+            initialdir = os.path.join(os.path.dirname(os.path.abspath(__file__))),
+            title = "選擇 BeeSeeR 程式啟動檔"
+        )
+        if not bat_path:
+            messagebox.showwarning("取消", "未選擇 .bat 檔案")
+            return
+        
+        icon_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "icon")
+        if not os.path.exists(icon_dir):
+            icon_dir = os.path.dirname(os.path.abspath(__file__))  # icon 資料夾不存在時 fallback
+
+        icon_path = filedialog.askopenfilename(
+            filetypes=[("Icon Files", "*.ico")],
+            initialdir=icon_dir,
+            title="選擇一個 icon"
+        )
+
+        if not icon_path:
+            messagebox.showwarning("取消", "未選擇 icon 檔案")
+            return
+        
+        save_dir = filedialog.askdirectory(
+            initialdir = os.path.dirname(os.path.abspath(__file__)),
+            title = "選擇捷徑存放位置"
+        )
+
+        if not save_dir:
+            messagebox.showwarning("取消", "未選擇捷徑存放位置")
+            return
+        shortcut_path = os.path.join(save_dir, "BeeSeeR.lnk")
+
+        # 建立捷徑
+        try:
+            shell = win32com.client.Dispatch("WScript.Shell")
+            shortcut = shell.CreateShortcut(shortcut_path)
+            shortcut.TargetPath = bat_path
+            shortcut.WorkingDirectory = os.path.dirname(bat_path)
+            shortcut.IconLocation = icon_path
+            shortcut.Save()
+            messagebox.showinfo("完成", f"捷徑已儲存：\n{shortcut_path}")  
+        except Exception as e:
+            messagebox.showerror("錯誤", f"建立捷徑失敗：{str(e)}") 
 
     def toggle_auto_dtype():
         """dtype 自動/手動切換"""
@@ -243,8 +297,8 @@ def set_OCR_config():
         save_config()
         
     # 自動/手動按鈕
-    auto_dtype_bt = ctk.CTkButton(dialog, text = "自動", font = text_font, width = 20, anchor = "c", command = toggle_auto_dtype,)
-    auto_dtype_bt.grid(row = 0, column = 0, padx = (5, 0), pady = 5, sticky = "e")
+    auto_dtype_bt = ctk.CTkButton(dialog, text = "自動", font = text_font, width = 20, anchor = "c", command = toggle_auto_dtype)
+    auto_dtype_bt.grid(row = 0, column = 0, padx = (5, 0), pady = (12, 0), sticky = "nsew")
 
     # 精度設定
     dtype_sw_var = ctk.StringVar(value = "float32" if args.force_cpu else "float16")
@@ -252,7 +306,7 @@ def set_OCR_config():
     dtype_sw = ctk.CTkSwitch(dialog, text = "辨識模型: 全精度" if current_dtype == "float32" else "辨識模型: 半精度", 
                              height = 28, corner_radius = 4, button_length = 10, font = text_font,
                              variable = dtype_sw_var, onvalue = "float32", offvalue = "float16", command = toggle_dtype)
-    dtype_sw.grid(row = 0, column = 1, padx = 5, pady = (5, 0), sticky = "ns")
+    dtype_sw.grid(row = 0, column = 1, padx = 5, pady = (12, 0), sticky = "ns")
     dtype_sw.configure(state = "disabled" if auto_dtype == "ON" else "normal")
 
     if args.force_cpu: auto_dtype_bt.configure(state = "disabled")
@@ -308,6 +362,10 @@ def set_OCR_config():
         langs_en_cb_var.set("OFF")
         langs_ja_sw_var.set("OFF")
         langs_ko_sw_var.set("OFF")
+
+    # 製作捷徑
+    make_ink_bt = ctk.CTkButton(dialog, text = "製作快速啟動捷徑", font = text_font, width = 20, anchor = "c", command = make_ink)
+    make_ink_bt.grid(row = 5, column = 0, columnspan = 2, padx = 5, pady = 5, sticky = "w")
 
 def save_config():
     """讀取現有設定，更新後再存入 JSON 檔案"""
