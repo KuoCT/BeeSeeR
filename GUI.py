@@ -200,6 +200,7 @@ def set_OCR_config():
     def make_ink():
         from tkinter import filedialog, messagebox
         import win32com.client
+        import shutil
         bat_path = filedialog.askopenfilename(
             filetypes = [("Batch Files", "*.bat")], 
             initialdir = os.path.join(os.path.dirname(os.path.abspath(__file__))),
@@ -233,11 +234,30 @@ def set_OCR_config():
             return
         shortcut_path = os.path.join(save_dir, "BeeSeeR.lnk")
 
+        def get_cmd_path():
+            # 檢查 cmd.exe 是否在 PATH 中
+            cmd_in_path = shutil.which("cmd.exe")
+            if cmd_in_path:
+                print(f"找到 cmd.exe 在 PATH：{cmd_in_path}")
+                return "cmd.exe"  # 使用簡寫，保持 PATH 彈性
+
+            # fallback 絕對路徑
+            fallback_path = os.path.join(os.environ["SystemRoot"], "System32", "cmd.exe")
+            if os.path.exists(fallback_path):
+                print(f"使用 fallback cmd.exe：{fallback_path}")
+                return fallback_path
+            else:
+                raise FileNotFoundError("找不到 cmd.exe，請確認系統是否正常。")
+
+        # 組合參數
+        arguments = f'/c "{bat_path}"'
+
         # 建立捷徑
         try:
             shell = win32com.client.Dispatch("WScript.Shell")
             shortcut = shell.CreateShortcut(shortcut_path)
-            shortcut.TargetPath = bat_path
+            shortcut.TargetPath = get_cmd_path()
+            shortcut.Arguments = arguments
             shortcut.WorkingDirectory = os.path.dirname(bat_path)
             shortcut.IconLocation = icon_path
             shortcut.Save()
