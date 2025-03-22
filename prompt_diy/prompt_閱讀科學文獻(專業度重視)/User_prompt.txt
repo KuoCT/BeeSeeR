@@ -1,2 +1,1 @@
-OCR text detected. If errors exist, lightly correct while preserving original meaning. Translate into **繁體中文**, accurately retaining technical terms and proper nouns. Focus on clarity and fidelity to the original. Output **繁體中文** translation only, no explanations.
----
+OCR text detected. If errors exist, lightly fix to retain original meaning. Translate into **繁體中文**, ensuring argument flow and tone are intact. Output **繁體中文** translation first, then provide brief analysis or suggest related articles if relevant:
