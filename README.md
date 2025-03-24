@@ -57,14 +57,14 @@ BeeSeeR 是一個整合螢幕截圖 + OCR + AI 的 GUI 工具，使用者能透�
 - 先備份你的文件到 `專案資料夾以外的其他地方` (例如你自己做的 prompt, API金鑰, config.json(使用者偏好設定存檔), 聊天紀錄等等...) 
 - 在 `BeeSeeR` 資料夾中逐行執行以下命令:
    ```bash
-   git fetch origin  # 取得 GitHub 上最新的內容
-   git reset --hard origin/main  # 將本機檔案更新至最新
-   git clean -dfn # 查看多餘檔案 (列出的檔案將會被刪除)
-   git clean -df # 刪除多餘檔案
+   git fetch origin
+   git reset --hard origin/main
+   git clean -dfn
+   git clean -df
    ```
    若你想要完全回復乾淨狀態重新安裝，繼續執行以下指令(選擇性):
    ```bash
-   git clean -dfX  # 移除未追蹤的檔案 (注意安裝過的依賴將全部清除)
+   git clean -dfX
    ```
 - 用 `debug=1` 模式啟動 `BeeSeeR.bat` 到程式順利彈出。
 - 切回 `debug=0` 繼續使用。
