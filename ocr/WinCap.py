@@ -6,8 +6,6 @@ import pyperclip # 剪貼簿
 import threading
 from PIL import Image
 from torch.cuda import is_available, empty_cache, ipc_collect
-from surya.recognition import RecognitionPredictor
-from surya.detection import DetectionPredictor
 
 class WindowCapture(tk.Toplevel):
     def __init__(self, prompt_control = True, on_capture = None, prompt = None, dtype = None, langs = None):
@@ -95,10 +93,19 @@ class WindowCapture(tk.Toplevel):
     def perform_ocr_process(self, coordinates):
         """執行擷取 + OCR（背景執行緒）"""
         x1, y1, x2, y2 = coordinates
+        width = x2 - x1
+        height = y2 - y1
+
+        # 防呆：確保選取範圍合法
+        if width <= 0 or height <= 0:
+            print("\033[31m[ERROR] 選取範圍無效，寬或高為 0。\033[0m")
+            self.is_dragging = False
+            self.after(0, self.exit_WinCap)
+            return
 
         # 擷取螢幕畫面
         img_bytes = io.BytesIO()
-        screenshot = pyautogui.screenshot(region=(x1, y1, x2 - x1, y2 - y1))
+        screenshot = pyautogui.screenshot(region=(x1, y1, width, height))
         screenshot.save(img_bytes, format="PNG")
         img_bytes.seek(0)
 
@@ -111,7 +118,7 @@ class WindowCapture(tk.Toplevel):
 
         # 合併 prompt 與 OCR 結果
         final_text = f"{prompt_text}\n\n{extracted_text}" if self.prompt_control else extracted_text
-        if final_text:
+        if extracted_text.strip():
             pyperclip.copy(final_text)
             print("\033[32m[INFO] OCR 辨識結果已複製到剪貼簿。\033[0m")
         else:
@@ -130,6 +137,8 @@ class WindowCapture(tk.Toplevel):
         self.after(0, self.exit_WinCap)
 
     def perform_ocr(self, image):
+        from surya.recognition import RecognitionPredictor
+        from surya.detection import DetectionPredictor
         """使用 Surya-OCR 進行辨識 (延遲加載)"""
         if self.recognition_predictor is None or self.detection_predictor is None:
             print(f"\033[32m[INFO] 載入 OCR 模型（使用裝置: {device}）...\033[0m")
@@ -138,7 +147,7 @@ class WindowCapture(tk.Toplevel):
 
         langs = self.langs
         predictions = self.recognition_predictor([image], [langs], self.detection_predictor)
-        print(predictions)
+        # print(predictions) # 測試用
 
         if predictions and hasattr(predictions[0], 'text_lines'):
             return "\n".join([line.text for line in predictions[0].text_lines])

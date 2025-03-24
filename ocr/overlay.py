@@ -425,7 +425,7 @@ class overlayWindow(ctk.CTkToplevel):
             # self.unbind("<B1-Motion>")
             # self.unbind("<ButtonRelease-1>")
             self.destroy()
-            self.quit()
+            # self.quit()
         except Exception as e:
             print(f"\033[31m[INFO] 視窗關閉時發生錯誤: {e}\033[0m")
 

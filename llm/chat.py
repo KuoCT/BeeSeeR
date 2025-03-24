@@ -243,9 +243,28 @@ class GroqChatSession:
             return response, prompt_tokens, completion_tokens
         
         except Exception as e:
-            print(f"\033[31m[ERROR] 調用 Groq API 時出錯：{e}\033[0m")
-            response = f"[ERROR] 與 AI 連線時出錯：{e}"
-            return response, None, None
+            error_text = str(e)
+            # 預設錯誤代碼與訊息
+            code = "未知"
+            message = "無法取得錯誤訊息"
+
+            # 嘗試解析錯誤內容
+            try:
+                if 'Error code:' in error_text:
+                    code_part, json_part = error_text.split(' - ', 1)
+                    code = code_part.strip().split(':')[1].strip()
+                    error_json = json.loads(json_part.replace("'", '"'))
+                    message = error_json.get('error', {}).get('message', message)
+            except Exception:
+                message = error_text  # 若解析失敗，直接顯示原始錯誤
+
+            # 格式化 response 給 GUI
+            response = f"[ERROR] 與 AI 連線時出錯:\nCode: {code}\n{message}"
+            
+            # 同步印出終端錯誤（可選）
+            print(f"\033[31m{response}\033[0m")
+
+            return response, 0, 0
 
 if __name__ == "__main__":
     import argparse

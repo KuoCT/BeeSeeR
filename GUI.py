@@ -52,11 +52,13 @@ auto_dtype = settings.get("auto_dtype", "ON")
 dtype = settings.get("dtype", None)
 if args.force_cpu or auto_dtype == "NO": dtype = None
 langs = settings.get("langs", None) # 限定語言參數
+dialog = None  # 初始化對話框
+dialog_api = None  # 初始化 API 對話框
 
 # 如果 API Key 非空，解鎖 API 功能
 if groq_key:
     groq_available = True
-    # 驗證機制有機率不過 (暫時棄用)
+    # 驗證機制有機率不過 (棄用)
     # from groq import Groq
     # try:
     #     client = Groq(api_key = groq_key)
@@ -128,17 +130,18 @@ def run_wincap():
     )
     app.mainloop()
     # prompt = app.get_prompt_text()
-    # ext = app.get_extracted_text()
+    ext = app.get_extracted_text()
     user_input = app.get_final_text()
-    if user_input:
+    global last_response
+    if isinstance(ext, str) and ext.strip():
         print("\033[33m[INFO] 文字辨識結果：\033[0m")
         print(user_input)
     else:
         print("\033[31m[INFO] 無法獲取文字辨識結果。\033[0m")
+        last_response = "沒有提供可翻譯的內容。"
 
     # 自動翻譯
-    if groq_available and ost_control and user_input:
-        global last_response
+    if groq_available and ost_control and isinstance(ext, str) and ext.strip():
         # global system_prompt
         # global system_prompt_path
         # global memory_prompt
@@ -169,9 +172,10 @@ def run_wincap():
         # 還原按鈕
         resetchat_bt.configure(text = "AI 重製/記憶刪除", fg_color = ["#1e8bba", "#C7712D"])
 
-        # 螢幕覆蓋顯示
-        overlay = overlayWindow(last_response, cb_coords, scale_factor)
-        overlay.mainloop()
+    # 螢幕覆蓋顯示
+    if not app.is_dragging: return
+    overlay = overlayWindow(last_response, cb_coords, scale_factor)
+    overlay.mainloop()
 
 def update_token_display(prompt_tokens, completion_tokens):
     """更新主視窗 token 顯示"""
@@ -188,13 +192,15 @@ def update_token_display(prompt_tokens, completion_tokens):
     t_out_total_wd.configure(text=f"● 累計輸出: {total_completion_tokens}")
 
 def set_OCR_config():
+    """設定 OCR 設定"""
+    global dialog
+    if dialog:
+        dialog.destroy()  # 關閉舊視窗
     dialog = ctk.CTkToplevel()
     dialog.title("OCR 設定")
-    dialog.geometry(f"240x220+{window.winfo_x() - 250}+{window.winfo_y()}")
-    dialog.grid_columnconfigure(0, weight = 0)
-    dialog.grid_rowconfigure(0, weight = 0)
+    dialog.geometry(f"240x180+{window.winfo_x() - 250}+{window.winfo_y()}")
     dialog.attributes("-topmost", True) # 讓視窗顯示在最前面
-    dialog.grab_set()
+    # dialog.grab_set() # 鎖定對話框
     dialog.after(250, dialog.iconbitmap, "icon/logo_dark.ico" if current_theme == "dark" else "icon/logo_light.ico")
 
     def make_ink():
@@ -315,18 +321,38 @@ def set_OCR_config():
         # 如果有選取語言，更新 self.langs，否則設為 None
         langs = selected if selected else None
         save_config()
-        
+    
+    # 區域規劃
+    dialog.grid_columnconfigure(0, weight = 1)
+    dialog.grid_rowconfigure((0, 1, 2), weight = 0)
+    dialog.grid_rowconfigure((2), weight = 1)
+
+    f1 = ctk.CTkFrame(dialog)
+    f1.grid(row = 0, column = 0, padx = 5, pady = (10, 0), sticky = "nswe")
+    f1.grid_columnconfigure(0, weight = 0)
+    f1.grid_rowconfigure(0, weight = 1)
+
+    f2 = ctk.CTkFrame(dialog)
+    f2.grid(row = 1, column = 0, padx = 5, pady = (0, 0), sticky = "nswe")
+    f2.grid_columnconfigure((0, 1), weight = 1)
+    f2.grid_rowconfigure(0, weight = 1)
+
+    f3 = ctk.CTkFrame(dialog)
+    f3.grid(row = 2, column = 0, padx = 5, pady = (0, 5), sticky = "nswe")
+    f3.grid_columnconfigure(0, weight = 1)
+    f3.grid_rowconfigure(0, weight = 1)
+
     # 自動/手動按鈕
-    auto_dtype_bt = ctk.CTkButton(dialog, text = "自動", font = text_font, width = 20, anchor = "c", command = toggle_auto_dtype)
-    auto_dtype_bt.grid(row = 0, column = 0, padx = (5, 0), pady = (12, 0), sticky = "nsew")
+    auto_dtype_bt = ctk.CTkButton(f1, text = "自動", font = text_font, width = 20, anchor = "c", command = toggle_auto_dtype)
+    auto_dtype_bt.grid(row = 0, column = 0, padx = (5, 0), pady = 0, sticky = "nsew")
 
     # 精度設定
     dtype_sw_var = ctk.StringVar(value = "float32" if args.force_cpu else "float16")
     current_dtype = dtype_sw_var.get()
-    dtype_sw = ctk.CTkSwitch(dialog, text = "辨識模型: 全精度" if current_dtype == "float32" else "辨識模型: 半精度", 
+    dtype_sw = ctk.CTkSwitch(f1, text = "辨識模型: 全精度" if current_dtype == "float32" else "辨識模型: 半精度", 
                              height = 28, corner_radius = 4, button_length = 10, font = text_font,
                              variable = dtype_sw_var, onvalue = "float32", offvalue = "float16", command = toggle_dtype)
-    dtype_sw.grid(row = 0, column = 1, padx = 5, pady = (12, 0), sticky = "ns")
+    dtype_sw.grid(row = 0, column = 1, padx = 5, pady = 0, sticky = "ns")
     dtype_sw.configure(state = "disabled" if auto_dtype == "ON" else "normal")
 
     if args.force_cpu: auto_dtype_bt.configure(state = "disabled")
@@ -342,33 +368,36 @@ def set_OCR_config():
         dtype_sw.configure(state = "disabled")
 
     # 限定語言模式
+    langs_wd = ctk.CTkLabel(f2, text = "限定語言(可複選): ", font = text_font, anchor = "w")
+    langs_wd.grid(row = 0, column = 0, columnspan = 2, padx = 5, pady = (5, 0), sticky = "w")
+
     langs_zh_sw_var = ctk.StringVar(value = "OFF")
     langs_zh_sw = ctk.CTkCheckBox(
-        dialog, text = "限定語言(可複選): 中文", height = 28, font = text_font, variable = langs_zh_sw_var, 
+        f2, text = "中文", height = 28, font = text_font, variable = langs_zh_sw_var, 
         onvalue = "ON", offvalue = "OFF", command = update_langs
     )
-    langs_zh_sw.grid(row = 1, column = 0, columnspan = 2, padx = 5, pady = (5, 0), sticky = "w")
+    langs_zh_sw.grid(row = 1, column = 0, padx = (5, 0), pady = 0, sticky = "w")
 
     langs_en_cb_var = ctk.StringVar(value = "OFF")
     langs_en_cb = ctk.CTkCheckBox(
-        dialog, text = "限定語言(可複選): 英文", height = 28, font = text_font, variable = langs_en_cb_var, 
+        f2, text = "英文", height = 28, font = text_font, variable = langs_en_cb_var, 
         onvalue = "ON", offvalue = "OFF", command = update_langs
     )
-    langs_en_cb.grid(row = 2, column = 0, columnspan = 2, padx = 5, pady = (5, 0), sticky = "w")
+    langs_en_cb.grid(row = 2, column = 0, padx = (5, 0), pady = 5, sticky = "w")
 
     langs_ja_sw_var = ctk.StringVar(value = "OFF")
     langs_ja_sw = ctk.CTkCheckBox(
-        dialog, text = "限定語言(可複選): 日文", height = 28, font = text_font, variable = langs_ja_sw_var, 
+        f2, text = "日文", height = 28, font = text_font, variable = langs_ja_sw_var, 
         onvalue = "ON", offvalue = "OFF", command = update_langs
     )
-    langs_ja_sw.grid(row = 3, column = 0, columnspan = 2, padx = 5, pady = (5, 0), sticky = "w")
+    langs_ja_sw.grid(row = 1, column = 1, padx = 5, pady = 0, sticky = "w")
 
     langs_ko_sw_var = ctk.StringVar(value = "OFF")
     langs_ko_sw = ctk.CTkCheckBox(
-        dialog, text = "限定語言(可複選): 韓文", height = 28, font = text_font, variable = langs_ko_sw_var, 
+        f2, text = "韓文", height = 28, font = text_font, variable = langs_ko_sw_var, 
         onvalue = "ON", offvalue = "OFF", command = update_langs
     )
-    langs_ko_sw.grid(row = 4, column = 0, columnspan = 2, padx = 5, pady = (5, 0), sticky = "w")
+    langs_ko_sw.grid(row = 2, column = 1, padx = 5, pady = 5, sticky = "w")
 
     # 初始化 CheckBox 狀態
     if langs is not None:
@@ -384,7 +413,7 @@ def set_OCR_config():
         langs_ko_sw_var.set("OFF")
 
     # 製作捷徑
-    make_ink_bt = ctk.CTkButton(dialog, text = "製作快速啟動捷徑", font = text_font, width = 20, anchor = "c", command = make_ink)
+    make_ink_bt = ctk.CTkButton(f3, text = "製作快速啟動捷徑", font = text_font, width = 20, anchor = "c", command = make_ink)
     make_ink_bt.grid(row = 5, column = 0, columnspan = 2, padx = 5, pady = 5, sticky = "w")
 
 def save_config():
@@ -429,14 +458,17 @@ def restart_app():
 
 def get_API():
     """獲取 API 並儲存"""
-    dialog = ctk.CTkToplevel()
-    dialog.title("輸入 API Key")
-    dialog.geometry(f"400x40+{window.winfo_x() - 410}+{window.winfo_y()}")
-    dialog.grid_columnconfigure(1, weight = 1)
-    dialog.grid_rowconfigure(0, weight = 0)
-    dialog.attributes("-topmost", True) # 讓視窗顯示在最前面
-    dialog.grab_set()
-    dialog.after(250, dialog.iconbitmap, "icon/logo_dark.ico" if current_theme == "dark" else "icon/logo_light.ico")
+    global dialog_api
+    if dialog_api:
+        dialog_api.destroy()  # 關閉舊視窗
+    dialog_api = ctk.CTkToplevel()
+    dialog_api.title("輸入 API Key")
+    dialog_api.geometry(f"400x40+{window.winfo_x() - 410}+{window.winfo_y()}")
+    dialog_api.grid_columnconfigure(1, weight = 1)
+    dialog_api.grid_rowconfigure(0, weight = 0)
+    dialog_api.attributes("-topmost", True) # 讓視窗顯示在最前面
+    # dialog_api.grab_set() # 鎖定對話框
+    dialog_api.after(250, dialog_api.iconbitmap, "icon/logo_dark.ico" if current_theme == "dark" else "icon/logo_light.ico")
 
     def select_all():
         """全選輸入框內的 API Key"""
@@ -457,24 +489,24 @@ def get_API():
             if response:  # 如果使用者選擇 "是"
                 restart_app()  # 重新啟動應用程式
 
-        dialog.destroy()  # 關閉對話框
+        dialog_api.destroy()  # 關閉對話框
 
     # 標題文字
-    API_wd = ctk.CTkLabel(dialog, text = "API Key:", font = text_font, anchor = "w")
+    API_wd = ctk.CTkLabel(dialog_api, text = "API Key:", font = text_font, anchor = "w")
     API_wd.grid(row = 0, column = 0, padx = (5, 0), pady = 5, sticky = "nswe")
 
     # 輸入框
-    entry = ctk.CTkEntry(dialog)
+    entry = ctk.CTkEntry(dialog_api)
     entry.grid(row = 0, column = 1, padx = (5, 0), pady = 5, sticky = "nswe")
     if groq_key:  # 如果有舊的 API Key，則填入
         entry.insert(0, groq_key)
 
     # 全選按鈕
-    confirm_API_bt = ctk.CTkButton(dialog, text = "[ ]", font = text_font, width = 20, anchor = "c", command = select_all)
+    confirm_API_bt = ctk.CTkButton(dialog_api, text = "[ ]", font = text_font, width = 20, anchor = "c", command = select_all)
     confirm_API_bt.grid(row = 0, column = 2, padx = (5, 0), pady = 5, sticky = "e")
 
     # 載入按鈕
-    confirm_API_bt = ctk.CTkButton(dialog, text = "確定", font = text_font, width = 40, anchor = "c", command = confirm_API)
+    confirm_API_bt = ctk.CTkButton(dialog_api, text = "確定", font = text_font, width = 40, anchor = "c", command = confirm_API)
     confirm_API_bt.grid(row = 0, column = 3, padx = 5, pady = 5, sticky = "e")
 
 def toggle_theme():
