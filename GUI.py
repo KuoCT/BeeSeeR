@@ -93,11 +93,6 @@ def load_prompt(file):
         print(f"\033[31m[INFO] 找不到 {prompt_path} 文件，將會使用預設的提示詞。\033[0m")
         return None  # 讀取失敗時回傳 None
         
-# 初始化提示詞
-# prompt = load_prompt(prompt_file)
-# system_prompt = load_prompt(system_prompt_file) # 讀取系統提示詞
-# memory_prompt = load_prompt(memory_prompt_file) # 讀取記憶提示詞
-
 # 初始化 chat 物件
 if groq_available:
     chat_session = chat.GroqChatSession(
@@ -142,10 +137,6 @@ def run_wincap():
 
     # 自動翻譯
     if groq_available and ost_control and isinstance(ext, str) and ext.strip():
-        # global system_prompt
-        # global system_prompt_path
-        # global memory_prompt
-        # global memory_prompt_path
         system_prompt = load_prompt(system_prompt_file) # 讀取系統提示詞
         memory_prompt = load_prompt(memory_prompt_file) # 讀取記憶提示詞
         response, prompt_tokens, completion_tokens = chat_session.send_to_groq(system_prompt, memory_prompt, user_input)
@@ -190,6 +181,9 @@ def update_token_display(prompt_tokens, completion_tokens):
     t_output_wd.configure(text=f"● 輸出: {completion_tokens}")
     t_in_total_wd.configure(text=f"● 累計輸入: {total_prompt_tokens}")
     t_out_total_wd.configure(text=f"● 累計輸出: {total_completion_tokens}")
+
+    # 還原按鈕
+    resetchat_bt.configure(text = "AI 重製/記憶刪除", fg_color = ["#1e8bba", "#C7712D"])
 
 def set_OCR_config():
     """設定 OCR 設定"""
@@ -586,47 +580,10 @@ def set_model(choice):
     
     save_config()
 
-process = None # 初始化記錄 Popen 進程  
-
 def pop_chatroom():
+    """打開聊天室"""
     chatroom.geometry(f"630x750+{window.winfo_x() - 640}+{window.winfo_y()}")
     chatroom.deiconify()
-
-def pop_chatroom_cmd(groq_available, groq_key, model, max_history, enable_short_term_memory, temperature, chat_session):
-    """依現在的設定打開一個新的聊天室"""
-    global process
-    # 若已有正在運行的進程，先終結它
-    if process and process.poll() is None:
-        # print(f"終止舊進程 (PID: {process.pid})")
-        process.terminate()  # 嘗試優雅終止
-        try:
-            process.wait(timeout=3)  # 等待 3 秒
-        except subprocess.TimeoutExpired:
-            # print("舊進程未能及時終結，強制殺死")
-            process.kill()  # 強制終止
-
-    # 建構程式碼
-    CMD = ["env/Scripts/python", "llm/chat.py"]
-
-    if groq_available:
-        CMD.extend(["-k", groq_key])  # 加入 "-k" 參數
-
-    CMD.extend(["-m", model])
-    CMD.extend(["-sl", str(max_history)])  # max_history 轉換為字串
-    if not enable_short_term_memory:
-        CMD.append("-ns")  # `-ns` 是 flag，不需要額外的值
-    CMD.extend(["-T", str(temperature)])  # temperature 轉換為字串
-
-    # 如果有對話歷史，轉換成 JSON 並加入
-    if chat_session.messages:
-        CMD.extend(["--messages", json.dumps(chat_session.messages)])
-
-    # 如果摘要不為空，轉換成 JSON 並加入
-    if chat_session.summaries and chat_session.summaries != [""]:
-        CMD.extend(["--summaries", json.dumps(chat_session.summaries)])
-
-    # 執行 subprocess，確保使用虛擬環境，並設定 `cwd` 以確保執行位置正確
-    process = subprocess.Popen(CMD)
 
 # 獲取螢幕資訊
 def get_refresh_rate():
@@ -801,7 +758,8 @@ setting_bt.grid(row = 3, column = 0, padx = 5, pady = 5, sticky = "we")
 f2 = ctk.CTkFrame(master = window, corner_radius = 10)
 f2.grid(row = 1, column = 0, padx = 5, pady = 8, sticky = "nswe")
 f2.grid_columnconfigure((0), weight = 1)
-f2.grid_rowconfigure((0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12), weight = 0)
+f2.grid_rowconfigure((0), weight = 0)
+f2.grid_rowconfigure((15), weight = 1)
 f2.grid_remove()  # 預設隱藏 f2
 
 # 擴充功能
@@ -815,7 +773,6 @@ pfolder_bt.grid(row = 1, column = 0, padx = 5, pady = (0, 5), sticky = "we")
 
 chatroom_bt = ctk.CTkButton(
     master = f2, text = "AI 聊天室", font = text_font, height = 28, anchor = "c", 
-    # command = lambda: pop_chatroom_cmd(groq_available, groq_key, model, max_history, enable_short_term_memory, temperature, chat_session),
     command = lambda: pop_chatroom()
 )
 chatroom_bt.grid(row = 2, column = 0, padx = 5, pady = (0, 5), sticky = "we")
@@ -865,7 +822,7 @@ t_out_total_wd.grid(row = 14, column = 0, padx = (10, 5), pady = (2, 5), sticky 
 
 # 模型切換器
 model_change_wd = ctk.CTkLabel(master = f2, text = "目前使用的 AI 模型", font = text_font, anchor = "w", height = 10)
-model_change_wd.grid(row = 15, column = 0, padx = 5, pady = (20, 5), sticky = "we")
+model_change_wd.grid(row = 15, column = 0, padx = 5, pady = (15, 5), sticky = "swe")
 model_change_op = ctk.CTkOptionMenu(
     master = f2, 
     values = ["llama-3.3-70b-versatile", "llama-3.3-70b-specdec", "llama-3.1-8b-instant", "gemma2-9b-it"], 
