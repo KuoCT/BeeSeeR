@@ -1,5 +1,4 @@
 import io
-import gc
 import tkinter as tk
 import pyautogui
 import pyperclip # 剪貼簿
@@ -8,13 +7,14 @@ from PIL import Image
 from torch.cuda import is_available, empty_cache, ipc_collect
 
 class WindowCapture(tk.Toplevel):
-    def __init__(self, prompt_control = True, on_capture = None, prompt = None, dtype = None, langs = None):
+    def __init__(self, prompt_control = True, on_capture = None, prompt = None, dtype = None, langs = None, manga_ocr = False):
         super().__init__()
         self.prompt_control = prompt_control
         self.on_capture = on_capture  # 回呼函數
         self.prompt = prompt
         self.dtype = dtype
         self.langs = langs
+        self.manga_ocr = manga_ocr
 
         # 初始化辨識結果
         self.prompt_text = None
@@ -44,10 +44,6 @@ class WindowCapture(tk.Toplevel):
         self.start_x = 0
         self.start_y = 0
         self.is_dragging = False # 用來記錄是否有拖曳
-
-        # 初始化 OCR 變數 (延遲加載)
-        self.recognition_predictor = None
-        self.detection_predictor = None
 
     def set_transparent_color(self, color):
         """讓指定顏色變成透明"""
@@ -137,41 +133,40 @@ class WindowCapture(tk.Toplevel):
         self.after(0, self.exit_WinCap)
 
     def perform_ocr(self, image):
-        from surya.recognition import RecognitionPredictor
-        from surya.detection import DetectionPredictor
-        """使用 Surya-OCR 進行辨識 (延遲加載)"""
-        if self.recognition_predictor is None or self.detection_predictor is None:
+        """進行 OCR 辨識"""
+        if self.manga_ocr:
+            from manga_ocr import MangaOcr
+            import logging
+            logging.getLogger("transformers").setLevel(logging.ERROR)
+            """使用 Manga-OCR 進行辨識 (延遲加載)"""
+            mocr = MangaOcr()
+            predictions = mocr(image)
+            # print(predictions) # 測試用
+            if predictions:
+                return predictions
+            return None
+        else:           
+            from surya.recognition import RecognitionPredictor
+            from surya.detection import DetectionPredictor
+            """使用 Surya-OCR 進行辨識 (延遲加載)"""
             print(f"\033[32m[INFO] 載入 OCR 模型（使用裝置: {device}）...\033[0m")
-            self.recognition_predictor = RecognitionPredictor(dtype = self.dtype)
-            self.detection_predictor = DetectionPredictor(dtype = self.dtype)
+            recognition_predictor = RecognitionPredictor(dtype = self.dtype)
+            detection_predictor = DetectionPredictor(dtype = self.dtype)
 
-        langs = self.langs
-        predictions = self.recognition_predictor([image], [langs], self.detection_predictor)
-        # print(predictions) # 測試用
+            langs = self.langs
+            predictions = recognition_predictor([image], [langs], detection_predictor)
+            # print(predictions) # 測試用
 
-        if predictions and hasattr(predictions[0], 'text_lines'):
-            return "\n".join([line.text for line in predictions[0].text_lines])
-        return None
+            if predictions and hasattr(predictions[0], 'text_lines'):
+                return "\n".join([line.text for line in predictions[0].text_lines])
+            return None
 
     def cleanup_memory(self):
         """釋放記憶體（CUDA 模式釋放 VRAM; CPU 模式釋放 DRAM）"""
-        if self.recognition_predictor is not None:
-            del self.recognition_predictor
-            self.recognition_predictor = None
-
-        if self.detection_predictor is not None:
-            del self.detection_predictor
-            self.detection_predictor = None
-
-        print("\033[32m[INFO] 已卸載 OCR 模型。\033[0m")
-
         if device == "CUDA":
             empty_cache()
             ipc_collect()
             print("\033[32m[INFO] 已釋放 GPU 記憶體。\033[0m")
-        else:
-            gc.collect()
-            print("\033[32m[INFO] 已釋放 CPU 記憶體。\033[0m")
 
     def get_prompt_text(self):
         """回傳 Prompt"""

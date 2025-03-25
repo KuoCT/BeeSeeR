@@ -20,7 +20,6 @@ from ocr.overlay import overlayWindow
 import llm.chat as chat
 from llm.chatroom import chatroomWindow
 import ctypes
-import subprocess
 
 def load_config():
     """讀取設定檔案"""
@@ -54,6 +53,7 @@ if args.force_cpu or auto_dtype == "NO": dtype = None
 langs = settings.get("langs", None) # 限定語言參數
 dialog = None  # 初始化對話框
 dialog_api = None  # 初始化 API 對話框
+manga_ocr = settings.get("manga_ocr", False)  # 漫畫 OCR 開關
 
 # 如果 API Key 非空，解鎖 API 功能
 if groq_key:
@@ -107,6 +107,7 @@ if groq_available:
 # 螢幕文字辨識 + AI 自動翻譯 + 螢幕覆蓋顯示結果
 def run_wincap():
     """啟動 WindowCapture 取得螢幕訊息"""
+    global manga_ocr
 
     def receive_coordinates(coords):
         """回呼函數，獲取座標"""
@@ -121,7 +122,8 @@ def run_wincap():
         on_capture = receive_coordinates, 
         prompt = prompt, 
         dtype = dtype,
-        langs = langs
+        langs = langs,
+        manga_ocr = manga_ocr
     )
     app.mainloop()
     # prompt = app.get_prompt_text()
@@ -134,6 +136,11 @@ def run_wincap():
     else:
         print("\033[31m[INFO] 無法獲取文字辨識結果。\033[0m")
         last_response = "沒有提供可翻譯的內容。"
+
+        # 螢幕覆蓋顯示
+        if not app.is_dragging: return
+        overlay = overlayWindow(last_response, cb_coords, scale_factor)
+        overlay.mainloop()
 
     # 自動翻譯
     if groq_available and ost_control and isinstance(ext, str) and ext.strip():
@@ -163,10 +170,10 @@ def run_wincap():
         # 還原按鈕
         resetchat_bt.configure(text = "AI 重製/記憶刪除", fg_color = ["#1e8bba", "#C7712D"])
 
-    # 螢幕覆蓋顯示
-    if not app.is_dragging: return
-    overlay = overlayWindow(last_response, cb_coords, scale_factor)
-    overlay.mainloop()
+        # 螢幕覆蓋顯示
+        if not app.is_dragging: return
+        overlay = overlayWindow(last_response, cb_coords, scale_factor)
+        overlay.mainloop()
 
 def update_token_display(prompt_tokens, completion_tokens):
     """更新主視窗 token 顯示"""
@@ -192,12 +199,13 @@ def set_OCR_config():
         dialog.destroy()  # 關閉舊視窗
     dialog = ctk.CTkToplevel()
     dialog.title("OCR 設定")
-    dialog.geometry(f"240x180+{window.winfo_x() - 250}+{window.winfo_y()}")
+    dialog.geometry(f"240x220+{window.winfo_x() - 250}+{window.winfo_y()}")
     dialog.attributes("-topmost", True) # 讓視窗顯示在最前面
     # dialog.grab_set() # 鎖定對話框
     dialog.after(250, dialog.iconbitmap, "icon/logo_dark.ico" if current_theme == "dark" else "icon/logo_light.ico")
 
     def make_ink():
+        """製作快速啟動捷徑"""
         from tkinter import filedialog, messagebox
         import win32com.client
         import shutil
@@ -303,17 +311,35 @@ def set_OCR_config():
         global langs
         selected = []
 
-        if langs_zh_sw_var.get() == "ON":
+        if langs_zh_cb_var.get() == "ON":
             selected.append("zh")
         if langs_en_cb_var.get() == "ON":
             selected.append("en")
-        if langs_ja_sw_var.get() == "ON":
+        if langs_ja_cb_var.get() == "ON":
             selected.append("ja")
-        if langs_ko_sw_var.get() == "ON":
+        if langs_ko_cb_var.get() == "ON":
             selected.append("ko")
 
         # 如果有選取語言，更新 self.langs，否則設為 None
         langs = selected if selected else None
+        save_config()
+
+    def toggle_manga_ocr():
+        """漫畫 OCR 開關"""
+        global manga_ocr
+        if manga_ocr_sw_var.get() == "ON":
+            manga_ocr = True
+            langs_zh_cb.configure(state = "disabled", border_color = "gray60", fg_color = "gray60")
+            langs_en_cb.configure(state = "disabled", border_color = "gray60", fg_color = "gray60")
+            langs_ja_cb.configure(state = "disabled", border_color = "gray60", fg_color = "gray60")
+            langs_ko_cb.configure(state = "disabled", border_color = "gray60", fg_color = "gray60")
+
+        else:
+            manga_ocr = False
+            langs_zh_cb.configure(state = "normal", border_color = ["#3E454A", "#4F5151"], fg_color = ["#56778c", "#c7712d"])
+            langs_en_cb.configure(state = "normal", border_color = ["#3E454A", "#4F5151"], fg_color = ["#56778c", "#c7712d"])
+            langs_ja_cb.configure(state = "normal", border_color = ["#3E454A", "#4F5151"], fg_color = ["#56778c", "#c7712d"])
+            langs_ko_cb.configure(state = "normal", border_color = ["#3E454A", "#4F5151"], fg_color = ["#56778c", "#c7712d"])
         save_config()
     
     # 區域規劃
@@ -365,46 +391,61 @@ def set_OCR_config():
     langs_wd = ctk.CTkLabel(f2, text = "限定語言(可複選): ", font = text_font, anchor = "w")
     langs_wd.grid(row = 0, column = 0, columnspan = 2, padx = 5, pady = (5, 0), sticky = "w")
 
-    langs_zh_sw_var = ctk.StringVar(value = "OFF")
-    langs_zh_sw = ctk.CTkCheckBox(
-        f2, text = "中文", height = 28, font = text_font, variable = langs_zh_sw_var, 
+    langs_zh_cb_var = ctk.StringVar(value = "OFF")
+    langs_zh_cb = ctk.CTkCheckBox(
+        f2, text = "中文", height = 28, font = text_font, variable = langs_zh_cb_var, 
         onvalue = "ON", offvalue = "OFF", command = update_langs
     )
-    langs_zh_sw.grid(row = 1, column = 0, padx = (5, 0), pady = 0, sticky = "w")
+    langs_zh_cb.grid(row = 1, column = 0, padx = (5, 0), pady = 0, sticky = "w")
 
     langs_en_cb_var = ctk.StringVar(value = "OFF")
     langs_en_cb = ctk.CTkCheckBox(
         f2, text = "英文", height = 28, font = text_font, variable = langs_en_cb_var, 
         onvalue = "ON", offvalue = "OFF", command = update_langs
     )
-    langs_en_cb.grid(row = 2, column = 0, padx = (5, 0), pady = 5, sticky = "w")
+    langs_en_cb.grid(row = 2, column = 0, padx = (5, 0), pady = (5, 0), sticky = "w")
 
-    langs_ja_sw_var = ctk.StringVar(value = "OFF")
-    langs_ja_sw = ctk.CTkCheckBox(
-        f2, text = "日文", height = 28, font = text_font, variable = langs_ja_sw_var, 
+    langs_ja_cb_var = ctk.StringVar(value = "OFF")
+    langs_ja_cb = ctk.CTkCheckBox(
+        f2, text = "日文", height = 28, font = text_font, variable = langs_ja_cb_var, 
         onvalue = "ON", offvalue = "OFF", command = update_langs
     )
-    langs_ja_sw.grid(row = 1, column = 1, padx = 5, pady = 0, sticky = "w")
+    langs_ja_cb.grid(row = 1, column = 1, padx = 5, pady = 0, sticky = "w")
 
-    langs_ko_sw_var = ctk.StringVar(value = "OFF")
-    langs_ko_sw = ctk.CTkCheckBox(
-        f2, text = "韓文", height = 28, font = text_font, variable = langs_ko_sw_var, 
+    langs_ko_cb_var = ctk.StringVar(value = "OFF")
+    langs_ko_cb = ctk.CTkCheckBox(
+        f2, text = "韓文", height = 28, font = text_font, variable = langs_ko_cb_var, 
         onvalue = "ON", offvalue = "OFF", command = update_langs
     )
-    langs_ko_sw.grid(row = 2, column = 1, padx = 5, pady = 5, sticky = "w")
+    langs_ko_cb.grid(row = 2, column = 1, padx = 5, pady = (5, 0), sticky = "w")
+
+    # 支援 manga-ocr 
+    manga_ocr_sw_var = ctk.StringVar(value = "OFF")
+    manga_ocr_sw = ctk.CTkCheckBox(
+        f2, text = "漫畫 OCR (只支援日文)", height = 28, font = text_font, variable = manga_ocr_sw_var, 
+        onvalue = "ON", offvalue = "OFF", command = toggle_manga_ocr
+    )
+    manga_ocr_sw.grid(row = 3, column = 0, columnspan = 2, padx = 5, pady = 5, sticky = "w")
 
     # 初始化 CheckBox 狀態
     if langs is not None:
-        langs_zh_sw_var.set("ON" if "zh" in langs else "OFF")
+        langs_zh_cb_var.set("ON" if "zh" in langs else "OFF")
         langs_en_cb_var.set("ON" if "en" in langs else "OFF")
-        langs_ja_sw_var.set("ON" if "ja" in langs else "OFF")
-        langs_ko_sw_var.set("ON" if "ko" in langs else "OFF")
+        langs_ja_cb_var.set("ON" if "ja" in langs else "OFF")
+        langs_ko_cb_var.set("ON" if "ko" in langs else "OFF")
     else:
         # 沒設定，全部 OFF
-        langs_zh_sw_var.set("OFF")
+        langs_zh_cb_var.set("OFF")
         langs_en_cb_var.set("OFF")
-        langs_ja_sw_var.set("OFF")
-        langs_ko_sw_var.set("OFF")
+        langs_ja_cb_var.set("OFF")
+        langs_ko_cb_var.set("OFF")
+
+    if manga_ocr:
+        manga_ocr_sw_var.set("ON")
+        langs_zh_cb.configure(state = "disabled", border_color = "gray60", fg_color = "gray60")
+        langs_en_cb.configure(state = "disabled", border_color = "gray60", fg_color = "gray60")
+        langs_ja_cb.configure(state = "disabled", border_color = "gray60", fg_color = "gray60")
+        langs_ko_cb.configure(state = "disabled", border_color = "gray60", fg_color = "gray60")
 
     # 製作捷徑
     make_ink_bt = ctk.CTkButton(f3, text = "製作快速啟動捷徑", font = text_font, width = 20, anchor = "c", command = make_ink)
@@ -423,7 +464,8 @@ def save_config():
         "enable_short_term_memory": enable_short_term_memory,
         "auto_dtype": auto_dtype,
         "dtype": dtype,
-        "langs": langs
+        "langs": langs,
+        "manga_ocr": manga_ocr
     })
 
     # 將更新後的設定存回 JSON
@@ -505,17 +547,21 @@ def get_API():
 
 def toggle_theme():
     """切換 Light/Dark 模式"""
-    global current_theme, chatroom # 確保使用的是全域變數
+    global current_theme, chatroom, dialog, dialog_api # 確保使用的是全域變數
     if current_theme == "dark":
         current_theme = "light"
         ctk.set_appearance_mode(current_theme)  # 切換為 Light 模式
         window.iconbitmap("icon/logo_light.ico")
         chatroom.iconbitmap("icon/logo_light.ico")
+        if dialog and dialog.winfo_exists(): dialog.iconbitmap("icon/logo_light.ico")
+        if dialog_api and dialog_api.winfo_exists(): dialog_api.iconbitmap("icon/logo_light.ico")
     else:
         current_theme = "dark"
         ctk.set_appearance_mode(current_theme)  # 切換為 Dark 模式
         window.iconbitmap("icon/logo_dark.ico")
         chatroom.iconbitmap("icon/logo_dark.ico")
+        if dialog and dialog.winfo_exists(): dialog.iconbitmap("icon/logo_dark.ico")
+        if dialog_api and dialog_api.winfo_exists(): dialog_api.iconbitmap("icon/logo_dark.ico")
     save_config()
 
 def open_prompt_folder():
@@ -579,6 +625,9 @@ def set_model(choice):
         chat_session.update_config(model = model)  # 更新 chat_session 內部設定
     
     save_config()
+
+    # 把焦點移開，讓游標從輸入框消失
+    model_change_op.master.focus_set()
 
 def pop_chatroom():
     """打開聊天室"""
@@ -700,7 +749,7 @@ window.geometry(f"{window_width}x{window_height}+{x_position}+{y_position}")
 window.title("BCR")
 window.resizable(True, True)
 window.iconbitmap("icon/logo_dark.ico" if current_theme == "dark" else "icon/logo_light.ico")
-appid = 'KuoCT.BeeSeeR.BCR.v2.0.4'
+appid = 'KuoCT.BeeSeeR.BCR.v2.1.0'
 ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(appid)
 
 # 讓視窗保持最上層
@@ -823,12 +872,18 @@ t_out_total_wd.grid(row = 14, column = 0, padx = (10, 5), pady = (2, 5), sticky 
 # 模型切換器
 model_change_wd = ctk.CTkLabel(master = f2, text = "目前使用的 AI 模型", font = text_font, anchor = "w", height = 10)
 model_change_wd.grid(row = 15, column = 0, padx = 5, pady = (15, 5), sticky = "swe")
-model_change_op = ctk.CTkOptionMenu(
+model_change_op = ctk.CTkComboBox(
     master = f2, 
     values = ["llama-3.3-70b-versatile", "llama-3.3-70b-specdec", "llama-3.1-8b-instant", "gemma2-9b-it"], 
-    command = set_model)
+    command = set_model
+)
 model_change_op.set(model)
 model_change_op.grid(row = 16, column = 0, padx = 5, pady = (0, 5), sticky = "we")
+
+# 綁定使用者輸入的事件
+entry_widget = model_change_op._entry
+entry_widget.bind("<Return>", lambda e: set_model(model_change_op.get())) # 傳入當前輸入的模型名稱
+entry_widget.bind("<FocusOut>", lambda e: set_model(model_change_op.get()))
 
 # 若 groq 不可用則禁用相關功能
 if not groq_available:

@@ -76,6 +76,7 @@ BeeSeeR 是一個整合螢幕截圖 + OCR + AI 的 GUI 工具，使用者能透�
 
 ## 致謝
 特別感謝以下開源專案的支持：
-- [Surya](https://github.com/VikParuchuri/surya) – 由 VikParuchuri 開發的強大 OCR 模型。
+- [Surya](https://github.com/VikParuchuri/surya) – 由 VikParuchuri 開發的通用 OCR 模型。
+- [manga-ocr](https://github.com/kha-white/manga-ocr) - 由 kha-white 開發的漫畫專精 OCR 模型。
 - [PyAutoGUI](https://github.com/asweigart/pyautogui) – 由 asweigart 開發的直觀自動化工具。
 - [CustomTkinter](https://github.com/TomSchimansky/CustomTkinter) – 由 TomSchimansky 開發的美觀現代 UI 庫。
