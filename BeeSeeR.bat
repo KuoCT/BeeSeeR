@@ -106,6 +106,8 @@ goto CHECK_INSTALLATION
 :RECHECK_INSTALLATION
 echo Recheck required packages...
 del "%REQUIREMENT_FLAG%" >nul 2>&1
+del "%MODEL_FLAG%" >nul 2>&1
+del "%MODEL_CPU_FLAG%" >nul 2>&1
 
 :CHECK_INSTALLATION
 :: 檢查是否已安裝必要的套件
