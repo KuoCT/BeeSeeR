@@ -23,7 +23,7 @@ class chatroomWindow(ctk.CTkToplevel):
         ctk.set_default_color_theme(os.path.join(PATH, "theme/nectar.json"))
 
         self.settings  = self.load_config()
-        self.chat_font_size = self.settings.get("chat_font_size", 18) # 文字大小
+        self.chat_font_size = self.settings.get("chat_font_size", 14) # 文字大小
         self.prompt_tokens = 0 # 初始化 token 計數器
         self.completion_tokens = 0 # 初始化 token 計數器
         self.chatlog =  "" # 初始化對話紀錄
@@ -269,7 +269,12 @@ class chatroomWindow(ctk.CTkToplevel):
             self.textbox.delete("0.0", "end")  # 清空輸入框內容
             system_prompt = self.load_prompt("Chat_system_prompt.txt") # 讀取系統提示詞
             memory_prompt = self.load_prompt("Chat_memory_prompt.txt") # 讀取記憶提示詞
-            response, prompt_tokens, completion_tokens = self.chat_session.send_to_groq(system_prompt, memory_prompt, user_input = self.user_input)
+            response, prompt_tokens, completion_tokens = self.chat_session.send_to_groq(
+                system_prompt, 
+                memory_prompt, 
+                user_prompt = None, 
+                user_input = self.user_input
+            )
             self.prompt_tokens = prompt_tokens
             self.completion_tokens = completion_tokens
             self.append_chatbubble(role = self.chat_session.model, message = response)
@@ -281,7 +286,7 @@ class chatroomWindow(ctk.CTkToplevel):
     def append_chatlog(self, role, message):
         """將單筆對話追加到 chatlog"""
         # 格式化為 Markdown 格式並加上換行
-        log_entry = f"##{role}: \n{message}\n\n"
+        log_entry = f"##{' '}{role}:{'  '}\n{message}\n\n"
         self.chatlog += log_entry
     
     def save_chatlog(self):

@@ -1,10 +1,43 @@
 import io
+# import time
 import tkinter as tk
 import pyautogui
 import pyperclip # 剪貼簿
 import threading
 from PIL import Image
 from torch.cuda import is_available, empty_cache, ipc_collect
+
+class MouseTooltip(tk.Toplevel):
+    def __init__(self, master, follow = True, text = "載入套件..."):
+        super().__init__(master)
+        self.overrideredirect(True)
+        self.attributes("-topmost", True)  # 再次確保 topmost
+        self.config(bg="yellow")
+
+        self.label = tk.Label(
+            self,
+            text = text,
+            font = ("Helvetica", 10),
+            bg = "yellow",
+            fg = "black",
+            highlightthickness = 1,
+            highlightbackground = "black"
+        )
+        self.label.pack()
+        x, y = pyautogui.position()
+        self.geometry(f"+{x + 20}+{y + 20}")
+
+        if follow: self.update_position()
+    
+    def update_position(self):
+        """讓提示框貼著滑鼠位置移動"""
+        try:
+            self.lift()  # 提升視窗層級
+            x, y = pyautogui.position()
+            self.geometry(f"+{x + 20}+{y + 20}")
+            self.after(16, self.update_position) # 60 FPS 更新位置
+        except:
+            pass  # 避免滑鼠瞬間消失時報錯
 
 class WindowCapture(tk.Toplevel):
     def __init__(self, prompt_control = True, on_capture = None, prompt = None, dtype = None, langs = None, manga_ocr = False):
@@ -27,7 +60,6 @@ class WindowCapture(tk.Toplevel):
         self.attributes('-alpha', 0.6)
         self.overrideredirect(True)
         self.attributes("-topmost", True) # 讓視窗顯示在最前面
-        self.bind("<Escape>", lambda event: self.exit_WinCap())
         self.set_transparent_color("green")
 
         # 創建畫布 (Canvas) 來繪製矩形
@@ -44,6 +76,16 @@ class WindowCapture(tk.Toplevel):
         self.start_x = 0
         self.start_y = 0
         self.is_dragging = False # 用來記錄是否有拖曳
+        self.bind("<Escape>", lambda event: self.escape_WinCap())
+
+        self.tooltip = MouseTooltip(self, text = "[漫畫模式] 拖曳偵測文字，點一下退出" if self.manga_ocr else "拖曳偵測文字，點一下退出")
+
+        # 初始化載入套件
+        from manga_ocr import MangaOcr
+        import logging
+        logging.getLogger("transformers").setLevel(logging.ERROR)
+        from surya.recognition import RecognitionPredictor
+        from surya.detection import DetectionPredictor
 
     def set_transparent_color(self, color):
         """讓指定顏色變成透明"""
@@ -51,10 +93,11 @@ class WindowCapture(tk.Toplevel):
 
     def start_draw(self, event):
         """當滑鼠左鍵按下時，開始繪製矩形"""
+        self.tooltip.label.config(text = "[漫畫模式] 放開滑鼠開始偵測 / Esc中斷" if self.manga_ocr else "放開滑鼠開始偵測 / Esc中斷")
         self.start_x = event.x
         self.start_y = event.y
         self.rect_id = self.canvas.create_rectangle(self.start_x, self.start_y, self.start_x, self.start_y,
-                                                    outline="white", width=1, fill="green")
+                                                    outline = "white", width = 1, fill = "green")
         self.is_dragging = False # 每次點擊時重置拖曳狀態
 
     def update_draw(self, event):
@@ -139,6 +182,7 @@ class WindowCapture(tk.Toplevel):
             import logging
             logging.getLogger("transformers").setLevel(logging.ERROR)
             """使用 Manga-OCR 進行辨識 (延遲加載)"""
+            self.tooltip.label.config(text = "[漫畫模式] 偵測文字...")
             mocr = MangaOcr()
             predictions = mocr(image)
             # print(predictions) # 測試用
@@ -149,6 +193,7 @@ class WindowCapture(tk.Toplevel):
             from surya.recognition import RecognitionPredictor
             from surya.detection import DetectionPredictor
             """使用 Surya-OCR 進行辨識 (延遲加載)"""
+            self.tooltip.label.config(text = "偵測文字...")
             print(f"\033[32m[INFO] 載入 OCR 模型（使用裝置: {device}）...\033[0m")
             recognition_predictor = RecognitionPredictor(dtype = self.dtype)
             detection_predictor = DetectionPredictor(dtype = self.dtype)
@@ -182,6 +227,17 @@ class WindowCapture(tk.Toplevel):
     
     def exit_WinCap(self):
         """關閉視窗，釋放綁定與資源"""
+        if hasattr(self, 'tooltip') and self.tooltip.winfo_exists():
+            self.tooltip.destroy()
+        self.destroy()
+        self.quit()
+
+    def escape_WinCap(self):
+        """中斷操作，釋放綁定與資源"""
+        print(f"\033[31m[INFO] 操作被中斷\033[0m")
+        self.is_dragging = False  # 重設拖曳狀態
+        if hasattr(self, 'tooltip') and self.tooltip.winfo_exists():
+            self.tooltip.destroy()
         self.destroy()
         self.quit()
 
@@ -214,11 +270,18 @@ if __name__ == "__main__":
     prompt = load_prompt(prompt_file)
     prompt_control = True
 
+    # 啟動最初的「載入中...」提示框
+    preload_root = tk.Tk()
+    preload_root.withdraw()
+    loading_tip = MouseTooltip(preload_root, follow = False)
+    preload_root.update() # 強制畫面更新一次，避免初期不顯示
+
     app = WindowCapture(
         prompt_control = prompt_control, 
         on_capture = receive_coordinates, 
         prompt = prompt
     )
+    loading_tip.destroy() # 關閉預載入提示視窗
     app.mainloop()
     # prompt = app.get_prompt_text()
     # ext = app.get_extracted_text()

@@ -16,6 +16,7 @@ import json
 import tkinter as tk
 import customtkinter as ctk
 from ocr.WinCap import WindowCapture
+from ocr.WinCap import MouseTooltip
 from ocr.overlay import overlayWindow
 import llm.chat as chat
 from llm.chatroom import chatroomWindow
@@ -54,6 +55,8 @@ langs = settings.get("langs", None) # 限定語言參數
 dialog = None  # 初始化對話框
 dialog_api = None  # 初始化 API 對話框
 manga_ocr = settings.get("manga_ocr", False)  # 漫畫 OCR 開關
+overlay_windows = [] # 加入 overlay_windows 管理清單
+overlay_visible = True
 
 # 如果 API Key 非空，解鎖 API 功能
 if groq_key:
@@ -117,6 +120,12 @@ def run_wincap():
 
     prompt = load_prompt(prompt_file) # 讀取使用者提示詞
 
+    capture_bt.configure(state = "disabled") # 鎖定按鈕防止重複觸發
+
+    # 啟動最初的「載入中...」提示框
+    loading_tip = MouseTooltip(window, follow = False)
+    loading_tip.update() # 強制畫面更新一次，避免初期不顯示
+
     app = WindowCapture(
         prompt_control = prompt_control, 
         on_capture = receive_coordinates, 
@@ -125,28 +134,39 @@ def run_wincap():
         langs = langs,
         manga_ocr = manga_ocr
     )
+
+    loading_tip.destroy() # 關閉提示框
     app.mainloop()
-    # prompt = app.get_prompt_text()
-    ext = app.get_extracted_text()
-    user_input = app.get_final_text()
+    capture_bt.configure(state = "normal") # 解鎖按鈕
+
+    ext = app.get_extracted_text() # 取得辨識後文字
+    user_prompt = prompt
+    user_input = ext
+
     global last_response
     if isinstance(ext, str) and ext.strip():
         print("\033[33m[INFO] 文字辨識結果：\033[0m")
-        print(user_input)
+        print(ext)
     else:
         print("\033[31m[INFO] 無法獲取文字辨識結果。\033[0m")
         last_response = "沒有提供可翻譯的內容。"
 
         # 螢幕覆蓋顯示
         if not app.is_dragging: return
-        overlay = overlayWindow(last_response, cb_coords, scale_factor)
-        overlay.mainloop()
+        if groq_available and ost_control:
+            overlay = overlayWindow(last_response, cb_coords, scale_factor)
+            overlay_windows.append(overlay)
+            overlay.mainloop()
 
     # 自動翻譯
     if groq_available and ost_control and isinstance(ext, str) and ext.strip():
+        # 啟動「AI 處理中...」提示框
+        loading_tip = MouseTooltip(window, follow = False, text = "AI 處理中...")
+        loading_tip.update() # 強制畫面更新一次，避免初期不顯示
+
         system_prompt = load_prompt(system_prompt_file) # 讀取系統提示詞
         memory_prompt = load_prompt(memory_prompt_file) # 讀取記憶提示詞
-        response, prompt_tokens, completion_tokens = chat_session.send_to_groq(system_prompt, memory_prompt, user_input)
+        response, prompt_tokens, completion_tokens = chat_session.send_to_groq(system_prompt, memory_prompt, user_prompt, user_input)
         last_response = response
 
         # 更新 token 計數器
@@ -169,10 +189,12 @@ def run_wincap():
 
         # 還原按鈕
         resetchat_bt.configure(text = "AI 重製/記憶刪除", fg_color = ["#1e8bba", "#C7712D"])
+        loading_tip.destroy() # 關閉提示框
 
         # 螢幕覆蓋顯示
         if not app.is_dragging: return
         overlay = overlayWindow(last_response, cb_coords, scale_factor)
+        overlay_windows.append(overlay)
         overlay.mainloop()
 
 def update_token_display(prompt_tokens, completion_tokens):
@@ -542,7 +564,7 @@ def get_API():
     confirm_API_bt.grid(row = 0, column = 2, padx = (5, 0), pady = 5, sticky = "e")
 
     # 載入按鈕
-    confirm_API_bt = ctk.CTkButton(dialog_api, text = "確定", font = text_font, width = 40, anchor = "c", command = confirm_API)
+    confirm_API_bt = ctk.CTkButton(dialog_api, text = "套用", font = text_font, width = 40, anchor = "c", command = confirm_API)
     confirm_API_bt.grid(row = 0, column = 3, padx = 5, pady = 5, sticky = "e")
 
 def toggle_theme():
@@ -714,6 +736,27 @@ def toggle_window_size():
         window.after(ANIMATION_DURATION, lambda: f2.grid())  # 動畫結束後才顯示 f2
     is_expanded = not is_expanded
 
+def toggle_overlay_visibility(event = None):
+    """切換所有 overlay 顯示與隱藏狀態"""
+    global overlay_visible
+
+    if overlay_visible:
+        # 隱藏所有 overlay
+        for ov in overlay_windows:
+            try:
+                ov.withdraw() # 隱藏
+            except:
+                pass # 保險處理，避免 overlay 被關閉後報錯
+        overlay_visible = False
+    else:
+        # 顯示所有 overlay
+        for ov in overlay_windows:
+            try:
+                ov.deiconify() # 顯示
+            except:
+                pass # 保險處理，避免 overlay 被關閉後報錯
+        overlay_visible = True
+
 # GUI    
 window = ctk.CTk() # 建立主視窗
 if groq_available:
@@ -749,7 +792,7 @@ window.geometry(f"{window_width}x{window_height}+{x_position}+{y_position}")
 window.title("BCR")
 window.resizable(True, True)
 window.iconbitmap("icon/logo_dark.ico" if current_theme == "dark" else "icon/logo_light.ico")
-appid = 'KuoCT.BeeSeeR.BCR.v2.1.0'
+appid = 'KuoCT.BeeSeeR.BCR.v2.1.1'
 ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(appid)
 
 # 讓視窗保持最上層
@@ -821,12 +864,12 @@ pfolder_bt = ctk.CTkButton(master = f2, text = "Prompt 資料夾", font = text_f
 pfolder_bt.grid(row = 1, column = 0, padx = 5, pady = (0, 5), sticky = "we")
 
 chatroom_bt = ctk.CTkButton(
-    master = f2, text = "AI 聊天室", font = text_font, height = 28, anchor = "c", 
+    master = f2, text = "AI 聊天室/紀錄", font = text_font, height = 28, anchor = "c", 
     command = lambda: pop_chatroom()
 )
 chatroom_bt.grid(row = 2, column = 0, padx = 5, pady = (0, 5), sticky = "we")
 
-resetchat_bt = ctk.CTkButton(master = f2, text = "重製對話/記憶", font = text_font, height = 28,
+resetchat_bt = ctk.CTkButton(master = f2, text = "重製 AI 記憶", font = text_font, height = 28,
                            anchor = "c", command = reset_chat)
 resetchat_bt.grid(row = 3, column = 0, padx = 5, pady = (0, 5), sticky = "we")
 
@@ -907,6 +950,9 @@ if not groq_available:
 if mem_cb_var.get() == "OFF":
     mem_limit_sd.configure(state = "disabled", button_color = ["#939BA2", "#AAB0B5"], progress_color = ["#939BA2", "#AAB0B5"])
     mem_limit_wd.configure(text_color = ["gray60", "gray40"])
+
+# 設定 overlay 隱藏快捷鍵
+window.bind_all('<Alt-F2>', toggle_overlay_visibility)
 
 # 啟動 GUI
 if __name__ == "__main__":

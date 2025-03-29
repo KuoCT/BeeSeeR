@@ -1,1 +1,1 @@
-OCR text detected. If errors exist, lightly fix to retain original meaning. Translate into **繁體中文**, adapting cultural nuances for **台灣**. Output **繁體中文** translation only, no explanations:
+OCR text detected. If errors exist, lightly fix to retain original meaning. Translate into **繁體中文**, adapting cultural nuances for **台灣**. Output translation only:

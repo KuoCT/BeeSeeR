@@ -14,7 +14,7 @@ class GroqChatSession:
             enable_short_term_memory = True, 
             max_history = 3, 
             temperature = 0.6,
-            silent = True
+            silent = False
     ):
         self.api_key = groq_key
         self.model = model
@@ -135,7 +135,7 @@ class GroqChatSession:
             not self.silent and print(f"\033[31m[ERROR] 總結對話時出錯：{e}\033[0m")
             raise Exception(f"錯誤出現在記憶力模組：{e}")  # 拋出異常到 send_to_groq()
 
-    def send_to_groq(self, system_prompt, memory_prompt, user_input):
+    def send_to_groq(self, system_prompt, memory_prompt, user_prompt, user_input):
         """發送對話請求給 Groq API，並在歷史過長時進行摘要"""
         if not self.api_key:
             print("\033[31m[ERROR] GROQ_API_KEY 未提供。\033[0m")
@@ -174,13 +174,25 @@ class GroqChatSession:
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_input}
         ]
-        
-        # 模型標籤    
-        print(f"\n\033[33m{self.model}: \033[0m")
+            
+        def insert_before_last(messages, role, content):
+            """建立一份副本，插入訊息在倒數第一筆前，並回傳新列表"""
+            new_messages = messages.copy()
+            new_messages.insert(-1, {"role": role, "content": content})
+            return new_messages
+
+        # 判斷 user_prompt 是否為空（None 或空白字串）
+        if user_prompt and user_prompt.strip():
+            messages_for_chat = insert_before_last(self.messages, "system", user_prompt)
+        else:
+            messages_for_chat = self.messages
+
+        # print("\033[32m[INFO] AI 看到的內容:\033[0m")
+        # print(json.dumps(messages_for_chat, indent = 2, ensure_ascii = False))
 
         try:
             chat_completion = self.client.chat.completions.create(
-                messages = self.messages,
+                messages = messages_for_chat,
                 model = self.model,
                 temperature = self.temperature  # 溫度參數
             )
@@ -200,6 +212,9 @@ class GroqChatSession:
                 if len(self.temp_pair) == 2:  # 一個 Pair 完整
                     self.conversation_pairs.append(self.temp_pair)
                     self.temp_pair = []
+            
+            # print("\033[32m[INFO] 過去對話:\033[0m")
+            # print(json.dumps(self.conversation_pairs, indent = 2, ensure_ascii = False))
 
             # 保留最近 max_history 個對話 Pair
             recent_conversations = self.conversation_pairs[-self.max_history // 3:]
@@ -221,7 +236,8 @@ class GroqChatSession:
             self.total_prompt_tokens += prompt_tokens
             self.total_completion_tokens += completion_tokens
 
-            # 顯示訊息
+            # 顯示訊息   
+            print(f"\n\033[33m{self.model}: \033[0m") # 模型標籤 
             print(response)
             print() # 空行
 

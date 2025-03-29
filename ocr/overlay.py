@@ -19,7 +19,7 @@ class overlayWindow(ctk.CTkToplevel):
         self.lock_movement = self.settings.get("lock_movement", False)
         self.hide = self.settings.get("hide", "show")
         self.scale_factor = scale_factor
-
+        
         # 設定要顯示的文字
         if showTEXT is None:
             showTEXT = "這是一個不可編輯的文字顯示區域，可以調整透明度，可以縮放字體大小，鎖定視窗後可以複製文字。\n" * 20
@@ -172,7 +172,7 @@ class overlayWindow(ctk.CTkToplevel):
         # 退出按鈕
         self.exit_bt = ctk.CTkButton(self.control_f1, text = "退出", fg_color = "firebrick3", hover_color = "firebrick", 
                                      corner_radius = 4, width = 40, height = 20,
-                                     font = text_fix_font, command = self.safe_destroy)
+                                     font = text_fix_font, command = self.destroy)
         self.exit_bt.grid(row = 0, column = 7, padx = (2, 5), pady = 2, sticky = "e")
 
         # 隱藏
@@ -408,26 +408,20 @@ class overlayWindow(ctk.CTkToplevel):
         with open(CONFIG_FILE, "w") as f:
             json.dump(config, f, indent = 4)  # `indent=4` 讓 JSON 易讀
 
-    def safe_destroy(self):
-        """確保關閉視窗時不會有綁定事件錯誤"""
-        try:
-            # self.withdraw()
-            # 檢查 after 事件並取消 (捨棄)
-            # after_ids = self.tk.call("after", "info")
-            # if isinstance(after_ids, tuple):  # 確保它是 tuple
-            #     for after_id in after_ids:
-            #         try:
-            #             # print(after_id) # 測試用
-            #             self.after_cancel(after_id)
-            #         except Exception as e:
-            #             print(f"\033[31m[WARNING] 無法取消 after 事件 {after_id}: {e}\033[0m")
-            # self.unbind("<ButtonPress-1>")
-            # self.unbind("<B1-Motion>")
-            # self.unbind("<ButtonRelease-1>")
-            self.destroy()
-            # self.quit()
-        except Exception as e:
-            print(f"\033[31m[INFO] 視窗關閉時發生錯誤: {e}\033[0m")
+    def withdraw(self):
+        super().withdraw()
+        if hasattr(self, "slider") and self.slider.winfo_exists():
+            self.slider.withdraw()
+
+    def deiconify(self):
+        super().deiconify()
+        if hasattr(self, "slider") and self.slider.winfo_exists():
+            self.slider.deiconify()
+    
+    def destroy(self):
+        if hasattr(self, "slider") and self.slider.winfo_exists():
+            self.slider.destroy()
+        super().destroy()
 
 if __name__ == "__main__":
     theme = 1
