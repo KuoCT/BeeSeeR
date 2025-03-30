@@ -110,6 +110,7 @@ class WindowCapture(tk.Toplevel):
         """當滑鼠釋放時，結束繪製並擷取螢幕 + OCR 辨識 + 複製到剪貼簿"""
         global device
         device = "CUDA" if is_available() else "CPU" # 偵測裝置
+        self.tooltip.withdraw() # 瞬間隱藏提示窗避開截圖
 
         # 如果沒有拖曳，直接結束視窗
         if not self.is_dragging:
@@ -182,6 +183,7 @@ class WindowCapture(tk.Toplevel):
             import logging
             logging.getLogger("transformers").setLevel(logging.ERROR)
             """使用 Manga-OCR 進行辨識 (延遲加載)"""
+            self.tooltip.deiconify() # 顯示提示窗
             self.tooltip.label.config(text = "[漫畫模式] 偵測文字...")
             mocr = MangaOcr()
             predictions = mocr(image)
