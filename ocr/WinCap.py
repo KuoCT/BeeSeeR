@@ -195,6 +195,7 @@ class WindowCapture(tk.Toplevel):
             from surya.recognition import RecognitionPredictor
             from surya.detection import DetectionPredictor
             """使用 Surya-OCR 進行辨識 (延遲加載)"""
+            self.tooltip.deiconify() # 顯示提示窗
             self.tooltip.label.config(text = "偵測文字...")
             print(f"\033[32m[INFO] 載入 OCR 模型（使用裝置: {device}）...\033[0m")
             recognition_predictor = RecognitionPredictor(dtype = self.dtype)
