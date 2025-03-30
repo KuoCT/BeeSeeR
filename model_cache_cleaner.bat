@@ -4,6 +4,8 @@ echo ================================
 echo Cleaning model cache folders...
 echo ================================
 
+:: 清除模型快取資料夾，如果未來模型更新或是使用者想要解除安裝，這個腳本可以將專案殘留的快取檔案刪除
+
 :: Hugging Face model cache - model
 set HF_MODEL=%USERPROFILE%\.cache\huggingface\hub\models--kha-white--manga-ocr-base
 if exist "%HF_MODEL%" (
