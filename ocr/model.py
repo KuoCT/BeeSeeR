@@ -3,7 +3,7 @@ import argparse
 
 # 解析命令列參數
 parser = argparse.ArgumentParser(description="OCR 模型控制器")
-parser.add_argument("--force-cpu", action="store_true", help="強制使用 CPU 模式")
+parser.add_argument("-c", "--force-cpu", action="store_true", help="強制使用 CPU 模式")
 args = parser.parse_args()
 
 # 根據 `--force-cpu` 設置環境變數

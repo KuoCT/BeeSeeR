@@ -106,6 +106,8 @@ goto CHECK_INSTALLATION
 :RECHECK_INSTALLATION
 echo Recheck required packages...
 del "%REQUIREMENT_FLAG%" >nul 2>&1
+del "%MODEL_CPU_FLAG%" >nul 2>&1
+del "%MODEL_FLAG%" >nul 2>&1
 
 :CHECK_INSTALLATION
 :: 檢查是否已安裝必要的套件
@@ -115,7 +117,7 @@ if not exist "%REQUIREMENT_FLAG%" (
     if %mode% equ 0 (
         pip install torch==2.6.0+cu118 --index-url https://download.pytorch.org/whl/cu118
     )
-    pip install customtkinter==5.2.2 pyautogui==0.9.54 surya-ocr==0.13.0 groq==0.18.0 beautifulsoup4==4.13.3 Markdown==3.7 pywin32
+    pip install -r requirements.txt
     echo Required packages installed > "%REQUIREMENT_FLAG%"
 )
 
