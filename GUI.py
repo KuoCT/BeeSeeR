@@ -12,6 +12,8 @@ args = parser.parse_args()
 if args.force_cpu:
     os.environ["CUDA_VISIBLE_DEVICES"] = "-1"  # 設定 CUDA 無效化
 
+PATH = os.path.join(os.path.dirname(os.path.abspath(__file__))) # 設定相對路徑
+
 import json
 import tkinter as tk
 import customtkinter as ctk
@@ -24,8 +26,8 @@ import ctypes
 
 def load_config():
     """讀取設定檔案"""
-    if os.path.exists("config.json"):
-        with open("config.json", "r") as f:
+    if os.path.exists(os.path.join(PATH, "config.json")):
+        with open(os.path.join(PATH, "config.json"), "r") as f:
             return json.load(f)
     return {}  # 如果沒有設定檔，回傳空字典
 
@@ -81,7 +83,7 @@ if groq_key:
 def load_prompt(file):
     """ 從文件載入提示詞，並回傳 (絕對路徑, 內容) """
     # 取得目前腳本所在的資料夾
-    script_dir = os.path.dirname(os.path.abspath(__file__))
+    script_dir = PATH
 
     # 構建絕對路徑
     prompt_path = os.path.join(script_dir, "prompt", file)
@@ -224,7 +226,13 @@ def set_OCR_config():
     dialog.geometry(f"240x220+{window.winfo_x() - 250}+{window.winfo_y()}")
     dialog.attributes("-topmost", True) # 讓視窗顯示在最前面
     # dialog.grab_set() # 鎖定對話框
-    dialog.after(250, dialog.iconbitmap, "icon/logo_dark.ico" if current_theme == "dark" else "icon/logo_light.ico")
+    dialog.after(250, dialog.iconbitmap, 
+                (
+                    os.path.join(PATH, "icon", "logo_dark.ico") 
+                    if current_theme == "dark" 
+                    else os.path.join(PATH, "icon", "logo_light.ico")
+                )
+    )
 
     def make_ink():
         """製作快速啟動捷徑"""
@@ -233,21 +241,21 @@ def set_OCR_config():
         import shutil
         bat_path = filedialog.askopenfilename(
             filetypes = [("Batch Files", "*.bat")], 
-            initialdir = os.path.join(os.path.dirname(os.path.abspath(__file__))),
+            initialdir = PATH,
             title = "選擇 BeeSeeR 程式啟動檔"
         )
         if not bat_path:
             messagebox.showwarning("取消", "未選擇 .bat 檔案")
             return
         
-        icon_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "icon")
+        icon_dir = os.path.join(PATH, "icon")
         if not os.path.exists(icon_dir):
-            icon_dir = os.path.dirname(os.path.abspath(__file__))  # icon 資料夾不存在時 fallback
+            icon_dir = PATH  # icon 資料夾不存在時 fallback
 
         icon_path = filedialog.askopenfilename(
-            filetypes=[("Icon Files", "*.ico")],
-            initialdir=icon_dir,
-            title="選擇一個 icon"
+            filetypes = [("Icon Files", "*.ico")],
+            initialdir = icon_dir,
+            title = "選擇一個 icon"
         )
 
         if not icon_path:
@@ -255,7 +263,7 @@ def set_OCR_config():
             return
         
         save_dir = filedialog.askdirectory(
-            initialdir = os.path.dirname(os.path.abspath(__file__)),
+            initialdir = PATH,
             title = "選擇捷徑存放位置"
         )
 
@@ -491,7 +499,7 @@ def save_config():
     })
 
     # 將更新後的設定存回 JSON
-    with open("config.json", "w") as f:
+    with open(os.path.join(PATH, "config.json"), "w") as f:
         json.dump(config, f, indent = 4)  # `indent = 4` 讓 JSON 易讀
 
 def prompt_sw():
@@ -526,7 +534,13 @@ def get_API():
     dialog_api.grid_rowconfigure(0, weight = 0)
     dialog_api.attributes("-topmost", True) # 讓視窗顯示在最前面
     # dialog_api.grab_set() # 鎖定對話框
-    dialog_api.after(250, dialog_api.iconbitmap, "icon/logo_dark.ico" if current_theme == "dark" else "icon/logo_light.ico")
+    dialog_api.after(250, dialog_api.iconbitmap, 
+                    (
+                        os.path.join(PATH, "icon/logo_dark.ico") 
+                        if current_theme == "dark" 
+                        else os.path.join(PATH, "icon/logo_light.ico")
+                    )
+    )
 
     def select_all():
         """全選輸入框內的 API Key"""
@@ -573,22 +587,22 @@ def toggle_theme():
     if current_theme == "dark":
         current_theme = "light"
         ctk.set_appearance_mode(current_theme)  # 切換為 Light 模式
-        window.iconbitmap("icon/logo_light.ico")
-        chatroom.iconbitmap("icon/logo_light.ico")
-        if dialog and dialog.winfo_exists(): dialog.iconbitmap("icon/logo_light.ico")
-        if dialog_api and dialog_api.winfo_exists(): dialog_api.iconbitmap("icon/logo_light.ico")
+        window.iconbitmap(os.path.join(PATH, "icon", "logo_light.ico"))
+        chatroom.iconbitmap(os.path.join(PATH, "icon", "logo_light.ico"))
+        if dialog and dialog.winfo_exists(): dialog.iconbitmap(os.path.join(PATH, "icon", "logo_light.ico"))
+        if dialog_api and dialog_api.winfo_exists(): dialog_api.iconbitmap(os.path.join(PATH, "icon", "logo_light.ico"))
     else:
         current_theme = "dark"
         ctk.set_appearance_mode(current_theme)  # 切換為 Dark 模式
-        window.iconbitmap("icon/logo_dark.ico")
-        chatroom.iconbitmap("icon/logo_dark.ico")
-        if dialog and dialog.winfo_exists(): dialog.iconbitmap("icon/logo_dark.ico")
-        if dialog_api and dialog_api.winfo_exists(): dialog_api.iconbitmap("icon/logo_dark.ico")
+        window.iconbitmap(os.path.join(PATH, "icon", "logo_dark.ico"))
+        chatroom.iconbitmap(os.path.join(PATH, "icon", "logo_dark.ico"))
+        if dialog and dialog.winfo_exists(): dialog.iconbitmap(os.path.join(PATH, "icon", "logo_dark.ico"))
+        if dialog_api and dialog_api.winfo_exists(): dialog_api.iconbitmap(os.path.join(PATH, "icon", "logo_dark.ico"))
     save_config()
 
 def open_prompt_folder():
     """打開 prompt 資料夾"""
-    os.startfile(os.path.join(os.getcwd(), "prompt"))
+    os.startfile(os.path.join(PATH, "prompt"))
 
 def toggle_memory():
     """切換 AI 短期記憶力"""
@@ -635,7 +649,7 @@ def reset_chat():
     t_output_wd.configure(text = "● 輸出: 0")
 
     # 更改按鈕外觀作為信號（變色或改變文字）
-    resetchat_bt.configure(text = "已重製", fg_color= "firebrick")
+    resetchat_bt.configure(text = "已重製", fg_color = "firebrick")
     print("\033[32m[INFO] 已重置 AI，等待新輸入。\033[0m")
 
 def set_model(choice):
@@ -791,7 +805,11 @@ window.geometry(f"{window_width}x{window_height}+{x_position}+{y_position}")
 # 設定標題與屬性
 window.title("BCR")
 window.resizable(True, True)
-window.iconbitmap("icon/logo_dark.ico" if current_theme == "dark" else "icon/logo_light.ico")
+window.iconbitmap(
+    os.path.join(PATH, "icon", "logo_dark.ico") 
+    if current_theme == "dark" 
+    else os.path.join(PATH, "icon", "logo_light.ico")
+)
 appid = 'KuoCT.BeeSeeR.BCR.v2.1.1'
 ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(appid)
 
@@ -800,7 +818,7 @@ window.attributes("-topmost", True) # 讓視窗顯示在最前面
 
 # 設定主題
 ctk.set_appearance_mode(current_theme)
-ctk.set_default_color_theme("theme/nectar.json")
+ctk.set_default_color_theme(os.path.join(PATH, "theme", "nectar.json"))
 
 # 設定預設字體、顏色
 title_font = ctk.CTkFont(family = "Helvetica", size = 24, weight = "bold")
@@ -956,7 +974,7 @@ window.bind_all('<Alt-F2>', toggle_overlay_visibility)
 
 # 啟動 GUI
 if __name__ == "__main__":
-    with open("GUI_open.flag", "w") as f:
+    with open(os.path.join(PATH, "GUI_open.flag"), "w") as f:
         f.write("GUI_is_opened")
     print("\033[32m[INFO] BeeSeeR GUI 已啟動，系統正常運行\033[0m")
     window.mainloop()

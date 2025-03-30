@@ -2,7 +2,7 @@ import customtkinter as ctk
 import json
 import os
 
-CONFIG_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "config.json") # 設定檔案名稱
+# CONFIG_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "config.json") # 設定檔案名稱
 PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..") # 設定相對路徑
 
 class overlayWindow(ctk.CTkToplevel):
@@ -387,8 +387,8 @@ class overlayWindow(ctk.CTkToplevel):
 
     def load_config(self):
         """讀取設定檔案"""
-        if os.path.exists(CONFIG_FILE):
-            with open(CONFIG_FILE, "r") as f:
+        if os.path.exists(os.path.join(PATH, "config.json")):
+            with open(os.path.join(PATH, "config.json"), "r") as f:
                 return json.load(f)
         return {}  # 如果沒有設定檔，回傳空字典
     
@@ -405,7 +405,7 @@ class overlayWindow(ctk.CTkToplevel):
         })
 
         # 將更新後的設定存回 JSON
-        with open(CONFIG_FILE, "w") as f:
+        with open(os.path.join(PATH, "config.json"), "w") as f:
             json.dump(config, f, indent = 4)  # `indent=4` 讓 JSON 易讀
 
     def withdraw(self):
