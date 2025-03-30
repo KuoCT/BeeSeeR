@@ -48,7 +48,6 @@ if "%VENV_PYTHON_PATH%"=="%PYTHON_PATH%" (
 )
 
 echo If you accidentally installed the CUDA version without an NVIDIA GPU, this script will help uninstall CUDA dependencies!
-echo Alternatively, if you have an NVIDIA GPU, you can use this script to reinstall the CUDA version.
 echo After the script completes, rerun BeeSeeR.bat with the correct settings.
 
 :: 解除安裝torch套件
@@ -58,7 +57,7 @@ echo Reset Checkpoint...
 del %INIT_FLAG% >nul 2>nul
 del %INIT_CPU_FLAG% >nul 2>nul
 del %REQUIREMENT_FLAG% >nul 2>nul
-echo Torch packages have been uninstalled. Remember to adjust the mode in BeeSeeR.bat before running it again!
+echo Torch packages have been uninstalled.
 
 pause
 endlocal
