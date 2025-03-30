@@ -975,6 +975,7 @@ if mem_cb_var.get() == "OFF":
 
 # 設定 overlay 隱藏快捷鍵
 window.bind_all(toggle_overlay_hotkey, toggle_overlay_visibility)
+capture_bt.bind("<Control-Button-1>",toggle_overlay_visibility)
 
 # 啟動 GUI
 if __name__ == "__main__":
