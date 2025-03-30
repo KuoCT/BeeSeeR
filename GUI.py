@@ -59,6 +59,7 @@ dialog_api = None  # 初始化 API 對話框
 manga_ocr = settings.get("manga_ocr", False)  # 漫畫 OCR 開關
 overlay_windows = [] # 加入 overlay_windows 管理清單
 overlay_visible = True
+toggle_overlay_hotkey = settings.get("toggle_overlay_hotkey", "<Alt-F2>")
 
 # 如果 API Key 非空，解鎖 API 功能
 if groq_key:
@@ -495,7 +496,8 @@ def save_config():
         "auto_dtype": auto_dtype,
         "dtype": dtype,
         "langs": langs,
-        "manga_ocr": manga_ocr
+        "manga_ocr": manga_ocr,
+        "toggle_overlay_hotkey": toggle_overlay_hotkey
     })
 
     # 將更新後的設定存回 JSON
@@ -770,6 +772,8 @@ def toggle_overlay_visibility(event = None):
             except:
                 pass # 保險處理，避免 overlay 被關閉後報錯
         overlay_visible = True
+    save_config()
+    
 
 # GUI    
 window = ctk.CTk() # 建立主視窗
@@ -970,7 +974,7 @@ if mem_cb_var.get() == "OFF":
     mem_limit_wd.configure(text_color = ["gray60", "gray40"])
 
 # 設定 overlay 隱藏快捷鍵
-window.bind_all('<Alt-F2>', toggle_overlay_visibility)
+window.bind_all(toggle_overlay_hotkey, toggle_overlay_visibility)
 
 # 啟動 GUI
 if __name__ == "__main__":
