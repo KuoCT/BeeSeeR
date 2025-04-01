@@ -819,6 +819,7 @@ ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(appid)
 
 # 讓視窗保持最上層
 window.attributes("-topmost", True) # 讓視窗顯示在最前面
+window.attributes("-disabled", False)
 
 # 設定主題
 ctk.set_appearance_mode(current_theme)
