@@ -40,7 +40,14 @@ class MouseTooltip(tk.Toplevel):
             pass  # 避免滑鼠瞬間消失時報錯
 
 class WindowCapture(tk.Toplevel):
-    def __init__(self, prompt_control = True, on_capture = None, prompt = None, dtype = None, langs = None, manga_ocr = False):
+    def __init__(
+            self, prompt_control = True, 
+            on_capture = None, 
+            prompt = None, 
+            dtype = None, 
+            langs = None, 
+            manga_ocr = False
+        ):
         super().__init__()
         self.prompt_control = prompt_control
         self.on_capture = on_capture  # 回呼函數
@@ -80,12 +87,17 @@ class WindowCapture(tk.Toplevel):
 
         self.tooltip = MouseTooltip(self, text = "[漫畫模式] 拖曳偵測文字，點一下退出" if self.manga_ocr else "拖曳偵測文字，點一下退出")
 
-        # 初始化載入套件
-        from manga_ocr import MangaOcr
-        import logging
-        logging.getLogger("transformers").setLevel(logging.ERROR)
-        from surya.recognition import RecognitionPredictor
-        from surya.detection import DetectionPredictor
+        # 初始化載入 OCR 套件
+        if manga_ocr:
+            from manga_ocr import MangaOcr
+            import logging
+            logging.getLogger("transformers").setLevel(logging.ERROR)
+            self.mocr = MangaOcr()
+        else:
+            from surya.recognition import RecognitionPredictor
+            from surya.detection import DetectionPredictor
+            self.recognition_predictor = RecognitionPredictor(dtype = self.dtype)
+            self.detection_predictor = DetectionPredictor(dtype = self.dtype)
 
     def set_transparent_color(self, color):
         """讓指定顏色變成透明"""
@@ -179,27 +191,22 @@ class WindowCapture(tk.Toplevel):
     def perform_ocr(self, image):
         """進行 OCR 辨識"""
         if self.manga_ocr:
-            from manga_ocr import MangaOcr
-            import logging
-            logging.getLogger("transformers").setLevel(logging.ERROR)
-            """使用 Manga-OCR 進行辨識 (延遲加載)"""
+            """使用 Manga-OCR 進行辨識"""
             self.tooltip.deiconify() # 顯示提示窗
             self.tooltip.label.config(text = "[漫畫模式] 偵測文字...")
-            mocr = MangaOcr()
+            mocr = self.mocr
             predictions = mocr(image)
             # print(predictions) # 測試用
             if predictions:
                 return predictions
             return None
         else:           
-            from surya.recognition import RecognitionPredictor
-            from surya.detection import DetectionPredictor
-            """使用 Surya-OCR 進行辨識 (延遲加載)"""
+            """使用 Surya-OCR 進行辨識"""
             self.tooltip.deiconify() # 顯示提示窗
             self.tooltip.label.config(text = "偵測文字...")
             print(f"\033[32m[INFO] 載入 OCR 模型（使用裝置: {device}）...\033[0m")
-            recognition_predictor = RecognitionPredictor(dtype = self.dtype)
-            detection_predictor = DetectionPredictor(dtype = self.dtype)
+            recognition_predictor = self.recognition_predictor
+            detection_predictor = self.detection_predictor
 
             langs = self.langs
             predictions = recognition_predictor([image], [langs], detection_predictor)
@@ -210,7 +217,16 @@ class WindowCapture(tk.Toplevel):
             return None
 
     def cleanup_memory(self):
-        """釋放記憶體（CUDA 模式釋放 VRAM; CPU 模式釋放 DRAM）"""
+        """釋放記憶體（CUDA 模式釋放 VRAM）"""
+        if hasattr(self, "recognition_predictor"):
+            del self.recognition_predictor
+
+        if hasattr(self, "detection_predictor"):
+            del self.detection_predictor
+
+        if hasattr(self, "mocr"):
+            del self.mocr
+
         if device == "CUDA":
             empty_cache()
             ipc_collect()
@@ -232,6 +248,7 @@ class WindowCapture(tk.Toplevel):
         """關閉視窗，釋放綁定與資源"""
         if hasattr(self, 'tooltip') and self.tooltip.winfo_exists():
             self.tooltip.destroy()
+        self.cleanup_memory()
         self.destroy()
         self.quit()
 

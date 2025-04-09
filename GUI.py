@@ -375,7 +375,7 @@ def set_OCR_config():
     
     # 區域規劃
     dialog.grid_columnconfigure(0, weight = 1)
-    dialog.grid_rowconfigure((0, 1, 2), weight = 0)
+    dialog.grid_rowconfigure((0, 1), weight = 0)
     dialog.grid_rowconfigure((2), weight = 1)
 
     f1 = ctk.CTkFrame(dialog)
@@ -391,7 +391,7 @@ def set_OCR_config():
     f3 = ctk.CTkFrame(dialog)
     f3.grid(row = 2, column = 0, padx = 5, pady = (0, 5), sticky = "nswe")
     f3.grid_columnconfigure(0, weight = 1)
-    f3.grid_rowconfigure(0, weight = 1)
+    f3.grid_rowconfigure((0), weight = 1)
 
     # 自動/手動按鈕
     auto_dtype_bt = ctk.CTkButton(f1, text = "自動", font = text_font, width = 20, anchor = "c", command = toggle_auto_dtype)
@@ -480,7 +480,11 @@ def set_OCR_config():
 
     # 製作捷徑
     make_ink_bt = ctk.CTkButton(f3, text = "製作快速啟動捷徑", font = text_font, width = 20, anchor = "c", command = make_ink)
-    make_ink_bt.grid(row = 5, column = 0, columnspan = 2, padx = 5, pady = 5, sticky = "w")
+    make_ink_bt.grid(row = 0, column = 0, columnspan = 2, padx = 5, pady = 5, sticky = "ws")
+
+    # 顯示版本號
+    version_lab = ctk.CTkLabel(f3, text = "v2.1.2", font = text_font, anchor = "e", text_color = ["gray60", "gray40"])
+    version_lab.grid(row = 0, column = 0, columnspan = 2, padx = 5, pady = 5, sticky = "es")
 
 def save_config():
     """讀取現有設定，更新後再存入 JSON 檔案"""
@@ -814,7 +818,7 @@ window.iconbitmap(
     if current_theme == "dark" 
     else os.path.join(PATH, "icon", "logo_light.ico")
 )
-appid = 'KuoCT.BeeSeeR.BCR.v2.1.1'
+appid = 'KuoCT.Miffon.BeeSeeR.BCR'
 ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(appid)
 
 # 讓視窗保持最上層
