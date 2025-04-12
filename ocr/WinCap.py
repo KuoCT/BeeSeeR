@@ -8,11 +8,12 @@ from PIL import Image
 from torch.cuda import is_available, empty_cache, ipc_collect
 
 class MouseTooltip(tk.Toplevel):
-    def __init__(self, master, follow = True, text = "載入套件..."):
-        super().__init__(master)
+    def __init__(self, window, follow = True, text = "載入套件..."):
+        super().__init__(window)
         self.overrideredirect(True)
         self.attributes("-topmost", True)  # 再次確保 topmost
         self.config(bg="yellow")
+        self._is_destroyed = False  # 加入狀態標記
 
         self.label = tk.Label(
             self,
@@ -32,6 +33,8 @@ class MouseTooltip(tk.Toplevel):
     def update_position(self):
         """讓提示框貼著滑鼠位置移動"""
         try:
+            if self._is_destroyed or not self.winfo_exists():
+                return  # 避免已被銷毀還持續排程
             self.lift()  # 提升視窗層級
             x, y = pyautogui.position()
             self.geometry(f"+{x + 20}+{y + 20}")
@@ -41,16 +44,23 @@ class MouseTooltip(tk.Toplevel):
 
 class WindowCapture(tk.Toplevel):
     def __init__(
-            self, prompt_control = True, 
+            self, 
+            window,
+            prompt_control = True, 
             on_capture = None, 
+            on_result = None, 
             prompt = None, 
             dtype = None, 
             langs = None, 
-            manga_ocr = False
+            manga_ocr = False,
+            mocr = None,
+            recognition_predictor = None,
+            detection_predictor = None
         ):
-        super().__init__()
+        super().__init__(window)
         self.prompt_control = prompt_control
         self.on_capture = on_capture  # 回呼函數
+        self.on_result = on_result # 回呼函數
         self.prompt = prompt
         self.dtype = dtype
         self.langs = langs
@@ -62,6 +72,7 @@ class WindowCapture(tk.Toplevel):
         self.final_text = None
 
         # 設定全螢幕
+        self.withdraw()
         self.attributes('-fullscreen', True)
         self.config(bg="black")
         self.attributes('-alpha', 0.6)
@@ -85,19 +96,18 @@ class WindowCapture(tk.Toplevel):
         self.is_dragging = False # 用來記錄是否有拖曳
         self.bind("<Escape>", lambda event: self.escape_WinCap())
 
-        self.tooltip = MouseTooltip(self, text = "[漫畫模式] 拖曳偵測文字，點一下退出" if self.manga_ocr else "拖曳偵測文字，點一下退出")
-
         # 初始化載入 OCR 套件
         if manga_ocr:
-            from manga_ocr import MangaOcr
-            import logging
-            logging.getLogger("transformers").setLevel(logging.ERROR)
-            self.mocr = MangaOcr()
+            self.mocr = mocr
         else:
-            from surya.recognition import RecognitionPredictor
-            from surya.detection import DetectionPredictor
-            self.recognition_predictor = RecognitionPredictor(dtype = self.dtype)
-            self.detection_predictor = DetectionPredictor(dtype = self.dtype)
+            self.recognition_predictor = recognition_predictor
+            self.detection_predictor = detection_predictor
+
+        if self.manga_ocr:
+            self.text = "[漫畫模式] 拖曳偵測文字，點一下退出"
+        else:
+            self.text = "拖曳偵測文字，點一下退出"
+        self.tooltip = MouseTooltip(self, text = self.text)
 
     def set_transparent_color(self, color):
         """讓指定顏色變成透明"""
@@ -127,7 +137,7 @@ class WindowCapture(tk.Toplevel):
         # 如果沒有拖曳，直接結束視窗
         if not self.is_dragging:
             print("\033[31m[INFO] 偵測到未截圖。\033[0m")
-            self.exit_WinCap()
+            self.after(0, self.exit_WinCap)
             return
 
         if self.rect_id:
@@ -183,7 +193,6 @@ class WindowCapture(tk.Toplevel):
 
         # 清理資源
         image.close()
-        self.cleanup_memory()
 
         # 確保 OCR 完成後關閉視窗（回到 UI 執行緒執行）
         self.after(0, self.exit_WinCap)
@@ -231,35 +240,31 @@ class WindowCapture(tk.Toplevel):
             empty_cache()
             ipc_collect()
             print("\033[32m[INFO] 已釋放 GPU 記憶體。\033[0m")
-
-    def get_prompt_text(self):
-        """回傳 Prompt"""
-        return self.prompt_text
-    
-    def get_extracted_text(self):
-        """回傳 OCR 結果"""
-        return self.extracted_text
-    
-    def get_final_text(self):
-        """回傳合併結果"""
-        return self.final_text
     
     def exit_WinCap(self):
         """關閉視窗，釋放綁定與資源"""
+        # 觸發 callback 回傳果給 on_result
+        if self.on_result:
+            self.on_result(self.prompt_text, self.extracted_text, self.final_text, self.is_dragging)
         if hasattr(self, 'tooltip') and self.tooltip.winfo_exists():
+            self.tooltip._is_destroyed = True  # 告知提示窗不要再 update
             self.tooltip.destroy()
         self.cleanup_memory()
         self.destroy()
-        self.quit()
+        # self.quit()
 
     def escape_WinCap(self):
         """中斷操作，釋放綁定與資源"""
         print(f"\033[31m[INFO] 操作被中斷\033[0m")
         self.is_dragging = False  # 重設拖曳狀態
+        # 回傳空結果給 on_result（主程式可以根據 is_dragging = False 做處理）
+        if self.on_result:
+            self.on_result(self.prompt_text, self.extracted_text, self.final_text, self.is_dragging)
         if hasattr(self, 'tooltip') and self.tooltip.winfo_exists():
+            self.tooltip._is_destroyed = True  # 告知提示窗不要再 update
             self.tooltip.destroy()
         self.destroy()
-        self.quit()
+        # self.quit()
 
 if __name__ == "__main__":
     import os
@@ -287,27 +292,31 @@ if __name__ == "__main__":
         cb_coords = coords
         print(f"\033[34m[INFO] 即時回傳選取範圍座標: {coords}\033[0m")
 
+    def handle_result(prompt_text, extracted_text, final_text, is_dragging):
+        """回呼函數，獲取 OCR 結果"""
+        if final_text:
+            print("\033[33m[INFO] OCR 結果：\033[0m")
+            print(final_text)
+        else:
+            print("\033[31m[INFO] 無法獲取文字辨識結果。\033[0m")
+
     prompt = load_prompt(prompt_file)
     prompt_control = True
 
     # 啟動最初的「載入中...」提示框
     preload_root = tk.Tk()
-    preload_root.withdraw()
+    # preload_root.withdraw()
     loading_tip = MouseTooltip(preload_root, follow = False)
     preload_root.update() # 強制畫面更新一次，避免初期不顯示
 
     app = WindowCapture(
         prompt_control = prompt_control, 
         on_capture = receive_coordinates, 
-        prompt = prompt
+        prompt = prompt,
+        on_result = handle_result
     )
     loading_tip.destroy() # 關閉預載入提示視窗
-    app.mainloop()
-    # prompt = app.get_prompt_text()
-    # ext = app.get_extracted_text()
-    user_input = app.get_final_text()
-    if user_input:
-        print("\033[33m[INFO] 文字辨識結果：\033[0m")
-        print(user_input)
-    else:
-        print("\033[31m[INFO] 無法獲取文字辨識結果。\033[0m")
+    app.deiconify()
+
+    # 啟動 Tkinter 事件迴圈，才會讓視窗顯示出來
+    preload_root.mainloop()

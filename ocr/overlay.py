@@ -6,8 +6,8 @@ import os
 PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..") # 設定相對路徑
 
 class overlayWindow(ctk.CTkToplevel):
-    def __init__(self, showTEXT = None, coords = None, scale_factor = 1):
-        super().__init__()
+    def __init__(self, master, showTEXT = None, coords = None, scale_factor = 1):
+        super().__init__(master)
 
         ctk.set_default_color_theme(os.path.join(PATH, "theme/nectar.json"))
 
@@ -424,10 +424,13 @@ class overlayWindow(ctk.CTkToplevel):
         super().destroy()
 
 if __name__ == "__main__":
+    import tkinter as tk
     theme = 1
     if theme == 1:
         ctk.set_appearance_mode("light")
     else:
         ctk.set_appearance_mode("dark")
-    app = overlayWindow()
-    app.mainloop()
+    root = tk.Tk()
+    app = overlayWindow(root)
+    app.deiconify()
+    root.mainloop()

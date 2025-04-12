@@ -11,9 +11,6 @@ set debug=1
 set VENV_DIR=%~dp0env
 set ACTIVATE_SCRIPT=%VENV_DIR%\Scripts\activate.bat
 set GUI=%~dp0GUI.py
-set MODEL=%~dp0\ocr\model.py
-set MODEL_FLAG=%VENV_DIR%\model.flag
-set MODEL_CPU_FLAG=%VENV_DIR%\model_cpu.flag
 set REQUIREMENT_FLAG=%VENV_DIR%\requirement.flag
 
 :: 設定最大重試次數
@@ -106,8 +103,6 @@ goto CHECK_INSTALLATION
 :RECHECK_INSTALLATION
 echo Recheck required packages...
 del "%REQUIREMENT_FLAG%" >nul 2>&1
-del "%MODEL_CPU_FLAG%" >nul 2>&1
-del "%MODEL_FLAG%" >nul 2>&1
 
 :CHECK_INSTALLATION
 :: 檢查是否已安裝必要的套件
@@ -119,35 +114,6 @@ if not exist "%REQUIREMENT_FLAG%" (
     )
     pip install -r requirements.txt
     echo Required packages installed > "%REQUIREMENT_FLAG%"
-)
-
-:: 檢查是否需要執行 model.py
-if %mode% equ 1 (
-    if not exist "%MODEL_CPU_FLAG%" (
-        echo Running MODEL in force-CPU mode...
-        python "%MODEL%" -c
-        if %errorlevel% neq 0 (
-            echo [ERROR] MODEL failed in CPU mode.
-            pause
-            exit /b 1
-        )
-        echo Initialized CPU Mode > "%MODEL_CPU_FLAG%"
-    ) else (
-        echo MODEL has already been executed in force-CPU mode.
-    )
-) else (
-    if not exist "%MODEL_FLAG%" (
-        echo Running MODEL in normal mode...
-        python "%MODEL%"
-        if %errorlevel% neq 0 (
-            echo [ERROR] MODEL failed in normal mode.
-            pause
-            exit /b 1
-        )
-        echo Initialized Normal Mode > "%MODEL_FLAG%"
-    ) else (
-        echo MODEL has already been executed in normal mode.
-    )
 )
 
 :: 重製 GUI 啟動訊號

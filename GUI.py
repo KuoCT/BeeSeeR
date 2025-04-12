@@ -23,6 +23,8 @@ from ocr.overlay import overlayWindow
 import llm.chat as chat
 from llm.chatroom import chatroomWindow
 import ctypes
+import re
+import threading
 
 def load_config():
     """讀取設定檔案"""
@@ -110,7 +112,7 @@ if groq_available:
         silent
     )
 
-# 螢幕文字辨識 + AI 自動翻譯 + 螢幕覆蓋顯示結果
+# 螢幕文字辨識
 def run_wincap():
     """啟動 WindowCapture 取得螢幕訊息"""
     global manga_ocr
@@ -126,79 +128,165 @@ def run_wincap():
     capture_bt.configure(state = "disabled") # 鎖定按鈕防止重複觸發
 
     # 啟動最初的「載入中...」提示框
-    loading_tip = MouseTooltip(window, follow = False)
+    loading_tip = MouseTooltip(window, follow = True)
     loading_tip.update() # 強制畫面更新一次，避免初期不顯示
 
-    app = WindowCapture(
-        prompt_control = prompt_control, 
-        on_capture = receive_coordinates, 
-        prompt = prompt, 
-        dtype = dtype,
-        langs = langs,
-        manga_ocr = manga_ocr
-    )
+    def load_model_and_launch():
+        """背景載入模型，載入完再啟動 WindowCapture"""
+        global mocr, recognition_predictor, detection_predictor
+        if manga_ocr:
+            from manga_ocr import MangaOcr
+            import logging
+            logging.getLogger("transformers").setLevel(logging.ERROR)
+            mocr = MangaOcr()
+            recognition_predictor = None
+            detection_predictor = None
+        else:
+            from surya.recognition import RecognitionPredictor
+            from surya.detection import DetectionPredictor
+            mocr = None
+            recognition_predictor = RecognitionPredictor(dtype = dtype)
+            detection_predictor = DetectionPredictor(dtype = dtype)
 
-    loading_tip.destroy() # 關閉提示框
-    app.mainloop()
+        # 模型載入完 → 回主執行緒建立 WindowCapture
+        def launch_window():
+            loading_tip.destroy()
+
+            app = WindowCapture(
+                window,
+                prompt_control = prompt_control,
+                on_capture = receive_coordinates,
+                on_result = handle_result,
+                prompt = prompt,
+                dtype = dtype,
+                langs = langs,
+                manga_ocr = manga_ocr,
+                mocr = mocr,
+                recognition_predictor = recognition_predictor,
+                detection_predictor = detection_predictor
+            )
+            app.deiconify()
+
+        window.after(0, launch_window)
+
+    # 背景執行模型載入
+    threading.Thread(target = load_model_and_launch, daemon = True).start()
+
+def estimate_word_count(text: str) -> int:
+    """
+    粗略估算混合語言（中、日、韓、英文、西文等）中的詞數。
+    - 中文/日文漢字：每個字算 1 詞
+    - 日文平假名、片假名、韓文字母：每個音節也算 1 詞
+    - 拼音語言：單詞算 1 詞
+    """
+    # 中文、日文、韓文漢字
+    cjk_chars = re.findall(r'[\u4E00-\u9FFF\u3400-\u4DBF\uF900-\uFAFF]', text)
+
+    # 日文平假名（ぁ-ん）與片假名（ァ-ン）
+    kana_chars = re.findall(r'[\u3040-\u30ff]', text)
+
+    # 韓文字（Hangul）：現代韓文音節
+    hangul_chars = re.findall(r'[\uac00-\ud7af]', text)
+
+    # 拉丁語系單詞（含西文變音字母）
+    latin_words = re.findall(r'\b[\wÀ-ÖØ-öø-ÿĀ-ſƀ-ȳ]+\b', text)
+
+    return len(cjk_chars) + len(kana_chars) + len(hangul_chars) + len(latin_words)
+
+# AI 自動翻譯 + 螢幕覆蓋顯示結果
+def handle_result(prompt_text, extracted_text, final_text, is_dragging):
+    """處理 WindowCapture 回傳的結果"""
+    global last_response, cb_coords, scale_factor 
     capture_bt.configure(state = "normal") # 解鎖按鈕
 
-    ext = app.get_extracted_text() # 取得辨識後文字
-    user_prompt = prompt
+    ext = extracted_text # 取得辨識後文字
+    user_prompt = prompt_text
     user_input = ext
 
-    global last_response
     if isinstance(ext, str) and ext.strip():
         print("\033[33m[INFO] 文字辨識結果：\033[0m")
         print(ext)
     else:
         print("\033[31m[INFO] 無法獲取文字辨識結果。\033[0m")
-        last_response = "沒有提供可翻譯的內容。"
+        # 顯示短暫提示：無法獲取文字辨識結果
+        tooltip = MouseTooltip(window, follow = False, text = "無法獲取文字辨識結果")
+        tooltip.update()  # 強制顯示一次，避免閃爍
+        tooltip.after(1000, tooltip.destroy)  # 1 秒後自動銷毀
 
         # 螢幕覆蓋顯示
-        if not app.is_dragging: return
-        if groq_available and ost_control:
-            overlay = overlayWindow(last_response, cb_coords, scale_factor)
-            overlay_windows.append(overlay)
-            overlay.mainloop()
+        if not is_dragging: return
 
     # 自動翻譯
-    if groq_available and ost_control and isinstance(ext, str) and ext.strip():
-        # 啟動「AI 處理中...」提示框
-        loading_tip = MouseTooltip(window, follow = False, text = "AI 處理中...")
-        loading_tip.update() # 強制畫面更新一次，避免初期不顯示
+    if groq_available and ost_control and isinstance(ext, str) and ext.strip() and is_dragging:
+        # 粗略統計單詞數
+        word_count = estimate_word_count(ext)
+        print(f"[INFO] OCR 分析結果: {word_count} 單字")
+        word_threshold = 1000  # 可自行調整單字上限
 
-        system_prompt = load_prompt(system_prompt_file) # 讀取系統提示詞
-        memory_prompt = load_prompt(memory_prompt_file) # 讀取記憶提示詞
-        response, prompt_tokens, completion_tokens = chat_session.send_to_groq(system_prompt, memory_prompt, user_prompt, user_input)
-        last_response = response
+        if word_count > word_threshold:
+            from tkinter import messagebox
+            confirm = messagebox.askyesno(
+                "OCR 內容過長警告",
+                f"OCR 內容過長（約 {word_count} 單詞），可能是辨識錯誤造成的大量雜訊。\n"
+                "系統已自動將辨識內容儲存至剪貼簿，可貼上檢查內容是否正確。\n\n"
+                "是否仍要送出進行 AI 翻譯？"
+            )
+            if not confirm:
+                return  # 使用者選擇取消，不進行翻譯
+            
+        # 顯示提示（主線）
+        loading_tip = MouseTooltip(window, follow=True, text="AI 處理中...")
+        loading_tip.update()
 
-        # 更新 token 計數器
-        global total_prompt_tokens
-        global total_completion_tokens
+        def translate_in_background():
+            global last_response
 
-        # 更新累計 token 數量
-        total_prompt_tokens += prompt_tokens
-        total_completion_tokens += completion_tokens
-        t_input_wd.configure(text = f"● 輸入: {prompt_tokens}")
-        t_output_wd.configure(text = f"● 輸出: {completion_tokens}")
-        t_in_total_wd.configure(text = f"● 累計輸入: {total_prompt_tokens}")
-        t_out_total_wd.configure(text = f"● 累計輸出: {total_completion_tokens}")
+            try:
+                # 讀取提示詞與發送至 Groq
+                system_prompt = load_prompt(system_prompt_file)
+                memory_prompt = load_prompt(memory_prompt_file)
+                response, prompt_tokens, completion_tokens = chat_session.send_to_groq(
+                    system_prompt, memory_prompt, user_prompt, user_input
+                )
+                last_response = response
+            except Exception as e:
+                print(f"[ERROR] AI 請求失敗: {e}")
+                response = "[錯誤] 無法取得 AI 回應。"
+                prompt_tokens, completion_tokens = 0, 0
+                last_response = response
 
-        # 更新 chatroom
-        chatroom.append_chatbubble(role = "User", message = user_input)
-        chatroom.append_chatbubble(role = chat_session.model, message = last_response)
-        chatroom.append_chatlog(role = "User", message = user_input)
-        chatroom.append_chatlog(role = chat_session.model, message = last_response)
+            def update_ui():
+                global total_prompt_tokens, total_completion_tokens
+                # 關閉提示
+                loading_tip.destroy()
 
-        # 還原按鈕
-        resetchat_bt.configure(text = "AI 重製/記憶刪除", fg_color = ["#1e8bba", "#C7712D"])
-        loading_tip.destroy() # 關閉提示框
+                # 更新 token 計數器
+                total_prompt_tokens += prompt_tokens
+                total_completion_tokens += completion_tokens
+                t_input_wd.configure(text=f"● 輸入: {prompt_tokens}")
+                t_output_wd.configure(text=f"● 輸出: {completion_tokens}")
+                t_in_total_wd.configure(text=f"● 累計輸入: {total_prompt_tokens}")
+                t_out_total_wd.configure(text=f"● 累計輸出: {total_completion_tokens}")
 
-        # 螢幕覆蓋顯示
-        if not app.is_dragging: return
-        overlay = overlayWindow(last_response, cb_coords, scale_factor)
-        overlay_windows.append(overlay)
-        overlay.mainloop()
+                # 更新 chatroom
+                chatroom.append_chatbubble(role = "User", message = user_input)
+                chatroom.append_chatbubble(role = chat_session.model, message = last_response)
+                chatroom.append_chatlog(role = "User", message = user_input)
+                chatroom.append_chatlog(role = chat_session.model, message = last_response)
+
+                # 按鈕狀態
+                resetchat_bt.configure(text = "AI 重製/記憶刪除", fg_color = ["#1e8bba", "#C7712D"])
+
+                # 顯示 overlay
+                overlay = overlayWindow(window, last_response, cb_coords, scale_factor)
+                overlay_windows.append(overlay)
+                overlay.deiconify()
+
+            # 回到主線更新畫面
+            window.after(0, update_ui)
+
+        # 背景執行 AI 翻譯任務
+        threading.Thread(target = translate_in_background, daemon = True).start()
 
 def update_token_display(prompt_tokens, completion_tokens):
     """更新主視窗 token 顯示"""
@@ -483,7 +571,7 @@ def set_OCR_config():
     make_ink_bt.grid(row = 0, column = 0, columnspan = 2, padx = 5, pady = 5, sticky = "ws")
 
     # 顯示版本號
-    version_lab = ctk.CTkLabel(f3, text = "v2.1.2", font = text_font, anchor = "e", text_color = ["gray60", "gray40"])
+    version_lab = ctk.CTkLabel(f3, text = "v2.1.3", font = text_font, anchor = "e", text_color = ["gray60", "gray40"])
     version_lab.grid(row = 0, column = 0, columnspan = 2, padx = 5, pady = 5, sticky = "es")
 
 def save_config():
