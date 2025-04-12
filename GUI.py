@@ -138,19 +138,27 @@ def run_wincap():
     def load_model_and_launch():
         """背景載入模型，載入完再啟動 WindowCapture"""
         global mocr, recognition_predictor, detection_predictor
-        if manga_ocr and mocr is None:
-            from manga_ocr import MangaOcr
-            import logging
-            logging.getLogger("transformers").setLevel(logging.ERROR)
-            mocr = MangaOcr()
+
+        # Manga OCR 模式
+        if manga_ocr:
+            if not mocr:
+                from manga_ocr import MangaOcr
+                import logging
+                logging.getLogger("transformers").setLevel(logging.ERROR)
+                mocr = MangaOcr()
+            # 清除其他模式
             recognition_predictor = None
             detection_predictor = None
-        elif not recognition_predictor and not detection_predictor:
-            from surya.recognition import RecognitionPredictor
-            from surya.detection import DetectionPredictor
+
+        # Surya 模式
+        else:
+            if not recognition_predictor and not detection_predictor:
+                from surya.recognition import RecognitionPredictor
+                from surya.detection import DetectionPredictor
+                recognition_predictor = RecognitionPredictor(dtype=dtype)
+                detection_predictor = DetectionPredictor(dtype=dtype)
+            # 清除其他模式
             mocr = None
-            recognition_predictor = RecognitionPredictor(dtype = dtype)
-            detection_predictor = DetectionPredictor(dtype = dtype)
 
         # 模型載入完 → 回主執行緒建立 WindowCapture
         def launch_window():
