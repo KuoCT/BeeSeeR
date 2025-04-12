@@ -62,6 +62,10 @@ manga_ocr = settings.get("manga_ocr", False)  # 漫畫 OCR 開關
 overlay_windows = [] # 加入 overlay_windows 管理清單
 overlay_visible = True
 toggle_overlay_hotkey = settings.get("toggle_overlay_hotkey", "<Alt-F2>")
+# 初使化 OCR 模型
+mocr = None
+recognition_predictor = None
+detection_predictor = None
 
 # 如果 API Key 非空，解鎖 API 功能
 if groq_key:
@@ -134,14 +138,14 @@ def run_wincap():
     def load_model_and_launch():
         """背景載入模型，載入完再啟動 WindowCapture"""
         global mocr, recognition_predictor, detection_predictor
-        if manga_ocr:
+        if manga_ocr and mocr is None:
             from manga_ocr import MangaOcr
             import logging
             logging.getLogger("transformers").setLevel(logging.ERROR)
             mocr = MangaOcr()
             recognition_predictor = None
             detection_predictor = None
-        else:
+        elif not recognition_predictor and not detection_predictor:
             from surya.recognition import RecognitionPredictor
             from surya.detection import DetectionPredictor
             mocr = None
