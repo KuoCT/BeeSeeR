@@ -890,6 +890,8 @@ def toggle_overlay_visibility(event = None):
 # GUI    
 window = ctk.CTk() # 建立主視窗
 freeze_overlay = FreezeOverlay(window)
+# freeze_overlay.show()
+# freeze_overlay.hide()
 if groq_available:
     chatroom = chatroomWindow(current_theme, chat_session, groq_key, token_update_callback = update_token_display) # 建立聊天室視窗
     chatroom.withdraw() # 聊天室視窗預設隱藏

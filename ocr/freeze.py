@@ -17,16 +17,23 @@ class FreezeOverlay:
 
         screenshot = ImageGrab.grab()
         self.overlay = tk.Toplevel(self.master)
+        self.overlay.withdraw()  # 先隱藏
         self.overlay.attributes("-fullscreen", True)
-        self.overlay.attributes("-topmost", False)
         self.overlay.configure(bg="black")
 
-        # 鎖定鍵盤輸入（選配）
-        # self.overlay.bind("<Escape>", lambda e: self.hide())
-
+        # 顯示圖片
         self.screenshot_tk = ImageTk.PhotoImage(screenshot)
-        self.label = tk.Label(self.overlay, image = self.screenshot_tk)
+        self.label = tk.Label(self.overlay, image=self.screenshot_tk)
         self.label.pack()
+
+        # 顯示後延遲提升
+        def raise_to_front():
+            self.overlay.lift()
+            self.overlay.attributes("-topmost", True)
+            self.overlay.after(100, lambda: self.overlay.attributes("-topmost", False))
+
+        self.overlay.deiconify()  # 顯示視窗
+        self.overlay.after(200, raise_to_front)  # 延遲拉到最前面（等待建立完成）
 
     def hide(self):
         """解除凍結，關閉覆蓋視窗"""
