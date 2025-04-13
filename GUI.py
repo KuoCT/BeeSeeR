@@ -65,6 +65,7 @@ overlay_windows = [] # 加入 overlay_windows 管理清單
 overlay_visible = True
 toggle_overlay_hotkey = settings.get("toggle_overlay_hotkey", "ctrl+shift+windows+a")
 capture_hotkey = settings.get("capture_hotkey", "ctrl+shift+windows+s")
+hotkey_enabled = True
 # 初使化 OCR 模型
 mocr = None
 recognition_predictor = None
@@ -122,7 +123,12 @@ if groq_available:
 # 螢幕文字辨識
 def run_wincap():
     """啟動 WindowCapture 取得螢幕訊息"""
-    global manga_ocr
+    global manga_ocr, hotkey_enabled
+
+    if not hotkey_enabled:
+        return  # 忽略多餘觸發
+    
+    hotkey_enabled = False  # 禁用快捷鍵
 
     def receive_coordinates(coords):
         """回呼函數，獲取座標"""
@@ -212,8 +218,9 @@ def estimate_word_count(text: str) -> int:
 # AI 自動翻譯 + 螢幕覆蓋顯示結果
 def handle_result(prompt_text, extracted_text, final_text, is_dragging):
     """處理 WindowCapture 回傳的結果"""
-    global last_response, cb_coords, scale_factor 
+    global last_response, cb_coords, scale_factor, hotkey_enabled
     freeze_overlay.hide() # 解除凍結畫面
+    hotkey_enabled = True  # 重啟快捷鍵
 
     ext = extracted_text # 取得辨識後文字
     user_prompt = prompt_text
