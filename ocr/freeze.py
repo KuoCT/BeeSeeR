@@ -30,10 +30,10 @@ class FreezeOverlay:
         def raise_to_front():
             self.overlay.lift()
             self.overlay.attributes("-topmost", True)
-            self.overlay.after(100, lambda: self.overlay.attributes("-topmost", False))
+            self.overlay.after(0, lambda: self.overlay.attributes("-topmost", False))
 
         self.overlay.deiconify()  # 顯示視窗
-        self.overlay.after(200, raise_to_front)  # 延遲拉到最前面（等待建立完成）
+        self.overlay.after(150, raise_to_front)  # 延遲拉到最前面（等待建立完成）
 
     def hide(self):
         """解除凍結，關閉覆蓋視窗"""
