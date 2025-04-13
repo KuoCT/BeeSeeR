@@ -20,11 +20,13 @@ import customtkinter as ctk
 from ocr.WinCap import WindowCapture
 from ocr.WinCap import MouseTooltip
 from ocr.overlay import overlayWindow
+from ocr.freeze import FreezeOverlay
 import llm.chat as chat
 from llm.chatroom import chatroomWindow
 import ctypes
 import re
 import threading
+import keyboard
 
 def load_config():
     """讀取設定檔案"""
@@ -61,7 +63,8 @@ dialog_api = None  # 初始化 API 對話框
 manga_ocr = settings.get("manga_ocr", False)  # 漫畫 OCR 開關
 overlay_windows = [] # 加入 overlay_windows 管理清單
 overlay_visible = True
-toggle_overlay_hotkey = settings.get("toggle_overlay_hotkey", "<Alt-F2>")
+toggle_overlay_hotkey = settings.get("toggle_overlay_hotkey", "ctrl+shift+alt+s")
+capture_hotkey = settings.get("capture_hotkey", "ctrl+shift+alt+s")
 # 初使化 OCR 模型
 mocr = None
 recognition_predictor = None
@@ -98,7 +101,7 @@ def load_prompt(file):
     try:
         with open(prompt_path, "r", encoding="utf-8") as f:
             content = f.read().strip()
-        return content  # 回傳
+        return content # 回傳
         # return prompt_path, content  # 回傳 (絕對路徑, 內容)
 
     except Exception as e:
@@ -155,14 +158,15 @@ def run_wincap():
             if not recognition_predictor and not detection_predictor:
                 from surya.recognition import RecognitionPredictor
                 from surya.detection import DetectionPredictor
-                recognition_predictor = RecognitionPredictor(dtype=dtype)
-                detection_predictor = DetectionPredictor(dtype=dtype)
+                recognition_predictor = RecognitionPredictor(dtype = dtype)
+                detection_predictor = DetectionPredictor(dtype = dtype)
             # 清除其他模式
             mocr = None
 
         # 模型載入完 → 回主執行緒建立 WindowCapture
         def launch_window():
             loading_tip.destroy()
+            freeze_overlay.show() # 凍結畫面
 
             app = WindowCapture(
                 window,
@@ -209,7 +213,7 @@ def estimate_word_count(text: str) -> int:
 def handle_result(prompt_text, extracted_text, final_text, is_dragging):
     """處理 WindowCapture 回傳的結果"""
     global last_response, cb_coords, scale_factor 
-    capture_bt.configure(state = "normal") # 解鎖按鈕
+    freeze_overlay.hide() # 解除凍結畫面
 
     ext = extracted_text # 取得辨識後文字
     user_prompt = prompt_text
@@ -218,15 +222,15 @@ def handle_result(prompt_text, extracted_text, final_text, is_dragging):
     if isinstance(ext, str) and ext.strip():
         print("\033[33m[INFO] 文字辨識結果：\033[0m")
         print(ext)
+        if not ost_control: capture_bt.configure(state="normal") # 解鎖按鈕
     else:
         print("\033[31m[INFO] 無法獲取文字辨識結果。\033[0m")
         # 顯示短暫提示：無法獲取文字辨識結果
         tooltip = MouseTooltip(window, follow = False, text = "無法獲取文字辨識結果")
         tooltip.update()  # 強制顯示一次，避免閃爍
         tooltip.after(1000, tooltip.destroy)  # 1 秒後自動銷毀
-
-        # 螢幕覆蓋顯示
-        if not is_dragging: return
+        capture_bt.configure(state = "normal") # 解鎖按鈕
+        return
 
     # 自動翻譯
     if groq_available and ost_control and isinstance(ext, str) and ext.strip() and is_dragging:
@@ -294,6 +298,9 @@ def handle_result(prompt_text, extracted_text, final_text, is_dragging):
                 overlay_windows.append(overlay)
                 overlay.deiconify()
 
+                # 翻譯完成並顯示 overlay 後再解鎖按鈕
+                capture_bt.configure(state="normal")
+
             # 回到主線更新畫面
             window.after(0, update_ui)
 
@@ -324,7 +331,7 @@ def set_OCR_config():
         dialog.destroy()  # 關閉舊視窗
     dialog = ctk.CTkToplevel()
     dialog.title("OCR 設定")
-    dialog.geometry(f"240x220+{window.winfo_x() - 250}+{window.winfo_y()}")
+    dialog.geometry(f"240x220+{window.winfo_x() - int(250 * scale_factor)}+{window.winfo_y()}")
     dialog.attributes("-topmost", True) # 讓視窗顯示在最前面
     # dialog.grab_set() # 鎖定對話框
     dialog.after(250, dialog.iconbitmap, 
@@ -583,7 +590,7 @@ def set_OCR_config():
     make_ink_bt.grid(row = 0, column = 0, columnspan = 2, padx = 5, pady = 5, sticky = "ws")
 
     # 顯示版本號
-    version_lab = ctk.CTkLabel(f3, text = "v2.1.3", font = text_font, anchor = "e", text_color = ["gray60", "gray40"])
+    version_lab = ctk.CTkLabel(f3, text = "v2.1.4", font = text_font, anchor = "e", text_color = ["gray60", "gray40"])
     version_lab.grid(row = 0, column = 0, columnspan = 2, padx = 5, pady = 5, sticky = "es")
 
 def save_config():
@@ -601,7 +608,8 @@ def save_config():
         "dtype": dtype,
         "langs": langs,
         "manga_ocr": manga_ocr,
-        "toggle_overlay_hotkey": toggle_overlay_hotkey
+        "toggle_overlay_hotkey": toggle_overlay_hotkey,
+        "capture_hotkey": capture_hotkey
     })
 
     # 將更新後的設定存回 JSON
@@ -635,7 +643,7 @@ def get_API():
         dialog_api.destroy()  # 關閉舊視窗
     dialog_api = ctk.CTkToplevel()
     dialog_api.title("輸入 API Key")
-    dialog_api.geometry(f"400x40+{window.winfo_x() - 410}+{window.winfo_y()}")
+    dialog_api.geometry(f"400x40+{window.winfo_x() - int(410 * scale_factor)}+{window.winfo_y()}")
     dialog_api.grid_columnconfigure(1, weight = 1)
     dialog_api.grid_rowconfigure(0, weight = 0)
     dialog_api.attributes("-topmost", True) # 讓視窗顯示在最前面
@@ -773,7 +781,7 @@ def set_model(choice):
 
 def pop_chatroom():
     """打開聊天室"""
-    chatroom.geometry(f"630x750+{window.winfo_x() - 640}+{window.winfo_y()}")
+    chatroom.geometry(f"630x750+{window.winfo_x() - int(640 * scale_factor)}+{window.winfo_y()}")
     chatroom.deiconify()
 
 # 獲取螢幕資訊
@@ -881,6 +889,7 @@ def toggle_overlay_visibility(event = None):
 
 # GUI    
 window = ctk.CTk() # 建立主視窗
+freeze_overlay = FreezeOverlay(window)
 if groq_available:
     chatroom = chatroomWindow(current_theme, chat_session, groq_key, token_update_callback = update_token_display) # 建立聊天室視窗
     chatroom.withdraw() # 聊天室視窗預設隱藏
@@ -952,7 +961,7 @@ capture_bt.grid(row = 0, column = 0, padx = 5, pady = 5, sticky = "swe")
 
 # User Prompt 開關
 prompt_cb_var = tk.StringVar(master = f1, value = "ON")
-prompt_cb = ctk.CTkCheckBox(master = f1, text = "Prompt (提示詞)", font = text_font,
+prompt_cb = ctk.CTkCheckBox(master = f1, text = "複製 Prompt (提示詞)", font = text_font,
                            variable = prompt_cb_var, onvalue = "ON", offvalue = "OFF",
                            command = prompt_sw)
 prompt_cb.grid(row = 1, column = 0, padx = 5, pady = 5, sticky = "w")
@@ -1078,9 +1087,70 @@ if mem_cb_var.get() == "OFF":
     mem_limit_sd.configure(state = "disabled", button_color = ["#939BA2", "#AAB0B5"], progress_color = ["#939BA2", "#AAB0B5"])
     mem_limit_wd.configure(text_color = ["gray60", "gray40"])
 
-# 設定 overlay 隱藏快捷鍵
-window.bind_all(toggle_overlay_hotkey, toggle_overlay_visibility)
-capture_bt.bind("<Control-Button-1>",toggle_overlay_visibility)
+def HotkeyConverter(hotkey):
+    """
+    將 <Key-a> 或 <Control-Alt-F> 類格式轉成 keyboard 套件用格式
+    """
+    if not hotkey.startswith("<") or not hotkey.endswith(">"):
+        return hotkey.lower()
+
+    content = hotkey[1:-1]  # 移除 <>
+    parts = content.split("-")
+
+    keyboard_parts = []
+    shift_needed = False
+    key_found = None
+
+    replacements = {
+        "control": "ctrl",
+        "return": "enter",
+        "escape": "esc",
+        "space": "space",
+        "prior": "page up",
+        "next": "page down",
+        "backspace": "backspace",
+        "delete": "delete",
+        "tab": "tab",
+        "shift": "shift",
+        "alt": "alt",
+        "meta": "windows",
+        "key": "",  # 移除 key 前綴
+    }
+
+    for part in parts:
+        part_stripped = part.lower()
+
+        # 跳過空字串（可能是 'key' 被去除後）
+        if not part_stripped:
+            continue
+
+        # 大寫字母處理（可能需要 shift）
+        if len(part) == 1 and part.isalpha():
+            if part.isupper():
+                shift_needed = True
+                key_found = part.lower()
+            else:
+                key_found = part.lower()
+        else:
+            mapped = replacements.get(part_stripped, part_stripped)
+            keyboard_parts.append(mapped)
+
+    # 加入 shift 修飾（若需要且未已存在）
+    if shift_needed and "shift" not in keyboard_parts:
+        keyboard_parts.append("shift")
+
+    if key_found:
+        keyboard_parts.append(key_found)
+
+    return "+".join(keyboard_parts)
+
+# 設定快捷鍵
+keyboard.add_hotkey(HotkeyConverter(capture_hotkey), lambda: window.after(10, run_wincap)) # 螢幕截圖 (全域)
+keyboard.add_hotkey(HotkeyConverter(toggle_overlay_hotkey), toggle_overlay_visibility) # 隱藏懸浮窗 (全域)
+capture_bt.bind("<Control-Button-1>", toggle_overlay_visibility) # 隱藏懸浮窗
+
+# 產生 config 檔案
+save_config()
 
 # 啟動 GUI
 if __name__ == "__main__":

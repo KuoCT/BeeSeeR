@@ -13,7 +13,7 @@ class overlayWindow(ctk.CTkToplevel):
 
         # 讀取配置設定
         self.settings  = self.load_config()
-        self.font_size = self.settings.get("font_size", 20)
+        self.font_size = self.settings.get("font_size", 16)
         # self.opacity = self.settings.get("opacity", 0.92)
         self.opacity = 0.92
         self.lock_movement = self.settings.get("lock_movement", False)

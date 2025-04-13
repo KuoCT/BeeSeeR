@@ -1,4 +1,4 @@
-customtkinter 
+customtkinter
 pyautogui
 surya-ocr
 groq
@@ -6,4 +6,5 @@ beautifulsoup4
 Markdown
 pywin32
 manga-ocr
+keyboard
 pip-tools
