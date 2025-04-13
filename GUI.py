@@ -63,8 +63,8 @@ dialog_api = None  # 初始化 API 對話框
 manga_ocr = settings.get("manga_ocr", False)  # 漫畫 OCR 開關
 overlay_windows = [] # 加入 overlay_windows 管理清單
 overlay_visible = True
-toggle_overlay_hotkey = settings.get("toggle_overlay_hotkey", "ctrl+shift+alt+s")
-capture_hotkey = settings.get("capture_hotkey", "ctrl+shift+alt+s")
+toggle_overlay_hotkey = settings.get("toggle_overlay_hotkey", "ctrl+shift+windows+a")
+capture_hotkey = settings.get("capture_hotkey", "ctrl+shift+windows+s")
 # 初使化 OCR 模型
 mocr = None
 recognition_predictor = None
