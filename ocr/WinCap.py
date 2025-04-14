@@ -22,7 +22,9 @@ class MouseTooltip(tk.Toplevel):
             bg = "yellow",
             fg = "black",
             highlightthickness = 1,
-            highlightbackground = "black"
+            highlightbackground = "black",
+            anchor = "w",
+            justify = "left",
         )
         self.label.pack()
         x, y = pyautogui.position()

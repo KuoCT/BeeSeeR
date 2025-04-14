@@ -11,10 +11,9 @@ set debug=1
 set VENV_DIR=%~dp0env
 set ACTIVATE_SCRIPT=%VENV_DIR%\Scripts\activate.bat
 set GUI=%~dp0GUI.py
-set REQUIREMENT_FLAG=%VENV_DIR%\requirement.flag
 
 :: 設定最大重試次數
-set MAX_RETRIES=2
+set MAX_RETRIES=1
 set RETRY_COUNT=0
 
 :: 檢查 Python 是否已安裝
@@ -31,7 +30,7 @@ if not exist "%VENV_DIR%" (
     echo Creating virtual environment...
     python -m venv "%VENV_DIR%"
     if %errorlevel% neq 0 (
-        echo [ERROR] Failed to create virtual environment.
+        echo [ERROR] Failed to create virtual environment. Please ensure Python is in your system's PATH.
         pause
         exit /b 1
     )
@@ -61,13 +60,13 @@ if "%VENV_PYTHON_PATH%"=="%PYTHON_PATH%" (
 )
 
 echo Virtual environment check completed.
-goto INSTALLATION
+goto CHECK_REQUIREMENT
 
 :REINSTALL_ENV
 :: 檢查是否達到最大重試次數
 set /a RETRY_COUNT+=1
 echo [WARNING] Attempt to repair virtual environment...
-if %RETRY_COUNT% geq %MAX_RETRIES% (
+if %RETRY_COUNT% gtr %MAX_RETRIES% (
     echo [ERROR] Maximum retry limit reached. Exiting...
     pause
     exit /b 1
@@ -76,44 +75,22 @@ if %RETRY_COUNT% geq %MAX_RETRIES% (
 :: 刪除現有的虛擬環境，然後重新安裝
 echo [WARNING] Removing and reinstalling the virtual environment... (Attempt %RETRY_COUNT%/%MAX_RETRIES%)
 rmdir /s /q "%VENV_DIR%"
-if exist "%VENV_DIR%" (
-    echo [ERROR] Failed to remove existing virtual environment.
-    pause
-    exit /b 1
-)
 
-echo Repairing virtual environment...
-python -m venv "%VENV_DIR%"
-if %errorlevel% neq 0 (
-    echo [ERROR] Failed to create virtual environment.
-    pause
-    exit /b 1
-)
-
-:: 重新檢查環境
+:: 重新安裝環境
 goto CHECK_ENV
 
-:INSTALLATION
-:: 重新檢查安裝套件
-if %debug% equ 1 goto RECHECK_INSTALLATION
-if %RETRY_COUNT% geq 1 goto RECHECK_INSTALLATION
-
-goto CHECK_INSTALLATION
-
-:RECHECK_INSTALLATION
-echo Recheck required packages...
-del "%REQUIREMENT_FLAG%" >nul 2>&1
-
-:CHECK_INSTALLATION
+:CHECK_REQUIREMENT
 :: 檢查是否已安裝必要的套件
-if not exist "%REQUIREMENT_FLAG%" (
-    echo Installing required packages...
+python requirements_check.py
+if %errorlevel% neq 0 (
+    echo Installing requirements...
     python.exe -m pip install --upgrade pip
     if %mode% equ 0 (
         pip install torch==2.6.0+cu118 --index-url https://download.pytorch.org/whl/cu118
     )
     pip install -r requirements.txt
-    echo Required packages installed > "%REQUIREMENT_FLAG%"
+) else (
+    echo All requirements are already installed.
 )
 
 :: 重製 GUI 啟動訊號

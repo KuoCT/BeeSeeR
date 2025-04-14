@@ -27,6 +27,7 @@ import ctypes
 import re
 import threading
 import keyboard
+import time
 
 def load_config():
     """讀取設定檔案"""
@@ -144,13 +145,45 @@ def run_wincap():
     loading_tip = MouseTooltip(window, follow = True)
     loading_tip.update() # 強制畫面更新一次，避免初期不顯示
 
+    def simulate_loop_progress(stop_event):
+        """模擬循環動畫：5 格黑框，1 格填滿，直到 stop_event 為 True"""
+        frames = []
+        total = 5
+        for i in range(total):
+            frame = ["□"] * total
+            frame[i] = "■"
+            frames.append("".join(frame))
+
+        idx = 0
+        start_time = time.time()  # 記錄動畫開始時間
+
+        while not stop_event.is_set():
+            elapsed = time.time() - start_time
+
+            # 額外說明文字（經過10秒後才出現）
+            extra_info = ""
+            if elapsed > 10:
+                extra_info = " \n下載模型約 2 分鐘，取決於網路速度"
+
+            # 更新畫面
+            loading_tip.label.configure(
+                text = f"下載/快取分析模型 {frames[idx]}{extra_info}"
+            )
+            loading_tip.update()
+            idx = (idx + 1) % total
+            time.sleep(0.2)
+
     def load_model_and_launch():
         """背景載入模型，載入完再啟動 WindowCapture"""
         global mocr, recognition_predictor, detection_predictor
 
+        # 啟動 loading 動畫用的 stop_flag
+        stop_event = threading.Event()
+
         # Manga OCR 模式
         if manga_ocr:
             if not mocr:
+                threading.Thread(target = simulate_loop_progress, args = (stop_event,), daemon = True).start()
                 from manga_ocr import MangaOcr
                 import logging
                 logging.getLogger("transformers").setLevel(logging.ERROR)
@@ -162,6 +195,7 @@ def run_wincap():
         # Surya 模式
         else:
             if not recognition_predictor and not detection_predictor:
+                threading.Thread(target = simulate_loop_progress, args = (stop_event,), daemon = True).start()
                 from surya.recognition import RecognitionPredictor
                 from surya.detection import DetectionPredictor
                 recognition_predictor = RecognitionPredictor(dtype = dtype)
@@ -171,6 +205,7 @@ def run_wincap():
 
         # 模型載入完 → 回主執行緒建立 WindowCapture
         def launch_window():
+            stop_event.set()  # 結束動畫
             loading_tip.destroy()
             freeze_overlay.show() # 凍結畫面
 
