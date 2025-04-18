@@ -265,11 +265,20 @@ class WindowCapture(tk.Toplevel):
         if hasattr(self, 'tooltip') and self.tooltip.winfo_exists():
             self.tooltip._is_destroyed = True  # 告知提示窗不要再 update
             self.tooltip.destroy()
+        self.cleanup_memory()
         self.destroy()
         # self.quit()
 
 if __name__ == "__main__":
     import os
+    from surya.recognition import RecognitionPredictor
+    from surya.detection import DetectionPredictor
+    PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
+    checkpoint_path = os.path.join(PATH, "checkpoint", "surya-ocr", "text_recognition")          
+    recognition_predictor = RecognitionPredictor(checkpoint = checkpoint_path)
+
+    checkpoint_path = os.path.join(PATH, "checkpoint", "surya-ocr", "text_detection")
+    detection_predictor = DetectionPredictor(checkpoint = checkpoint_path)
     prompt_file = "User_prompt.txt"
 
     def load_prompt(file):
@@ -306,19 +315,25 @@ if __name__ == "__main__":
     prompt_control = True
 
     # 啟動最初的「載入中...」提示框
-    preload_root = tk.Tk()
-    # preload_root.withdraw()
-    loading_tip = MouseTooltip(preload_root, follow = False)
-    preload_root.update() # 強制畫面更新一次，避免初期不顯示
+    
+    root = tk.Tk()
+    # root.withdraw()
+    loading_tip = MouseTooltip(root, follow = False)
+    root.update() # 強制畫面更新一次，避免初期不顯示
 
     app = WindowCapture(
+        root,
         prompt_control = prompt_control, 
         on_capture = receive_coordinates, 
+        on_result = handle_result,
         prompt = prompt,
-        on_result = handle_result
+        recognition_predictor = recognition_predictor,
+        detection_predictor = detection_predictor
     )
     loading_tip.destroy() # 關閉預載入提示視窗
     app.deiconify()
 
+    root.attributes("-topmost", True) # 讓視窗顯示在最前面
+
     # 啟動 Tkinter 事件迴圈，才會讓視窗顯示出來
-    preload_root.mainloop()
+    root.mainloop()

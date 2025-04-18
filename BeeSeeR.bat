@@ -102,7 +102,7 @@ if %mode% equ 1 (
     if %debug% equ 1 (
         python "%GUI%" -a -c
     ) else (
-        start "" pythonw "%GUI%" -c
+        start "" pythonw "%GUI%" -b -c
         for /L %%i in (1,1,60) do (
             if exist %~dp0GUI_open.flag (
                 del %~dp0GUI_open.flag
@@ -117,7 +117,7 @@ if %mode% equ 1 (
     if %debug% equ 1 (
         python "%GUI%" -a
     ) else (
-        start "" pythonw "%GUI%"
+        start "" pythonw "%GUI%" -b
         for /L %%i in (1,1,60) do (
             if exist %~dp0GUI_open.flag (
                 del %~dp0GUI_open.flag

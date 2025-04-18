@@ -123,7 +123,7 @@ class overlayWindow(ctk.CTkToplevel):
         self.textbox.configure(state="disabled") # 唯讀
         self.textbox.grid(row = 0, column = 0, padx = 5, pady = (5, 0), sticky = "nsew")
 
-        # 控制區域
+        # 控制區域 1
         self.control_f1 = ctk.CTkFrame(self, fg_color = "green", bg_color = "green")
         self.control_f1.grid(row = 1, column = 0, padx = 0, pady = 0, sticky="we")
         self.control_f1.grid_rowconfigure((0, 1), weight = 0)
@@ -204,19 +204,29 @@ class overlayWindow(ctk.CTkToplevel):
         self.slider_f = ctk.CTkFrame(self.slider, fg_color = "green", bg_color = "green") 
         self.slider_f.grid(row = 0, column = 0, padx = 0, pady = 0, sticky="nsew")
         self.slider_f.grid_columnconfigure(0, weight = 1)
-        self.slider_f.grid_rowconfigure(0, weight = 1)
+        self.slider_f.grid_rowconfigure(0, weight = 10000)
+        self.slider_f.grid_rowconfigure(1, weight = 1)
+        self.slider_f.grid_rowconfigure(2, weight = 0)
+        self.slider_f.grid_rowconfigure(3, weight = 0)
       
         # 透明度調整滑桿
         self.opacity_sd = ctk.CTkSlider(self.slider_f, from_ = 0.0, to = 1.0, number_of_steps = 90, width = 20,
                                             orientation = "vertical", command = self.update_opacity)
         self.opacity_sd.set(self.opacity)  # 設定滑桿初始值
-        self.opacity_sd.grid(row = 0, column = 0, padx = 5, pady = (5, 0), sticky = "ns")
+        self.opacity_sd.grid(row = 1, column = 0, padx = 5, pady = (2, 0), sticky = "ns")
+
+        # `再翻一次`按鈕
+        self.re_bt = ctk.CTkButton(
+            self.slider_f, text = "R", font = text_fix_font, width = 20, height = 20, corner_radius = 4, 
+            fg_color = ["#1e8bba", "#C06E2F"], hover_color = ["#325882", "#A85820"],
+            command = None)
+        self.re_bt.grid(row = 2, column = 0, padx = 5, pady = 3)
 
         # 隱藏選項開關
         hide_sw_var = ctk.StringVar(value = self.hide)
         self.hide_sw = ctk.CTkSwitch(self.slider_f, text = "", height = 28, corner_radius = 4, button_length = 10,
                                      variable = hide_sw_var, onvalue = "hide", offvalue = "show", command = self.toggle_control_f1)
-        self.hide_sw.grid(row = 1, column = 0, padx = 5, pady = 5, sticky = "ns")
+        self.hide_sw.grid(row = 3, column = 0, padx = 5, pady = 1, sticky = "we")
 
     def increase_font_size(self):
         """增加字體大小"""
@@ -425,12 +435,14 @@ class overlayWindow(ctk.CTkToplevel):
 
 if __name__ == "__main__":
     import tkinter as tk
-    theme = 1
+    theme = 0
     if theme == 1:
         ctk.set_appearance_mode("light")
     else:
         ctk.set_appearance_mode("dark")
     root = tk.Tk()
-    app = overlayWindow(root)
+    app = overlayWindow(root, coords = (500, 100, 1000, 600))
     app.deiconify()
+
+    root.attributes("-topmost", True) # 讓視窗顯示在最前面
     root.mainloop()

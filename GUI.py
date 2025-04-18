@@ -6,6 +6,7 @@ import argparse
 parser = argparse.ArgumentParser(description = "BeeSeeR 控制參數，支援 GPU/CPU 模式選擇及 Groq API 設定")
 parser.add_argument("-c", "--force-cpu", action = "store_true", help = "強制使用 CPU 模式（預設為 GPU，如適用）")
 parser.add_argument("-a", "--all", action = "store_false", help = "完整輸出模式 (只在終端機中生效)")
+parser.add_argument("-b", "--background", action = "store_true", help = "背景執行模式參數 (只在終端機中生效)")
 args = parser.parse_args()
 
 # 根據 `--force-cpu` 設置環境變數
@@ -21,6 +22,7 @@ from ocr.WinCap import WindowCapture
 from ocr.WinCap import MouseTooltip
 from ocr.overlay import overlayWindow
 from ocr.freeze import FreezeOverlay
+from ocr.model_setting import *
 import llm.chat as chat
 from llm.chatroom import chatroomWindow
 import ctypes
@@ -155,19 +157,24 @@ def run_wincap():
             frames.append("".join(frame))
 
         idx = 0
-        start_time = time.time()  # 記錄動畫開始時間
+        # start_time = time.time()  # 記錄動畫開始時間
 
         while not stop_event.is_set():
-            elapsed = time.time() - start_time
+            # elapsed = time.time() - start_time
 
-            # 額外說明文字（經過10秒後才出現）
-            extra_info = ""
-            if elapsed > 10:
-                extra_info = " \n下載模型約 2 分鐘，取決於網路速度"
+            # # 額外說明文字（經過 15 秒後才出現）
+            # extra_info = ""
+            # if elapsed > 15:
+            #     extra_info = " \n可能會耗時約 2 分鐘，請耐心等候"
+
+            # # 更新畫面
+            # loading_tip.label.configure(
+            #     text = f"載入分析模型 {frames[idx]}{extra_info}"
+            # )
 
             # 更新畫面
             loading_tip.label.configure(
-                text = f"下載/快取分析模型 {frames[idx]}{extra_info}"
+                text = f"載入分析模型 {frames[idx]}"
             )
             loading_tip.update()
             idx = (idx + 1) % total
@@ -180,6 +187,22 @@ def run_wincap():
         # 啟動 loading 動畫用的 stop_flag
         stop_event = threading.Event()
 
+        # 統一的錯誤處理函式
+        def handle_model_not_found():
+            global hotkey_enabled
+            stop_event.set()  # 結束動畫
+            loading_tip.destroy()
+            capture_bt.configure(state="normal")  # 解鎖按鈕
+            hotkey_enabled = True  # 恢復快捷鍵
+
+            # 延遲 100 毫秒再建立 tooltip，讓 window 回穩
+            def show_tooltip():
+                tooltip = MouseTooltip(window, follow=False, text="找不到模型文件")
+                tooltip.update()
+                tooltip.after(1000, tooltip.destroy)
+
+            window.after(100, show_tooltip)
+
         # Manga OCR 模式
         if manga_ocr:
             if not mocr:
@@ -187,7 +210,11 @@ def run_wincap():
                 from manga_ocr import MangaOcr
                 import logging
                 logging.getLogger("transformers").setLevel(logging.ERROR)
-                mocr = MangaOcr()
+                checkpoint_path = os.path.join(PATH, "checkpoint", "manga-ocr")
+                if not os.path.exists(checkpoint_path): # 檢查 checkpoint 資料夾是否存在
+                    handle_model_not_found()
+                    return
+                mocr = MangaOcr(pretrained_model_name_or_path = checkpoint_path)
             # 清除其他模式
             recognition_predictor = None
             detection_predictor = None
@@ -198,8 +225,18 @@ def run_wincap():
                 threading.Thread(target = simulate_loop_progress, args = (stop_event,), daemon = True).start()
                 from surya.recognition import RecognitionPredictor
                 from surya.detection import DetectionPredictor
-                recognition_predictor = RecognitionPredictor(dtype = dtype)
-                detection_predictor = DetectionPredictor(dtype = dtype)
+                
+                checkpoint_path = os.path.join(PATH, "checkpoint", "surya-ocr", "text_recognition")          
+                if not os.path.exists(checkpoint_path): # 檢查 checkpoint 資料夾是否存在
+                    handle_model_not_found()
+                    return
+                recognition_predictor = RecognitionPredictor(dtype = dtype, checkpoint = checkpoint_path)
+
+                checkpoint_path = os.path.join(PATH, "checkpoint", "surya-ocr", "text_detection")
+                if not os.path.exists(checkpoint_path): # 檢查 checkpoint 資料夾是否存在
+                    handle_model_not_found()
+                    return
+                detection_predictor = DetectionPredictor(dtype = dtype, checkpoint = checkpoint_path)
             # 清除其他模式
             mocr = None
 
@@ -463,7 +500,7 @@ def set_OCR_config():
             auto_dtype_bt.configure(fg_color = "gray60", hover_color = ["#325882", "#A85820"])
             dtype_sw.configure(
                 fg_color = ["#325882", "#A85820"],
-                progress_color = ["gray70", "gray60"],
+                progress_color = ["#325882", "#A85820"],
                 button_color = ["#1e8bba", "#C7712D"]
             )
         else:
@@ -1198,7 +1235,8 @@ save_config()
 
 # 啟動 GUI
 if __name__ == "__main__":
-    with open(os.path.join(PATH, "GUI_open.flag"), "w") as f:
-        f.write("GUI_is_opened")
+    if args.background:
+        with open(os.path.join(PATH, "GUI_open.flag"), "w") as f:
+            f.write("GUI_is_opened")
     print("\033[32m[INFO] BeeSeeR GUI 已啟動，系統正常運行\033[0m")
     window.mainloop()
