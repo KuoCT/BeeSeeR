@@ -22,7 +22,7 @@ from ocr.WinCap import WindowCapture
 from ocr.WinCap import MouseTooltip
 from ocr.overlay import overlayWindow
 from ocr.freeze import FreezeOverlay
-from ocr.model_setting import *
+from ocr.model_setting import ModelSetting
 import llm.chat as chat
 from llm.chatroom import chatroomWindow
 import ctypes
@@ -30,6 +30,42 @@ import re
 import threading
 import keyboard
 import time
+
+# >> Nuitka 補丁 ==============================================================
+import transformers.image_utils
+# import importlib.metadata
+# import importlib.util
+# import PIL
+from PIL import Image
+
+# 修補 transformers 缺少的 Resampling 屬性（舊 Pillow 不支援）
+if not hasattr(transformers.image_utils, "PILImageResampling"):
+    transformers.image_utils.PILImageResampling = Image.Resampling
+    # print("\033[32m[INFO] 手動補上 PILImageResampling\033[0m")
+
+# 避免 transformers 執行 inspect.getsource() 導致的錯誤
+os.environ["TRANSFORMERS_NO_DOCSTRINGS"] = "1"  # 優雅處理 (無效)
+try: # 再加一層防禦：如果 decorator 還是跑進來就 patch 掉
+    import transformers.utils.doc
+    transformers.utils.doc.get_docstring_indentation_level = lambda func: 4
+except Exception as e:
+    print("[警告] 無法 patch transformers docstring 函式：", e)
+
+# 確保 PIL 可以被 importlib.find_spec() 檢測 (以確認打包後可被檢測)
+# if importlib.util.find_spec("PIL") is None:
+#     PIL.__spec__ = importlib.machinery.ModuleSpec("PIL", loader = None)
+#     sys.modules["PIL"] = PIL
+#     print("[PATCH] Injected fake PIL spec")
+
+# 補上 metadata version，避免 transformers 判定 backend 不存在
+# try:
+#     importlib.metadata.version("Pillow")
+#     print(importlib.metadata.version("Pillow"))
+# except importlib.metadata.PackageNotFoundError:
+#     importlib.metadata.version = lambda name: "10.4.0" if name == "Pillow" else "unknown"
+#     print("[PATCH] Injected Pillow version metadata (10.4.0)")
+
+# << Nuitka 補丁 ==============================================================
 
 def load_config():
     """讀取設定檔案"""
@@ -197,7 +233,7 @@ def run_wincap():
 
             # 延遲 100 毫秒再建立 tooltip，讓 window 回穩
             def show_tooltip():
-                tooltip = MouseTooltip(window, follow=False, text="找不到模型文件")
+                tooltip = MouseTooltip(window, follow = False, text="找不到模型文件")
                 tooltip.update()
                 tooltip.after(1000, tooltip.destroy)
 
@@ -408,6 +444,7 @@ def set_OCR_config():
     global dialog
     if dialog:
         dialog.destroy()  # 關閉舊視窗
+    ctk.set_default_color_theme(os.path.join(PATH, "theme/nectar.json"))
     dialog = ctk.CTkToplevel()
     dialog.title("OCR 設定")
     dialog.geometry(f"240x220+{window.winfo_x() - int(250 * scale_factor)}+{window.winfo_y()}")
@@ -710,10 +747,25 @@ def ost_sw():
     save_config()
     print(f"\033[33m[INFO] AI 自動翻譯開關: {sw}\033[0m")
 
+def is_frozen():
+    """判斷是否為 Nuitka 或其他打包環境"""
+    exe = sys.executable.lower()
+    return (
+        hasattr(sys, "frozen")  # PyInstaller、cx_Freeze 常見特徵
+        or hasattr(sys, "_MEIPASS")  # PyInstaller 特有
+        or exe.endswith(".exe") and not exe.endswith("python.exe")  # Nuitka 判斷法
+        or "nuitka" in exe  # fallback：Nuitka 路徑中有 nuitka 字樣
+    )
+
 def restart_app():
-    """重新啟動應用程式"""
-    python = sys.executable  # 取得當前 Python 解釋器的路徑
-    os.execl(python, python, *sys.argv)  # 重新執行當前腳本
+    """根據是否被打包，選擇適當的重啟方式"""
+    python = sys.executable
+    # print(f"是否為打包環境: {is_frozen()}")
+    if is_frozen():  # 判斷是否為打包環境
+        # print("\033[33m[INFO] 打包環境，不保留參數\033[0m")
+        os.execl(python, python)  # 只執行主程式
+    else:
+        os.execl(python, python, *sys.argv)  # 開發階段保留參數
 
 def get_API():
     """獲取 API 並儲存"""
@@ -973,8 +1025,6 @@ freeze_overlay = FreezeOverlay(window)
 # freeze_overlay.hide()
 if groq_available:
     chatroom = chatroomWindow(current_theme, chat_session, groq_key, token_update_callback = update_token_display) # 建立聊天室視窗
-    chatroom.withdraw() # 聊天室視窗預設隱藏
-    chatroom.protocol("WM_DELETE_WINDOW", chatroom.withdraw) # 攔截關閉行為 → 改為隱藏（withdraw）
 
 # 獲取螢幕的寬高和縮放比例
 def get_scale_factor():
@@ -1081,7 +1131,7 @@ pfolder_bt = ctk.CTkButton(master = f2, text = "Prompt 資料夾", font = text_f
 pfolder_bt.grid(row = 1, column = 0, padx = 5, pady = (0, 5), sticky = "we")
 
 chatroom_bt = ctk.CTkButton(
-    master = f2, text = "AI 聊天室/紀錄", font = text_font, height = 28, anchor = "c", 
+    master = f2, text = "AI 聊天室 / LOG", font = text_font, height = 28, anchor = "c", 
     command = lambda: pop_chatroom()
 )
 chatroom_bt.grid(row = 2, column = 0, padx = 5, pady = (0, 5), sticky = "we")

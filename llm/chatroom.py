@@ -7,7 +7,6 @@ from bs4 import BeautifulSoup
 
 colorama.init() # 讓文字有顏色
 
-CONFIG_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "config.json") # 設定檔案名稱
 PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..") # 設定相對路徑
 
 class chatroomWindow(ctk.CTkToplevel):
@@ -56,6 +55,8 @@ class chatroomWindow(ctk.CTkToplevel):
         self.title("聊天室")
         self.geometry("630x750")
         self.attributes("-topmost", False) # 讓視窗顯示在最前面
+        self.withdraw() # 聊天室視窗預設隱藏
+        self.protocol("WM_DELETE_WINDOW", self.withdraw) # 攔截關閉行為 → 改為隱藏（withdraw）
         self.after( # icon 一致化
             250, 
             self.iconbitmap, 
@@ -84,6 +85,7 @@ class chatroomWindow(ctk.CTkToplevel):
         # 可捲動文字框
         self.textbox = ctk.CTkTextbox(self.type_f, font = self.message_font, wrap = "word", corner_radius = 5, height = 100)
         self.textbox.grid(row = 0, rowspan = 4, column = 0, padx = (5, 0), pady = 5, sticky = "nsew")
+        self.textbox.bind("<Return>", self.on_return_key) # 綁定 Enter 鍵
 
         # 功能按鈕
         self.increase_bt = ctk.CTkButton(
@@ -132,8 +134,8 @@ class chatroomWindow(ctk.CTkToplevel):
     
     def load_config(self):
         """讀取設定檔案"""
-        if os.path.exists(CONFIG_FILE):
-            with open(CONFIG_FILE, "r") as f:
+        if os.path.exists(os.path.join(PATH, "config.json")):
+            with open(os.path.join(PATH, "config.json"), "r") as f:
                 return json.load(f)
         return {}  # 如果沒有設定檔，回傳空字典
     
@@ -148,7 +150,7 @@ class chatroomWindow(ctk.CTkToplevel):
         })
 
         # 將更新後的設定存回 JSON
-        with open(CONFIG_FILE, "w") as f:
+        with open(os.path.join(PATH, "config.json"), "w") as f:
             json.dump(config, f, indent = 4)  # `indent=4` 讓 JSON 易讀
 
     def append_chatbubble(self, role, message):
@@ -260,7 +262,14 @@ class chatroomWindow(ctk.CTkToplevel):
             print(f"\033[31m[INFO] 找不到 {prompt_path} 文件，將會使用預設的提示詞。\033[0m")
             return None  # 讀取失敗時回傳 None
         
-    def talk_to_llm(self):
+    def on_return_key(self, event):
+        if event.state & 0x0001:  # Shift+Enter 換行
+            self.textbox.insert("insert", "\n")
+        else:  # 單獨 Enter：送出
+            self.talk_to_llm()
+        return "break"
+        
+    def talk_to_llm(self, event = None):
         """輸入文字與模型對話"""
         self.user_input = self.textbox.get("0.0", "end").strip()
         if self.user_input:  # 避免空輸入
@@ -326,6 +335,8 @@ if __name__ == "__main__":
     print("\033[32m[INFO] 請提供Groq API key。\033[0m")
     groq_key = input("\033[33mGroq API key: \033[0m")
 
+    root = ctk.CTk() # 創建主視窗
+
     # 設定主題
     theme = 1
     if theme == 1:
@@ -335,4 +346,7 @@ if __name__ == "__main__":
         ctk.set_appearance_mode("dark")
         chatroom = chatroomWindow("dark", groq_key = groq_key)
 
-    chatroom.mainloop()
+    chatroom.deiconify() # 顯示視窗
+
+    root.attributes("-topmost", True) # 讓視窗顯示在最前面
+    root.mainloop()

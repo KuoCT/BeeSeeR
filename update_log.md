@@ -1,8 +1,63 @@
 # 更新日誌
+## 2025/04/19
+- 嘗試打包成 exe 執行檔 (找到問題出在打包 transformers 套件，想辦法處理)
+    - 修改 transformers 套件內容: `tokenization_utils_base.py`
+        ```python
+        # Get a function reference for the correct framework
+            if tensor_type == TensorType.TENSORFLOW:
+                if not is_tf_available():
+                    raise ImportError(
+                        "Unable to convert output to TensorFlow tensors format, TensorFlow is not installed."
+                    )
+                import tensorflow as tf
+
+                as_tensor = tf.constant
+                is_tensor = tf.is_tensor
+            elif tensor_type == TensorType.PYTORCH:
+                # 修改: 註釋以下 2 行
+                # if not is_torch_available():
+                #     raise ImportError("Unable to convert output to PyTorch tensors format, PyTorch is not installed.")
+                import torch
+
+                is_tensor = torch.is_tensor
+
+                def as_tensor(value, dtype=None):
+                    if isinstance(value, list) and isinstance(value[0], np.ndarray):
+                        return torch.from_numpy(np.array(value))
+                    return torch.tensor(value)
+        ```
+    - 修改 transformers 套件內容: `dependency_versions_check.py`
+        ```python
+        for pkg in pkgs_to_check_at_runtime:
+            if pkg in deps:
+                if pkg == "tokenizers":
+                    # must be loaded here, or else tqdm check may fail
+                    from .utils import is_tokenizers_available
+
+                    if not is_tokenizers_available():
+                        continue  # not required, check version only if installed
+                elif pkg == "accelerate":
+                    # must be loaded here, or else tqdm check may fail
+                    from .utils import is_accelerate_available
+
+                    # Maybe switch to is_torch_available in the future here so that Accelerate is hard dep of
+                    # Transformers with PyTorch
+                    if not is_accelerate_available():
+                        continue  # not required, check version only if installed
+
+                # 修改: 註釋以下 1 行
+                # require_version_core(deps[pkg])
+            else:
+                raise ValueError(f"can't find {pkg} in {deps.keys()}, check dependency_versions_table.py")
+        ```
+
 ## 2025/04/18
+- 調整設定選單 (未實裝)
+- AI 聊天室綁定 enter 鍵
+- 嘗試打包成 exe 執行檔 (失敗)
 
 ## 2025/04/17
-- 實驗連續翻譯功能
+- 實驗連續翻譯功能 (未實裝)
 - 模型載入改成用離線方式讀取 checkpoint 資料夾
 - 更新懸浮窗布局
 - 優化背景執行機制
