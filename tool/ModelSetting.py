@@ -1,24 +1,28 @@
 import customtkinter as ctk
 import os
 import json
+from torch.cuda import is_available
 
 PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..") # 設定相對路徑
 
 class ModelSetting(ctk.CTkToplevel):
-    w = 270
-    h = 380
+    w = 280
+    h = 445
     def __init__(
             self, 
-            current_theme, 
-            force_cpu,
+            current_theme,
             width = None, 
             height = None,
-            on_activate = None
+            on_activate = None,
+            on_restart = None,
+            on_update_hotkey = None
         ):
         super().__init__()
 
         # Callback 函數
         self.on_activate = on_activate
+        self.on_restart = on_restart
+        self.on_update_hotkey = on_update_hotkey
 
         self.title("OCR 設定")
         width = width if width is not None else self.w
@@ -41,6 +45,8 @@ class ModelSetting(ctk.CTkToplevel):
         self.dtype = self.settings.get("dtype", None)
         self.langs = self.settings.get("langs", None) 
         self.ocr_model = self.settings.get("ocr_model", "surya") 
+        self.toggle_overlay_hotkey = self.settings.get("toggle_overlay_hotkey", "ctrl+shift+windows+a")
+        self.capture_hotkey = self.settings.get("capture_hotkey", "ctrl+shift+windows+s")
         self.text_font = ctk.CTkFont(family = "Helvetica", size = 14, weight = "bold") # 設定字體
 
         # 區域規劃
@@ -73,7 +79,7 @@ class ModelSetting(ctk.CTkToplevel):
         self.f4 = ctk.CTkFrame(self)
         self.f4.grid(row = 3, column = 0, padx = 5, pady = 5, sticky = "nswe")
         self.f4.grid_columnconfigure((0, 1, 2), weight = 1)
-        self.f4.grid_rowconfigure(1, weight = 1)
+        self.f4.grid_rowconfigure(3, weight = 1)
 
         # Google-OCR 開關
         self.google_ocr_sw_var = ctk.StringVar(value = "OFF")
@@ -116,42 +122,42 @@ class ModelSetting(ctk.CTkToplevel):
         self.langs_zh_cb_var = ctk.StringVar(value = "OFF")
         self.langs_zh_cb = ctk.CTkCheckBox(
             self.f2, text = "中文", height = 28, font = self.text_font, variable = self.langs_zh_cb_var, 
-            onvalue = "ON", offvalue = "OFF", command = None
+            onvalue = "ON", offvalue = "OFF", command = self.update_langs
         )
         self.langs_zh_cb.grid(row = 2, column = 1, padx = (5, 0), pady = 0, sticky = "w")
 
         self.langs_en_cb_var = ctk.StringVar(value = "OFF")
         self.langs_en_cb = ctk.CTkCheckBox(
             self.f2, text = "英文", height = 28, font = self.text_font, variable = self.langs_en_cb_var, 
-            onvalue = "ON", offvalue = "OFF", command = None
+            onvalue = "ON", offvalue = "OFF", command = self.update_langs
         )
         self.langs_en_cb.grid(row = 3, column = 1, padx = (5, 0), pady = 5, sticky = "w")
 
         self.langs_ja_cb_var = ctk.StringVar(value = "OFF")
         self.langs_ja_cb = ctk.CTkCheckBox(
             self.f2, text = "日文", height = 28, font = self.text_font, variable = self.langs_ja_cb_var, 
-            onvalue = "ON", offvalue = "OFF", command = None
+            onvalue = "ON", offvalue = "OFF", command = self.update_langs
         )
         self.langs_ja_cb.grid(row = 2, column = 2, padx = 5, pady = 0, sticky = "w")
 
         self.langs_ko_cb_var = ctk.StringVar(value = "OFF")
         self.langs_ko_cb = ctk.CTkCheckBox(
             self.f2, text = "韓文", height = 28, font = self.text_font, variable = self.langs_ko_cb_var, 
-            onvalue = "ON", offvalue = "OFF", command = None
+            onvalue = "ON", offvalue = "OFF", command = self.update_langs
         )
         self.langs_ko_cb.grid(row = 3, column = 2, padx = 5, pady = 5, sticky = "w")
 
         # 精度設定
         # 自動/手動按鈕
-        self.auto_dtype_bt = ctk.CTkButton(self.f2_1, text = "自動", font = self.text_font, width = 20, height = 25, anchor = "c", command = None)
+        self.auto_dtype_bt = ctk.CTkButton(self.f2_1, text = "自動", font = self.text_font, width = 20, height = 25, anchor = "c", command = self.toggle_auto_dtype)
         self.auto_dtype_bt.grid(row = 0, column = 0, padx = (5, 0), pady = 5, sticky = "ew")
 
         # 精度切換
-        self.dtype_sw_var = ctk.StringVar(value = "float32" if force_cpu else "float16")
+        self.dtype_sw_var = ctk.StringVar(value = "float32" if not is_available() else "float16")
         self.current_dtype = self.dtype_sw_var.get()
         self.dtype_sw = ctk.CTkSwitch(self.f2_1, text = "模型精度: 全精度" if self.current_dtype == "float32" else "模型精度: 半精度", 
                                 height = 28, corner_radius = 4, button_length = 10, font = self.text_font, 
-                                variable = self.dtype_sw_var, onvalue = "float32", offvalue = "float16", command = None)
+                                variable = self.dtype_sw_var, onvalue = "float32", offvalue = "float16", command = self.toggle_dtype)
         self.dtype_sw.grid(row = 0, column = 1, padx = 5, pady = 0, sticky = "ns")
         self.dtype_sw.configure(state = "disabled" if self.auto_dtype == "ON" else "normal")
 
@@ -165,19 +171,39 @@ class ModelSetting(ctk.CTkToplevel):
 
         # 打開模型資料夾
         self.make_ink_bt = ctk.CTkButton(self.f4, text = "模型資料夾", font = self.text_font, width = 20, height = 25, anchor = "c", command = self.open_checkpoint_folder)
-        self.make_ink_bt.grid(row = 0, column = 0, padx = (5, 0), pady = 5, sticky = "nwe")
+        self.make_ink_bt.grid(row = 0, column = 0, padx = (5, 0), pady = (5, 0), sticky = "nwe")
 
         # 製作捷徑
         self.make_ink_bt = ctk.CTkButton(self.f4, text = "製作捷徑", font = self.text_font, width = 20, height = 25, anchor = "c", command = self.make_ink)
-        self.make_ink_bt.grid(row = 0, column = 1, padx = (5, 0), pady = 5, sticky = "nwe")
+        self.make_ink_bt.grid(row = 0, column = 1, padx = (5, 0), pady = (5, 0), sticky = "nwe")
 
         # 回復初始設定
-        self.reset_bt = ctk.CTkButton(self.f4, text = "初始設定", font = self.text_font, width = 20, height = 25, anchor = "c", command = None)
-        self.reset_bt.grid(row = 0, column = 2, padx = 5, pady = 5, sticky = "nwe")
+        self.reset_bt = ctk.CTkButton(self.f4, text = "初始設定", font = self.text_font, width = 20, height = 25, anchor = "c", command = self.reset_settings)
+        self.reset_bt.grid(row = 0, column = 2, padx = 5, pady = (5, 0), sticky = "nwe")
+
+        # 快捷鍵設定
+        self.capture_hotkey_wd = ctk.CTkLabel(self.f4, text = "Capture 熱鍵", font = self.text_font, height = 20, anchor = "e")
+        self.capture_hotkey_wd.grid(row = 1, column = 0, padx = (5, 0), pady = (3, 0), sticky = "we")
+        self.capture_hotkey_entry = ctk.CTkEntry(self.f4, font = ctk.CTkFont(family = "Helvetica", size = 12))
+        self.capture_hotkey_entry.grid(row = 1, column = 1, columnspan = 2, padx = 5, pady = (3, 0), sticky = "we")
+        self.capture_hotkey_entry.insert(0, self.capture_hotkey)
+
+        self.toggle_overlay_hotkey_wd = ctk.CTkLabel(self.f4, text = "隱藏懸浮窗熱鍵", font = self.text_font, height = 20, anchor = "e")
+        self.toggle_overlay_hotkey_wd.grid(row = 2, column = 0, padx = (5, 0), pady = (3, 0), sticky = "we")
+        self.toggle_overlay_hotkey_entry = ctk.CTkEntry(self.f4, font = ctk.CTkFont(family = "Helvetica", size = 12))
+        self.toggle_overlay_hotkey_entry.grid(row = 2, column = 1, columnspan = 2, padx = 5, pady = (3, 0), sticky = "we")
+        self.toggle_overlay_hotkey_entry.insert(0, self.toggle_overlay_hotkey)
+
+        # 綁定使用者輸入的事件
+        self.capture_hotkey_entry.bind("<Return>", lambda e: self.update_hotkey())
+        self.capture_hotkey_entry.bind("<FocusOut>", lambda e: self.update_hotkey())
+
+        self.toggle_overlay_hotkey_entry.bind("<Return>", lambda e: self.update_hotkey())
+        self.toggle_overlay_hotkey_entry.bind("<FocusOut>", lambda e: self.update_hotkey())
 
         # 顯示版本號
         self.version_lab = ctk.CTkLabel(self.f4, text = "BeeSeeR 版本: v3.0.0 ", font = ctk.CTkFont(family = "Helvetica", size = 12), anchor = "e")
-        self.version_lab.grid(row = 1, column = 0, columnspan = 3, padx = 5, pady = (0, 5), sticky = "es")
+        self.version_lab.grid(row = 3, column = 0, columnspan = 3, padx = 5, pady = 5, sticky = "es")
 
         # 初始化設定選項狀態 (Surya-OCR: 限定語言設定)
         if self.langs is not None:
@@ -193,14 +219,14 @@ class ModelSetting(ctk.CTkToplevel):
             self.langs_ko_cb_var.set("OFF")
 
         # 初始化設定選項狀態 (Surya-OCR: 精度切換)
-        if force_cpu: self.auto_dtype_bt.configure(state = "disabled")
+        if not is_available(): self.auto_dtype_bt.configure(state = "disabled")
         if self.auto_dtype == "OFF": 
             self.auto_dtype_bt.configure(fg_color = "gray60", hover_color = ["#325882", "#A85820"])
             self.dtype_sw_var.set(self.dtype)
             self.dtype_sw.configure(text = "模型精度: 全精度" if self.dtype == "float32" else "模型精度: 半精度")
         else: 
             self.auto_dtype_bt.configure(fg_color = ["#1e8bba", "#C7712D"], hover_color = ["#325882", "#A85820"])
-            self.dtype_sw_var.set("float32" if force_cpu else "float16")
+            self.dtype_sw_var.set("float32" if not is_available() else "float16")
             self.dtype_sw.configure(fg_color = "gray60", progress_color = "gray60", button_color = "gray60",
                             text = "模型精度: 全精度" if self.current_dtype == "float32" else "模型精度: 半精度")
             self.dtype_sw.configure(state = "disabled")
@@ -236,19 +262,28 @@ class ModelSetting(ctk.CTkToplevel):
         return {}  # 如果沒有設定檔，回傳空字典
     
     def save_config(self):
-        """讀取現有設定，更新後再存入 JSON 檔案"""
-        config = self.load_config()  # 先載入現有設定
+        """只有當設定異動時，才更新 config.json"""
+        old_config = self.load_config()
 
-        # 更新設定
-        config.update({
+        # 準備要寫入的內容
+        new_config = {
+            "ocr_model": self.ocr_model,
             "auto_dtype": self.auto_dtype,
+            "dtype": self.dtype,
             "langs": self.langs,
-            "ocr_model": self.ocr_model
-        })
+            "capture_hotkey": self.capture_hotkey,
+            "toggle_overlay_hotkey": self.toggle_overlay_hotkey
+        }
 
-        # 將更新後的設定存回 JSON
-        with open(os.path.join(PATH, "config.json"), "w") as f:
-            json.dump(config, f, indent = 4)  # `indent = 4` 讓 JSON 易讀
+        # 只有內容不同時才寫入
+        if old_config != {**old_config, **new_config}:
+            old_config.update(new_config)
+            with open(os.path.join(PATH, "config.json"), "w") as f:
+                json.dump(old_config, f, indent = 4)
+            # print("\033[32m[INFO] 設定檔已更新\033[0m")
+        else:
+            # print("\033[34m[INFO] 設定無變更，跳過寫入\033[0m")
+            pass
 
     def activate_google_ocr(self):
         """啟用 Google OCR"""
@@ -293,7 +328,58 @@ class ModelSetting(ctk.CTkToplevel):
         self.google_ocr_sw.configure(state = "normal")
         self.surya_ocr_sw.configure(state = "normal")
         if self.on_activate: self.on_activate() # Callback 函數
-        self.save_config()        
+        self.save_config()   
+
+    def update_langs(self):
+        """根據 Checkbox 狀態更新 self.langs"""
+        selected = []
+
+        if self.langs_zh_cb_var.get() == "ON":
+            selected.append("zh")
+        if self.langs_en_cb_var.get() == "ON":
+            selected.append("en")
+        if self.langs_ja_cb_var.get() == "ON":
+            selected.append("ja")
+        if self.langs_ko_cb_var.get() == "ON":
+            selected.append("ko")
+
+        # 如果有選取語言，更新 self.langs，否則設為 None
+        self.langs = selected if selected else None
+        if self.on_activate: self.on_activate() # Callback 函數
+        self.save_config()     
+
+    def toggle_auto_dtype(self):
+        """模型精度自動/手動調整開關"""
+        if self.auto_dtype == "ON":
+            self.auto_dtype = "OFF"
+            self.dtype = self.current_dtype
+            self.dtype_sw.configure(state = "normal")
+            self.auto_dtype_bt.configure(fg_color = "gray60", hover_color = ["#325882", "#A85820"])
+            self.dtype_sw.configure(
+                fg_color = ["#325882", "#A85820"],
+                progress_color = ["#325882", "#A85820"],
+                button_color = ["#1e8bba", "#C7712D"]
+            )
+        else:
+            self.auto_dtype = "ON"
+            self.dtype = None # 自動偵測
+            self.dtype_sw_var.set(self.current_dtype)
+            self.dtype_sw.configure(state = "disabled", text = "模型精度: 全精度" if self.current_dtype == "float32" else "模型精度: 半精度")
+            self.auto_dtype_bt.configure(fg_color = ["#1e8bba", "#C7712D"], hover_color = ["#325882", "#A85820"])
+            self.dtype_sw.configure(fg_color = "gray60", progress_color = "gray60", button_color = "gray60")
+        if self.on_activate: self.on_activate() # Callback 函數
+        self.save_config()
+
+    def toggle_dtype(self):
+        """切換模型精度"""
+        if self.dtype == "float32":
+            self.dtype = "float16"
+            self.dtype_sw.configure(text = "模型精度: 半精度")
+        else:
+            self.dtype = "float32"
+            self.dtype_sw.configure(text = "模型精度: 全精度")
+        if self.on_activate: self.on_activate() # Callback 函數
+        self.save_config()
 
     def open_checkpoint_folder(self): 
         """打開 checkpoint 資料夾"""
@@ -320,7 +406,7 @@ class ModelSetting(ctk.CTkToplevel):
                 title="選擇 BeeSeeR 啟動用 .bat 檔"
             )
             if not bat_path:
-                messagebox.showwarning("取消", "未選擇 .bat 檔案")
+                messagebox.showwarning("操作中斷", "未選擇 .bat 檔案")
                 return
 
         # 選取 icon
@@ -335,7 +421,7 @@ class ModelSetting(ctk.CTkToplevel):
         )
 
         if not icon_path:
-            messagebox.showwarning("取消", "未選擇 icon 檔案")
+            messagebox.showwarning("操作中斷", "未選擇 icon 檔案")
             return
 
         # 選取儲存位置
@@ -345,7 +431,7 @@ class ModelSetting(ctk.CTkToplevel):
         )
 
         if not save_dir:
-            messagebox.showwarning("取消", "未選擇捷徑存放位置")
+            messagebox.showwarning("操作中斷", "未選擇捷徑存放位置")
             return
 
         shortcut_path = os.path.join(save_dir, "BeeSeeR.lnk")
@@ -377,4 +463,68 @@ class ModelSetting(ctk.CTkToplevel):
             messagebox.showinfo("完成", f"捷徑已儲存：\n{shortcut_path}")
 
         except Exception as e:
-            messagebox.showerror("錯誤", f"建立捷徑失敗：{str(e)}") 
+            messagebox.showerror("錯誤", f"建立捷徑失敗：{str(e)}")
+
+    def reset_settings(self):
+        """回復初始設定"""
+        from tkinter import messagebox
+        import winsound  
+        # 顯示警告並詢問是否重啟
+        winsound.MessageBeep(winsound.MB_ICONEXCLAMATION)
+        response = messagebox.askyesno("系統提示", "您確定要重置所有設定嗎？")
+        if response:
+            try:
+                config_path = os.path.join(PATH, "config.json")
+                if os.path.exists(config_path):
+                    os.remove(config_path)  # 正確刪除設定檔
+            except Exception as e:
+                messagebox.showerror("錯誤", f"無法刪除設定檔：{str(e)}")
+            
+            if self.on_restart: self.on_restart()
+
+    def update_hotkey(self):
+        """根據使用者輸入更新快捷鍵"""
+        from tkinter import messagebox
+
+        def _try_update_hotkey(name, entry_widget, current_key_attr):
+            """
+            嘗試更新單一熱鍵
+            name: 用於 callback 辨識的名稱（如 "capture"）
+            entry_widget: 對應的 Entry 元件
+            current_key_attr: 屬性名稱字串（如 "capture_hotkey"）
+            """
+            new_key = entry_widget.get().strip()
+            old_key = getattr(self, current_key_attr)
+
+            if new_key == old_key:
+                return  # 沒有異動，不需處理
+
+            try:
+                # 嘗試更新屬性與觸發 hotkey 註冊
+                setattr(self, current_key_attr, new_key)
+                if self.on_update_hotkey:
+                    self.on_update_hotkey(name)
+
+                # 將焦點移出 Entry 欄位
+                entry_widget.master.focus_set()
+
+                if self.on_activate:
+                    self.on_activate()
+
+                self.save_config()  # 寫入 config.json
+
+            except Exception as e:
+                # 更新失敗 → 回復舊值並提示
+                setattr(self, current_key_attr, old_key)
+                entry_widget.delete(0, ctk.END)
+                entry_widget.insert(0, old_key)
+                messagebox.showerror("錯誤", f"無法更新快捷鍵：{e}")
+
+        # 嘗試更新每一個熱鍵項目
+        _try_update_hotkey("capture", self.capture_hotkey_entry, "capture_hotkey")
+        _try_update_hotkey("toggle_overlay", self.toggle_overlay_hotkey_entry, "toggle_overlay_hotkey")
+
+    
+
+
+

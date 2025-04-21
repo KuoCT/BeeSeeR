@@ -54,7 +54,7 @@ class WindowCapture(tk.Toplevel):
             prompt = None, 
             dtype = None, 
             langs = None, 
-            manga_ocr = False,
+            ocr_model = None,
             mocr = None,
             recognition_predictor = None,
             detection_predictor = None
@@ -66,7 +66,7 @@ class WindowCapture(tk.Toplevel):
         self.prompt = prompt
         self.dtype = dtype
         self.langs = langs
-        self.manga_ocr = manga_ocr
+        self.ocr_model = ocr_model if ocr_model else "surya"  # 初始化 OCR 模型
 
         # 初始化辨識結果
         self.prompt_text = None
@@ -99,13 +99,13 @@ class WindowCapture(tk.Toplevel):
         self.bind("<Escape>", lambda event: self.escape_WinCap())
 
         # 初始化載入 OCR 套件
-        if manga_ocr:
+        if self.ocr_model == "manga":
             self.mocr = mocr
         else:
             self.recognition_predictor = recognition_predictor
             self.detection_predictor = detection_predictor
 
-        if self.manga_ocr:
+        if self.ocr_model == "manga":
             self.text = "[漫畫模式] 拖曳偵測文字，點一下退出"
         else:
             self.text = "拖曳偵測文字，點一下退出"
@@ -117,7 +117,7 @@ class WindowCapture(tk.Toplevel):
 
     def start_draw(self, event):
         """當滑鼠左鍵按下時，開始繪製矩形"""
-        self.tooltip.label.config(text = "[漫畫模式] 放開滑鼠開始偵測 / Esc中斷" if self.manga_ocr else "放開滑鼠開始偵測 / Esc中斷")
+        self.tooltip.label.config(text = "[漫畫模式] 放開滑鼠開始偵測 / Esc中斷" if self.ocr_model == "manga" else "放開滑鼠開始偵測 / Esc中斷")
         self.start_x = event.x
         self.start_y = event.y
         self.rect_id = self.canvas.create_rectangle(self.start_x, self.start_y, self.start_x, self.start_y,
@@ -201,7 +201,7 @@ class WindowCapture(tk.Toplevel):
 
     def perform_ocr(self, image):
         """進行 OCR 辨識"""
-        if self.manga_ocr:
+        if self.ocr_model == "manga":
             """使用 Manga-OCR 進行辨識"""
             self.tooltip.deiconify() # 顯示提示窗
             self.tooltip.label.config(text = "[漫畫模式] 偵測文字...")
@@ -211,7 +211,8 @@ class WindowCapture(tk.Toplevel):
             if predictions:
                 return predictions
             return None
-        else:           
+        
+        elif self.ocr_model == "surya":           
             """使用 Surya-OCR 進行辨識"""
             self.tooltip.deiconify() # 顯示提示窗
             self.tooltip.label.config(text = "偵測文字...")
@@ -226,6 +227,16 @@ class WindowCapture(tk.Toplevel):
             if predictions and hasattr(predictions[0], 'text_lines'):
                 return "\n".join([line.text for line in predictions[0].text_lines])
             return None
+        
+        elif self.ocr_model == "google":           
+            """使用 Google-OCR 進行辨識"""
+            self.tooltip.deiconify() # 顯示提示窗
+            self.tooltip.label.config(text = "偵測文字...")
+            print("此模式尚未實裝")
+            return None
+        
+        else:
+            raise ValueError("Unsupported OCR model") # 不支援的 OCR 模式
 
     def cleanup_memory(self):
         """釋放記憶體（CUDA 模式釋放 VRAM）"""

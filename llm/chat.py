@@ -351,23 +351,6 @@ if __name__ == "__main__":
     if args.STM_limit:
         max_history = args.STM_limit
 
-    # # 如果 API Key 非空，嘗試連線驗證
-    # if groq_key:
-    #     try:
-    #         client = Groq(api_key = groq_key)
-    #         test_response = client.chat.completions.create(
-    #             model="mixtral-8x7b-32768",
-    #             messages=[{"role": "system", "content": "ping"}],  # 測試 API 可用性
-    #             max_tokens=10
-    #         )
-    #         if test_response:
-    #             print("\033[32m[INFO] Groq API 連線成功! \033[0m")
-    #             groq_available = True
-    #         else:
-    #             print("\033[31m[INFO] API Key 無效，請確認 Groq API Key。\033[0m")
-    #     except Exception as e:
-    #         print(f"\033[31m[ERROR] 無法連線到 Groq API：{e}\033[0m")
-
     def multi_line_input():
         """當使用者輸入 `/m` 時，開啟多行輸入模式"""
         print("\033[36m多行輸入模式，輸入 /s 完成輸入。\033[0m")

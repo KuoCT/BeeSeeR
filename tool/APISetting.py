@@ -69,7 +69,8 @@ class APISetting(ctk.CTkToplevel):
         if self.google_ocr_key:  # 如果有舊的 API Key，則填入
             self.google_ocr_entry.insert(0, self.google_ocr_key)
 
-        self.google_ocr_select_all_bt = ctk.CTkButton(self.f1, text = "[ ]", font = self.text_font, width = 20, anchor = "c", command = None)
+        self.google_ocr_select_all_bt = ctk.CTkButton(self.f1, text = "[ ]", font = self.text_font, width = 20, anchor = "c", 
+                                                      command = lambda: self.select_all(self.google_ocr_entry))
         self.google_ocr_select_all_bt.grid(row = 1, column = 1, padx = 5, pady = (2, 5), sticky = "e") # 全選按鈕
 
         # groq API 設定
@@ -81,7 +82,8 @@ class APISetting(ctk.CTkToplevel):
         if self.groq_key:  # 如果有舊的 API Key，則填入
             self.groq_entry.insert(0, self.groq_key)
 
-        self.groq_select_all_bt = ctk.CTkButton(self.f2, text = "[ ]", font = self.text_font, width = 20, anchor = "c", command = None)
+        self.groq_select_all_bt = ctk.CTkButton(self.f2, text = "[ ]", font = self.text_font, width = 20, anchor = "c", 
+                                                command = lambda: self.select_all(self.groq_entry))
         self.groq_select_all_bt.grid(row = 1, column = 1, padx = 5, pady = (0, 5), sticky = "e") # 全選按鈕
 
         # 網頁按鈕
@@ -89,7 +91,7 @@ class APISetting(ctk.CTkToplevel):
         self.groq_confirm_bt.grid(row = 0, column = 0, padx = 5, pady = (5, 0), sticky = "nswe")
 
         # 載入按鈕
-        self.groq_confirm_bt = ctk.CTkButton(self.f3, text = "套用", font = self.text_font, width = 40, anchor = "c", command = None)
+        self.groq_confirm_bt = ctk.CTkButton(self.f3, text = "套用", font = self.text_font, width = 40, anchor = "c", command = self.confirm_API)
         self.groq_confirm_bt.grid(row = 1, column = 0, padx = 5, pady = 5, sticky = "nswe")
 
     def load_config(self):
@@ -105,12 +107,42 @@ class APISetting(ctk.CTkToplevel):
 
         # 更新設定
         config.update({
-            "auto_dtype": self.auto_dtype,
-            "langs": self.langs,
-            "ocr_model": self.ocr_model
+            "google_ocr_key": self.google_ocr_key,
+            "groq_key": self.groq_key
         })
+
+        # 將更新後的設定存回 JSON
+        with open(os.path.join(PATH, "config.json"), "w") as f:
+            json.dump(config, f, indent = 4)  # `indent = 4` 讓 JSON 易讀
 
     def open_sites(self):
         """打開 API 申請網站"""
         webbrowser.open_new_tab("https://console.groq.com")
         webbrowser.open_new_tab("https://console.cloud.google.com/marketplace/product/google/vision.googleapis.com")
+
+    def select_all(self, entry):
+        """全選輸入框內的 API Key"""
+        entry.select_range(0, "end")  # 選取所有文字
+        entry.focus_set()  # 設定輸入框焦點，確保全選有效
+
+    def confirm_API(self):
+        """套用 API Key"""
+        # 取得輸入框內的 API Key
+        input_google_ocr = self.google_ocr_entry.get().strip()
+        input_groq = self.groq_entry.get().strip()
+
+        # 判斷是否有更新
+        changed = False
+
+        if input_google_ocr != self.google_ocr_key:
+            self.google_ocr_key = input_google_ocr
+            changed = True
+
+        if input_groq != self.groq_key:
+            self.groq_key = input_groq
+            changed = True
+
+        # 若有變動就儲存並 callback
+        if changed:
+            self.save_config()
+            if self.on_activate: self.on_activate()  # Callback 函數
