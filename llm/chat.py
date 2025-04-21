@@ -13,7 +13,7 @@ class GroqChatSession:
             model = "llama-3.3-70b-versatile", 
             enable_short_term_memory = True, 
             max_history = 3, 
-            temperature = 0.6,
+            temperature = 0.5,
             silent = False
     ):
         self.api_key = groq_key
@@ -24,7 +24,7 @@ class GroqChatSession:
         self.total_prompt_tokens = 0  # 初始化發送的 token 數
         self.total_completion_tokens = 0  # 初始化 AI 回應的 token 數
         self.enable_short_term_memory = enable_short_term_memory  # 記憶功能開關
-        self.temperature = temperature  # 設定 AI 創意度
+        self.temperature = temperature * 2  # 設定 AI 創意度
         self.summaries = [""] # 儲存記憶
         self.silent = silent # 控制輸出
         
@@ -57,9 +57,9 @@ class GroqChatSession:
             not self.silent and print(f"\033[32m[INFO] 已修改歷史長度: {max_history} 輪對話\033[0m")
 
         # 檢查並更新溫度參數
-        if temperature is not None and temperature != self.temperature:
-            self.temperature = temperature
-            not self.silent and print(f"\033[32m[INFO] 已變更模型溫度: {temperature}\033[0m")
+        if temperature is not None and temperature * 2 != self.temperature:
+            self.temperature = temperature * 2
+            not self.silent and print(f"\033[32m[INFO] 已變更模型溫度: {self.temperature}\033[0m")
         
     def add_message(self, role, content):
         """將新的訊息加入對話歷史"""
@@ -110,7 +110,7 @@ class GroqChatSession:
                     {"role": "user", "content": chat_content},
                 ],
                 model = self.model,
-                temperature = 0.25  # 降低創意度確保摘要更精確
+                temperature = 0.25 # 降低創意度確保摘要更精確
             )
             
             summary = summary_response.choices[0].message.content.strip()
@@ -315,6 +315,7 @@ if __name__ == "__main__":
     total_completion_tokens = 0  # 初始化 AI 回應的 token 數
     system_prompt_file = "Chat_system_prompt.txt"
     memory_prompt_file = "Chat_memory_prompt.txt"
+    user_prompt_file = "User_prompt.txt"
     groq_key = args.groq_key.strip() if args.groq_key else None # 移除多餘空白
     groq_available = True
 
@@ -437,7 +438,8 @@ if __name__ == "__main__":
             # 讀取提示詞
             system_prompt = load_prompt(system_prompt_file)
             memory_prompt = load_prompt(memory_prompt_file)
-            reresponse, prompt_tokens, completion_tokens = chat_session.send_to_groq(system_prompt, memory_prompt, user_input)
+            user_prompt = load_prompt(user_prompt_file)
+            reresponse, prompt_tokens, completion_tokens = chat_session.send_to_groq(system_prompt, memory_prompt, user_prompt, user_input)
 
             # Debug 模式
             if debug_mode:

@@ -1,70 +1,30 @@
 # 更新日誌
+## 2025/04/20
+- 嘗試封裝主程式成 exe 執行檔 (成功，開始測試功能)
+- 針對有可能的重複執行，設立防止多開機制
+- 調整設定選單 (未實裝)
+
 ## 2025/04/19
-- 嘗試打包成 exe 執行檔 (找到問題出在打包 transformers 套件，想辦法處理)
-    - 修改 transformers 套件內容: `tokenization_utils_base.py`
-        ```python
-        # Get a function reference for the correct framework
-            if tensor_type == TensorType.TENSORFLOW:
-                if not is_tf_available():
-                    raise ImportError(
-                        "Unable to convert output to TensorFlow tensors format, TensorFlow is not installed."
-                    )
-                import tensorflow as tf
-
-                as_tensor = tf.constant
-                is_tensor = tf.is_tensor
-            elif tensor_type == TensorType.PYTORCH:
-                # 修改: 註釋以下 2 行
-                # if not is_torch_available():
-                #     raise ImportError("Unable to convert output to PyTorch tensors format, PyTorch is not installed.")
-                import torch
-
-                is_tensor = torch.is_tensor
-
-                def as_tensor(value, dtype=None):
-                    if isinstance(value, list) and isinstance(value[0], np.ndarray):
-                        return torch.from_numpy(np.array(value))
-                    return torch.tensor(value)
-        ```
-    - 修改 transformers 套件內容: `dependency_versions_check.py`
-        ```python
-        for pkg in pkgs_to_check_at_runtime:
-            if pkg in deps:
-                if pkg == "tokenizers":
-                    # must be loaded here, or else tqdm check may fail
-                    from .utils import is_tokenizers_available
-
-                    if not is_tokenizers_available():
-                        continue  # not required, check version only if installed
-                elif pkg == "accelerate":
-                    # must be loaded here, or else tqdm check may fail
-                    from .utils import is_accelerate_available
-
-                    # Maybe switch to is_torch_available in the future here so that Accelerate is hard dep of
-                    # Transformers with PyTorch
-                    if not is_accelerate_available():
-                        continue  # not required, check version only if installed
-
-                # 修改: 註釋以下 1 行
-                # require_version_core(deps[pkg])
-            else:
-                raise ValueError(f"can't find {pkg} in {deps.keys()}, check dependency_versions_table.py")
-        ```
+- 嘗試封裝主程式成 exe 執行檔 (還是失敗，但找到問題出在 transformers 套件，想辦法處理)
 
 ## 2025/04/18
 - 調整設定選單 (未實裝)
 - AI 聊天室綁定 enter 鍵
-- 嘗試打包成 exe 執行檔 (失敗)
+- 嘗試封裝主程式成 exe 執行檔 (失敗)
 
 ## 2025/04/17
+- 成功封裝測試用 exe 執行檔
 - 實驗連續翻譯功能 (未實裝)
-- 模型載入改成用離線方式讀取 checkpoint 資料夾
+- 模型改用離線方式載入 (需要自行下載模型文件放入 checkpoint 資料夾)
 - 更新懸浮窗布局
 - 優化背景執行機制
 
+## 2025/04/14
+- 開始學習如何封裝 exe 執行檔
+
 ## 2025/04/13
 ### **上傳版本 v2.1.4**
-- 需要載入相同模型時沿用(加速處理速度)
+- 需要載入相同模型時沿用 (加速處理速度)
 - 保護機制更新
 - 增加全域快捷鍵，預設:
     - ctrl+shift+windows+s 螢幕擷取 (=按下Capture)
@@ -89,7 +49,7 @@
 ## 2025/03/25
 ### **上傳版本 v2.1.0**
 - 延遲載入 OCR 模型 code 的時間點，加快程式開啟速度 (各模型第一次運行時需要載入，消耗 ~ 2秒)
-- 增加日文漫畫識別模型 (manga-ocr)，雙模型可互相切換(右鍵 Capture 設定)
+- 增加日文漫畫識別模型 (manga-ocr)，雙模型可互相切換 (右鍵 Capture 設定)
 - AI 模型可讓用戶自行輸入，只要是 groq API 支援的模型皆可使用
 
 ## 2025/03/22
@@ -97,13 +57,13 @@
 - 實裝 GUI 正式版聊天室
 - 修正 API 功能
 - 雙向串接聊天/翻譯
-- 限定語言模式(右鍵 Capture 設定)
-- 捷徑製作(右鍵 Capture 設定)
+- 限定語言模式 (右鍵 Capture 設定)
+- 捷徑製作 (右鍵 Capture 設定)
 - 直式書寫的漫畫翻譯有點困難，近期目標設定成尋找合適的直式書寫辨識器，或是自己訓練一個。
 
 ## 2025/03/16
 ### **上傳版本 v2.0.3**
-- 增加修改OCR模型精度設定 (支援GTX系列顯卡)
+- 增加修改 OCR 模型精度設定 (更好的支援 NVIDIA 系列顯卡)
 - 使程式可以及時反應提示詞變更
 - 分開管理提示詞
 
@@ -138,7 +98,7 @@
 - 修正使用者 prompt 關不掉的 bug
 - UI 介面調整
 - 系統提示詞與記憶提示詞調整成每次對話即時更新
-- 新增 AI 臨時聊天室(實驗)功能。
+- 新增 AI 臨時聊天室 (實驗) 功能。
 
 ## 2025/03/08
 - 實驗螢幕上覆蓋翻譯功能。
@@ -154,7 +114,7 @@
 - 實驗與 AI 對話的功能。
 - 實驗性增加對 Groq API 的支援，預設使用 llama3.3 70B 模型 (由 Meta/Facebook 公司開發的大型語言模型)。
 - 正式為程式命名: BeeSeeR (BCR) - 念起來很像在暗示OCR，意思是蜜蜂先知、或是成為先知。
-- 開發目標設定為透過 OCR 與 AI 串聯讓使用者可以看到哪裡翻譯到哪裡(漫畫/遊戲/新聞/學術文章)！
+- 開發目標設定為透過 OCR 與 AI 串聯讓使用者可以看到哪裡翻譯到哪裡 (漫畫/遊戲/新聞/學術文章)！
 
 ## 2025/03/04
 ### **上傳版本 v1.1.0**

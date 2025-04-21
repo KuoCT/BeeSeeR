@@ -1,9 +1,9 @@
 {
   "CTk": {
-    "fg_color": ["#d9d9e8", "#252930"]
+    "fg_color": ["#EBEBEB", "#242424"]
   },
   "CTkToplevel": {
-    "fg_color": ["#d9d9e8", "#252930"]
+    "fg_color": ["#EBEBEB", "#242424"]
   },
   "CTkFrame": {
     "corner_radius": 6,
@@ -37,10 +37,10 @@
   "CTkCheckBox": {
     "corner_radius": 6,
     "border_width": 2,
-    "fg_color": ["#56778c", "#c7712d"],
+    "fg_color": ["#1e8bba", "#c7712d"],
     "border_color": ["#3E454A", "#4F5151"],
-    "hover_color": ["#616b75", "#755138"],
-    "checkmark_color": ["#111110", "#C1C1C1"],
+    "hover_color": ["#56778c", "#755138"],
+    "checkmark_color": ["#DCE4EE", "#D4D2CF"],
     "text_color": ["gray14", "#D4D2CF"],
     "text_color_disabled": ["gray60", "gray45"]
   },

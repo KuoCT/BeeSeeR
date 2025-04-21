@@ -5,6 +5,7 @@ env/
 dev/
 api/
 build/
+nuitka_report.html
 GUI_open.flag
 BeeSeeR_user.bat
 groq_api_test.py

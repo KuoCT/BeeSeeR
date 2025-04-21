@@ -19,8 +19,6 @@ class chatroomWindow(ctk.CTkToplevel):
         ):
         super().__init__()
 
-        ctk.set_default_color_theme(os.path.join(PATH, "theme/nectar.json"))
-
         self.settings  = self.load_config()
         self.chat_font_size = self.settings.get("chat_font_size", 14) # 文字大小
         self.prompt_tokens = 0 # 初始化 token 計數器
@@ -52,7 +50,7 @@ class chatroomWindow(ctk.CTkToplevel):
             self.chat_session = chat_session
 
         # 設定視窗
-        self.title("聊天室")
+        self.title("聊天室 / 翻譯紀錄")
         self.geometry("630x750")
         self.attributes("-topmost", False) # 讓視窗顯示在最前面
         self.withdraw() # 聊天室視窗預設隱藏
@@ -335,18 +333,33 @@ if __name__ == "__main__":
     print("\033[32m[INFO] 請提供Groq API key。\033[0m")
     groq_key = input("\033[33mGroq API key: \033[0m")
 
-    root = ctk.CTk() # 創建主視窗
+    # 設定主題
+    current_theme = "dark"
 
     # 設定主題
-    theme = 1
-    if theme == 1:
-        ctk.set_appearance_mode("light")
-        chatroom = chatroomWindow("light", groq_key = groq_key)
-    else:
+    if current_theme == "dark":
         ctk.set_appearance_mode("dark")
-        chatroom = chatroomWindow("dark", groq_key = groq_key)
+    else:
+        ctk.set_appearance_mode("light")
 
+    ctk.set_default_color_theme(os.path.join(PATH, "theme", "nectar.json"))
+
+    def toggle_theme():
+        """切換主題的函數"""
+        global current_theme # 使用全域變數
+        if current_theme == "dark": # 如果當前主題是深色
+            ctk.set_appearance_mode("light") # 切換到淺色主題
+            current_theme = "light" # 更新當前主題變數
+        else: # 如果當前主題是淺色
+            ctk.set_appearance_mode("dark") # 切換到深色主題
+            current_theme = "dark" # 更新當前主題變數
+
+    root = ctk.CTk() # 創建主視窗
+    chatroom = chatroomWindow(current_theme, groq_key = groq_key)
     chatroom.deiconify() # 顯示視窗
+
+    toggle_theme_bt = ctk.CTkButton(root, text = "切換主題", command = toggle_theme)
+    toggle_theme_bt.pack(padx = 10, pady = 10) 
 
     root.attributes("-topmost", True) # 讓視窗顯示在最前面
     root.mainloop()

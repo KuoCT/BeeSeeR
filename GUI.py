@@ -1,41 +1,58 @@
+import portalocker
 import os
 import sys
 import argparse
 
 # 解析命令列參數
-parser = argparse.ArgumentParser(description = "BeeSeeR 控制參數，支援 GPU/CPU 模式選擇及 Groq API 設定")
-parser.add_argument("-c", "--force-cpu", action = "store_true", help = "強制使用 CPU 模式（預設為 GPU，如適用）")
-parser.add_argument("-a", "--all", action = "store_false", help = "完整輸出模式 (只在終端機中生效)")
-parser.add_argument("-b", "--background", action = "store_true", help = "背景執行模式參數 (只在終端機中生效)")
+parser = argparse.ArgumentParser(description = "BeeSeeR 控制參數")
+parser.add_argument("-c", "--force-cpu", action = "store_true", help = "強制使用 CPU 模式")
+parser.add_argument("-a", "--all", action = "store_false", help = "完整輸出模式 (debug 參數)")
+parser.add_argument("-b", "--background", action = "store_true", help = "背景執行模式參數 (只在.bat腳本執行時有效)")
 args = parser.parse_args()
+
+PATH = os.path.join(os.path.dirname(os.path.abspath(__file__))) # 設定相對路徑
+
+# 檢查是否已經有執行中的程式
+lock_file_path = os.path.join(os.getenv("TEMP"), "beeseer.lock")
+lock_file = open(lock_file_path, "w")
+
+try:
+    # 嘗試獲取檔案鎖
+    portalocker.lock(lock_file, portalocker.LOCK_EX | portalocker.LOCK_NB)
+except portalocker.exceptions.LockException:
+    import tkinter as tk
+    from tkinter import messagebox
+    if args.background:
+        with open(os.path.join(PATH, "GUI_open.flag"), "w") as f:
+            f.write("GUI_is_opened")
+    root = tk.Tk()
+    root.withdraw()
+    messagebox.showwarning("重複執行", "BeeSeeR 已啟動！")
+    sys.exit(0)
 
 # 根據 `--force-cpu` 設置環境變數
 if args.force_cpu:
     os.environ["CUDA_VISIBLE_DEVICES"] = "-1"  # 設定 CUDA 無效化
 
-PATH = os.path.join(os.path.dirname(os.path.abspath(__file__))) # 設定相對路徑
-
 import json
 import tkinter as tk
 import customtkinter as ctk
+import threading
 from ocr.WinCap import WindowCapture
 from ocr.WinCap import MouseTooltip
 from ocr.overlay import overlayWindow
 from ocr.freeze import FreezeOverlay
-from ocr.model_setting import ModelSetting
+from tool.ModelSetting import ModelSetting
 import llm.chat as chat
 from llm.chatroom import chatroomWindow
 import ctypes
 import re
-import threading
 import keyboard
 import time
 
 # >> Nuitka 補丁 ==============================================================
+
 import transformers.image_utils
-# import importlib.metadata
-# import importlib.util
-# import PIL
 from PIL import Image
 
 # 修補 transformers 缺少的 Resampling 屬性（舊 Pillow 不支援）
@@ -51,20 +68,6 @@ try: # 再加一層防禦：如果 decorator 還是跑進來就 patch 掉
 except Exception as e:
     print("[警告] 無法 patch transformers docstring 函式：", e)
 
-# 確保 PIL 可以被 importlib.find_spec() 檢測 (以確認打包後可被檢測)
-# if importlib.util.find_spec("PIL") is None:
-#     PIL.__spec__ = importlib.machinery.ModuleSpec("PIL", loader = None)
-#     sys.modules["PIL"] = PIL
-#     print("[PATCH] Injected fake PIL spec")
-
-# 補上 metadata version，避免 transformers 判定 backend 不存在
-# try:
-#     importlib.metadata.version("Pillow")
-#     print(importlib.metadata.version("Pillow"))
-# except importlib.metadata.PackageNotFoundError:
-#     importlib.metadata.version = lambda name: "10.4.0" if name == "Pillow" else "unknown"
-#     print("[PATCH] Injected Pillow version metadata (10.4.0)")
-
 # << Nuitka 補丁 ==============================================================
 
 def load_config():
@@ -74,43 +77,44 @@ def load_config():
             return json.load(f)
     return {}  # 如果沒有設定檔，回傳空字典
 
-# 定義預設參數
-settings  = load_config()
-model = settings.get("model", "llama-3.3-70b-versatile")
-enable_short_term_memory = settings.get("enable_short_term_memory", True)
-silent = args.all
-max_history = 3
-temperature = 0.6
+# 定義全域變數
+settings  = load_config() # 讀取設定檔案
+toggle_overlay_hotkey = settings.get("toggle_overlay_hotkey", "ctrl+shift+windows+a") # 快捷鍵: 切換 overlay 顯示/隱藏
+capture_hotkey = settings.get("capture_hotkey", "ctrl+shift+windows+s") # 快捷鍵: Capture
+current_theme = settings.get("theme", "dark") # 讀取主題設定
+langs = settings.get("langs", None) # Surya-OCR: 限定語言
+auto_dtype = settings.get("auto_dtype", "ON") # Surya-OCR: 自動選擇模型精度
+dtype = settings.get("dtype", None) # Surya-OCR: 手動選擇模型精度
+manga_ocr = settings.get("manga_ocr", False) # 漫畫 OCR 開關
+groq_key = settings.get("groq_key", None) # Groq API Key 翻譯 / 聊天 語言模型
+ost_control = settings.get("ost_control", False) # on-screen translation (AI 自動翻譯)
+model = settings.get("model", "llama-3.3-70b-versatile") # 預設語言模型 
+enable_short_term_memory = settings.get("enable_short_term_memory", True) # 短期記憶開關
+# ============================================================================
+mocr = None # 初始化 OCR 模型
+recognition_predictor = None # 初始化 OCR 模型
+detection_predictor = None # 初始化 OCR 模型
+prompt_control = True # 複製提示詞控制開關
+silent = args.all # 語言模型靜默模式
+max_history = 3 # 短期記憶長度
+temperature = 0.6 # AI 創意力
 cb_coords = None # 初始化座標
-last_response = None
-current_theme = settings.get("theme", "dark")
+last_response = None # 初始化 AI 回應
 total_prompt_tokens = 0  # 初始化發送的 token 數
 total_completion_tokens = 0  # 初始化 AI 回應的 token 數
-system_prompt_file = "AI_system_prompt.txt"
-memory_prompt_file = "AI_memory_prompt.txt"
-prompt_file = "User_prompt.txt"
-prompt_control = True
-ost_control = settings.get("ost_control", False)
-groq_key = settings.get("groq_key", None)
-groq_available = False # 預設 API 狀態為 False
-auto_dtype = settings.get("auto_dtype", "ON")
-dtype = settings.get("dtype", None)
-if args.force_cpu or auto_dtype == "NO": dtype = None
-langs = settings.get("langs", None) # 限定語言參數
+system_prompt_file = "AI_system_prompt.txt" # 系統提示詞
+memory_prompt_file = "AI_memory_prompt.txt" # 短期記憶提示詞
+prompt_file = "User_prompt.txt" # 使用者提示詞
+groq_available = False # AI 自動翻譯功能，預設為鎖定
 dialog = None  # 初始化對話框
 dialog_api = None  # 初始化 API 對話框
-manga_ocr = settings.get("manga_ocr", False)  # 漫畫 OCR 開關
 overlay_windows = [] # 加入 overlay_windows 管理清單
-overlay_visible = True
-toggle_overlay_hotkey = settings.get("toggle_overlay_hotkey", "ctrl+shift+windows+a")
-capture_hotkey = settings.get("capture_hotkey", "ctrl+shift+windows+s")
-hotkey_enabled = True
-# 初使化 OCR 模型
-mocr = None
-recognition_predictor = None
-detection_predictor = None
+overlay_visible = True # 初始化 overlay 顯示狀態
+hotkey_enabled = True # 初始化快捷鍵狀態
+# ============================================================================
+if args.force_cpu or auto_dtype == "NO": dtype = None # 強制 CPU 計算時使用自動模型精度
 
-# 如果 API Key 非空，解鎖 API 功能
+# 如果 API Key 非空，解鎖 AI 自動翻譯功能
 if groq_key:
     groq_available = True
     # 驗證機制有機率不過 (棄用)
@@ -165,7 +169,7 @@ def run_wincap():
     global manga_ocr, hotkey_enabled
 
     if not hotkey_enabled:
-        return  # 忽略多餘觸發
+        return  # 忽略重複觸發
     
     hotkey_enabled = False  # 禁用快捷鍵
 
@@ -364,10 +368,6 @@ def handle_result(prompt_text, extracted_text, final_text, is_dragging):
             )
             if not confirm:
                 return  # 使用者選擇取消，不進行翻譯
-            
-        # 顯示提示（主線）
-        loading_tip = MouseTooltip(window, follow=True, text="AI 處理中...")
-        loading_tip.update()
 
         def translate_in_background():
             global last_response
@@ -414,10 +414,14 @@ def handle_result(prompt_text, extracted_text, final_text, is_dragging):
                 overlay.deiconify()
 
                 # 翻譯完成並顯示 overlay 後再解鎖按鈕
-                capture_bt.configure(state="normal")
+                capture_bt.configure(state = "normal")
 
             # 回到主線更新畫面
             window.after(0, update_ui)
+
+        # 顯示提示（主線）
+        loading_tip = MouseTooltip(window, follow=True, text="AI 處理中...")
+        loading_tip.update()
 
         # 背景執行 AI 翻譯任務
         threading.Thread(target = translate_in_background, daemon = True).start()
@@ -444,7 +448,6 @@ def set_OCR_config():
     global dialog
     if dialog:
         dialog.destroy()  # 關閉舊視窗
-    ctk.set_default_color_theme(os.path.join(PATH, "theme/nectar.json"))
     dialog = ctk.CTkToplevel()
     dialog.title("OCR 設定")
     dialog.geometry(f"240x220+{window.winfo_x() - int(250 * scale_factor)}+{window.winfo_y()}")
@@ -809,7 +812,7 @@ def get_API():
         dialog_api.destroy()  # 關閉對話框
 
     # 標題文字
-    API_wd = ctk.CTkLabel(dialog_api, text = "API Key:", font = text_font, anchor = "w")
+    API_wd = ctk.CTkLabel(dialog_api, text = "Groq API:", font = text_font, anchor = "w")
     API_wd.grid(row = 0, column = 0, padx = (5, 0), pady = 5, sticky = "nswe")
 
     # 輸入框
@@ -833,14 +836,14 @@ def toggle_theme():
         current_theme = "light"
         ctk.set_appearance_mode(current_theme)  # 切換為 Light 模式
         window.iconbitmap(os.path.join(PATH, "icon", "logo_light.ico"))
-        chatroom.iconbitmap(os.path.join(PATH, "icon", "logo_light.ico"))
+        if chatroom and chatroom.winfo_exists(): chatroom.iconbitmap(os.path.join(PATH, "icon", "logo_light.ico"))
         if dialog and dialog.winfo_exists(): dialog.iconbitmap(os.path.join(PATH, "icon", "logo_light.ico"))
         if dialog_api and dialog_api.winfo_exists(): dialog_api.iconbitmap(os.path.join(PATH, "icon", "logo_light.ico"))
     else:
         current_theme = "dark"
         ctk.set_appearance_mode(current_theme)  # 切換為 Dark 模式
         window.iconbitmap(os.path.join(PATH, "icon", "logo_dark.ico"))
-        chatroom.iconbitmap(os.path.join(PATH, "icon", "logo_dark.ico"))
+        if chatroom and chatroom.winfo_exists(): chatroom.iconbitmap(os.path.join(PATH, "icon", "logo_dark.ico"))
         if dialog and dialog.winfo_exists(): dialog.iconbitmap(os.path.join(PATH, "icon", "logo_dark.ico"))
         if dialog_api and dialog_api.winfo_exists(): dialog_api.iconbitmap(os.path.join(PATH, "icon", "logo_dark.ico"))
     save_config()
@@ -1017,14 +1020,21 @@ def toggle_overlay_visibility(event = None):
         overlay_visible = True
     save_config()
     
+# GUI ===========================================================================================================================
+# 設定主題
+ctk.set_appearance_mode(current_theme)
+ctk.set_default_color_theme(os.path.join(PATH, "theme", "nectar.json"))
 
-# GUI    
-window = ctk.CTk() # 建立主視窗
-freeze_overlay = FreezeOverlay(window)
-# freeze_overlay.show()
-# freeze_overlay.hide()
+# 建立視窗
+window = ctk.CTk() # 主視窗 (root)
+freeze_overlay = FreezeOverlay(window) # 模擬螢幕凍結的 overlay (toplevel)
+# freeze_overlay.show() # 顯示 overlay
+# freeze_overlay.hide() # 隱藏 overlay
 if groq_available:
-    chatroom = chatroomWindow(current_theme, chat_session, groq_key, token_update_callback = update_token_display) # 建立聊天室視窗
+    # 聊天室視窗 (toplevel)
+    chatroom = chatroomWindow(current_theme, chat_session, groq_key, token_update_callback = update_token_display)
+else:
+    chatroom = None
 
 # 獲取螢幕的寬高和縮放比例
 def get_scale_factor():
@@ -1064,10 +1074,6 @@ ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(appid)
 # 讓視窗保持最上層
 window.attributes("-topmost", True) # 讓視窗顯示在最前面
 window.attributes("-disabled", False)
-
-# 設定主題
-ctk.set_appearance_mode(current_theme)
-ctk.set_default_color_theme(os.path.join(PATH, "theme", "nectar.json"))
 
 # 設定預設字體、顏色
 title_font = ctk.CTkFont(family = "Helvetica", size = 24, weight = "bold")
