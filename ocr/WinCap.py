@@ -48,7 +48,7 @@ class WindowCapture(tk.Toplevel):
     def __init__(
             self, 
             window,
-            prompt_control = True, 
+            prompt_copy = True, 
             on_capture = None, 
             on_result = None, 
             prompt = None, 
@@ -57,16 +57,18 @@ class WindowCapture(tk.Toplevel):
             ocr_model = None,
             mocr = None,
             recognition_predictor = None,
-            detection_predictor = None
+            detection_predictor = None,
+            google_ocr_key = None
         ):
         super().__init__(window)
-        self.prompt_control = prompt_control
+        self.prompt_copy = prompt_copy
         self.on_capture = on_capture  # 回呼函數
         self.on_result = on_result # 回呼函數
         self.prompt = prompt
         self.dtype = dtype
         self.langs = langs
         self.ocr_model = ocr_model if ocr_model else "surya"  # 初始化 OCR 模型
+        self.google_ocr_key = google_ocr_key
 
         # 初始化辨識結果
         self.prompt_text = None
@@ -175,13 +177,13 @@ class WindowCapture(tk.Toplevel):
 
         # 讀取影像並進行 OCR
         image = Image.open(img_bytes)
-        extracted_text = self.perform_ocr(image)  # OCR 處理
+        extracted_text = self.perform_ocr(image, img_bytes)  # OCR 處理
 
         # 讀取 prompt 內容
         prompt_text = self.prompt if self.prompt else "以下文字為光學字元辨識後的文字結果，若出現瑕疵請輕度修復文字確保用詞貼近原文，使用**繁體中文**完整翻譯文字並適度使用**台灣常用詞辭典**在地化，稍微使語法自然通順。**只輸出翻譯結果**："
 
         # 合併 prompt 與 OCR 結果
-        final_text = f"{prompt_text}\n\n{extracted_text}" if self.prompt_control else extracted_text
+        final_text = f"{prompt_text}\n\n{extracted_text}" if self.prompt_copy else extracted_text
         if extracted_text.strip():
             pyperclip.copy(final_text)
             print("\033[32m[INFO] OCR 辨識結果已複製到剪貼簿。\033[0m")
@@ -199,7 +201,7 @@ class WindowCapture(tk.Toplevel):
         # 確保 OCR 完成後關閉視窗（回到 UI 執行緒執行）
         self.after(0, self.exit_WinCap)
 
-    def perform_ocr(self, image):
+    def perform_ocr(self, image, img_bytes):
         """進行 OCR 辨識"""
         if self.ocr_model == "manga":
             """使用 Manga-OCR 進行辨識"""
@@ -210,7 +212,7 @@ class WindowCapture(tk.Toplevel):
             # print(predictions) # 測試用
             if predictions:
                 return predictions
-            return None
+            return ""
         
         elif self.ocr_model == "surya":           
             """使用 Surya-OCR 進行辨識"""
@@ -226,15 +228,50 @@ class WindowCapture(tk.Toplevel):
 
             if predictions and hasattr(predictions[0], 'text_lines'):
                 return "\n".join([line.text for line in predictions[0].text_lines])
-            return None
+            return ""
         
         elif self.ocr_model == "google":           
             """使用 Google-OCR 進行辨識"""
             self.tooltip.deiconify() # 顯示提示窗
             self.tooltip.label.config(text = "偵測文字...")
-            print("此模式尚未實裝")
-            return None
-        
+
+            import base64
+            import requests
+
+            if not self.google_ocr_key:
+                print("\033[31m[ERROR] Google OCR API Key 未設定。\033[0m")
+                return ""
+            
+            # 將 img_bytes 轉為 base64
+            img_bytes.seek(0)
+            img_base64 = base64.b64encode(img_bytes.read()).decode("utf-8")
+
+            endpoint = f"https://vision.googleapis.com/v1/images:annotate?key={self.google_ocr_key}"
+            payload = {
+                "requests": [
+                    {
+                        "image": {"content": img_base64},
+                        "features": [{"type": "TEXT_DETECTION"}]
+                        # 加入語言提示，例如: `"imageContext": {"languageHints": ["zh-Hant"]}` 可以提升辨識率 (以後再考慮)
+                    }
+                ]
+            }
+            try:
+                response = requests.post(endpoint, json = payload, timeout=10)
+                response.raise_for_status()
+                result = response.json()
+                
+                annotations = result.get("responses", [{}])[0].get("textAnnotations", [])
+                if annotations:
+                    return annotations[0]["description"]
+                else:
+                    return ""
+            except requests.exceptions.RequestException as e:
+                print(f"\033[31m[ERROR] Google OCR 請求失敗：{e}\033[0m")
+                if e.response is not None:
+                    print("\033[33m[DEBUG] 回應內容：\033[0m", e.response.text)
+                return ""
+
         else:
             raise ValueError("Unsupported OCR model") # 不支援的 OCR 模式
 
@@ -323,7 +360,7 @@ if __name__ == "__main__":
             print("\033[31m[INFO] 無法獲取文字辨識結果。\033[0m")
 
     prompt = load_prompt(prompt_file)
-    prompt_control = True
+    prompt_copy = True
 
     # 啟動最初的「載入中...」提示框
     
@@ -334,7 +371,7 @@ if __name__ == "__main__":
 
     app = WindowCapture(
         root,
-        prompt_control = prompt_control, 
+        prompt_copy = prompt_copy, 
         on_capture = receive_coordinates, 
         on_result = handle_result,
         prompt = prompt,

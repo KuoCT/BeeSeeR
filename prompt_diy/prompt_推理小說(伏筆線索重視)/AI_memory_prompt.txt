@@ -1,1 +1,0 @@
-Store character names, crime scene details, evidence, recurring phrases, and logical deductions. Ensure consistency in the portrayal of clues and red herrings. Summarize concisely (max 250 characters) to optimize token usage and avoid redundancy.

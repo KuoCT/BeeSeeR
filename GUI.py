@@ -44,6 +44,7 @@ from ocr.overlay import overlayWindow
 from ocr.freeze import FreezeOverlay
 from tool.ModelSetting import ModelSetting
 from tool.APISetting import APISetting
+from tool.PersonaEditor import PersonaEditor
 import llm.chat as chat
 from llm.chatroom import chatroomWindow
 import ctypes
@@ -74,7 +75,7 @@ except Exception as e:
 def load_config():
     """讀取設定檔案"""
     if os.path.exists(os.path.join(PATH, "config.json")):
-        with open(os.path.join(PATH, "config.json"), "r") as f:
+        with open(os.path.join(PATH, "config.json"), "r", encoding = "utf-8") as f:
             return json.load(f)
     return {}  # 如果沒有設定檔，回傳空字典
 
@@ -92,11 +93,11 @@ groq_key = settings.get("groq_key", None) # Groq API Key 翻譯 / 聊天 語言�
 ost_control = settings.get("ost_control", False) # on-screen translation (AI 自動翻譯)
 model = settings.get("model", "llama-3.3-70b-versatile") # 預設語言模型 
 enable_short_term_memory = settings.get("enable_short_term_memory", True) # 短期記憶開關
+prompt_copy = settings.get("prompt_copy", True) # 複製提示詞控制開關
 # ============================================================================
 mocr = None # 初始化 OCR 模型
 recognition_predictor = None # 初始化 OCR 模型
 detection_predictor = None # 初始化 OCR 模型
-prompt_control = True # 複製提示詞控制開關
 silent = args.all # 語言模型靜默模式
 max_history = 3 # 短期記憶長度
 temperature = 0.5 # AI 創意力
@@ -104,9 +105,6 @@ cb_coords = None # 初始化座標
 last_response = None # 初始化 AI 回應
 total_prompt_tokens = 0  # 初始化發送的 token 數
 total_completion_tokens = 0  # 初始化 AI 回應的 token 數
-system_prompt_file = "AI_system_prompt.txt" # 系統提示詞
-memory_prompt_file = "AI_memory_prompt.txt" # 短期記憶提示詞
-prompt_file = "User_prompt.txt" # 使用者提示詞
 groq_available = False # AI 自動翻譯功能，預設為鎖定
 dialog = None  # 初始化對話框
 dialog_api = None  # 初始化 API 對話框
@@ -119,40 +117,6 @@ if args.force_cpu or auto_dtype == "NO": dtype = None # 強制 CPU 計算時使�
 # 如果 API Key 非空，解鎖 AI 自動翻譯功能
 if groq_key:
     groq_available = True
-    # 驗證機制有機率不過 (棄用)
-    # from groq import Groq
-    # try:
-    #     client = Groq(api_key = groq_key)
-    #     test_response = client.chat.completions.create(
-    #         model="mixtral-8x7b-32768",
-    #         messages=[{"role": "system", "content": "ping"}],  # 測試 API 可用性
-    #         max_tokens=10
-    #     )
-    #     if test_response:
-    #         print("\033[32m[INFO] Groq API 連線成功！\033[0m")
-    #         groq_available = True
-    #     else:
-    #         print("\033[31m[INFO] API Key 無效，請確認 Groq API Key。\033[0m")
-    # except Exception as e:
-    #     print(f"\033[31m[ERROR] 無法連線到 Groq API：{e}\033[0m")
-
-def load_prompt(file):
-    """ 從文件載入提示詞，並回傳 (絕對路徑, 內容) """
-    # 取得目前腳本所在的資料夾
-    script_dir = PATH
-
-    # 構建絕對路徑
-    prompt_path = os.path.join(script_dir, "prompt", file)
-
-    try:
-        with open(prompt_path, "r", encoding="utf-8") as f:
-            content = f.read().strip()
-        return content # 回傳
-        # return prompt_path, content  # 回傳 (絕對路徑, 內容)
-
-    except Exception as e:
-        print(f"\033[31m[INFO] 找不到 {prompt_path} 文件，將會使用預設的提示詞。\033[0m")
-        return None  # 讀取失敗時回傳 None
         
 # 初始化 chat 物件
 if groq_available:
@@ -181,8 +145,6 @@ def run_wincap():
         cb_coords = coords
         # print(f"\033[34m[INFO] 即時回傳選取範圍座標: {coords}\033[0m")
 
-    prompt = load_prompt(prompt_file) # 讀取使用者提示詞
-
     capture_bt.configure(state = "disabled") # 鎖定按鈕防止重複觸發
 
     # 啟動最初的「載入中...」提示框
@@ -199,21 +161,8 @@ def run_wincap():
             frames.append("".join(frame))
 
         idx = 0
-        # start_time = time.time()  # 記錄動畫開始時間
 
         while not stop_event.is_set():
-            # elapsed = time.time() - start_time
-
-            # # 額外說明文字（經過 15 秒後才出現）
-            # extra_info = ""
-            # if elapsed > 15:
-            #     extra_info = " \n可能會耗時約 2 分鐘，請耐心等候"
-
-            # # 更新畫面
-            # loading_tip.label.configure(
-            #     text = f"載入分析模型 {frames[idx]}{extra_info}"
-            # )
-
             # 更新畫面
             loading_tip.label.configure(
                 text = f"載入分析模型 {frames[idx]}"
@@ -239,7 +188,7 @@ def run_wincap():
 
             # 延遲 100 毫秒再建立 tooltip，讓 window 回穩
             def show_tooltip():
-                tooltip = MouseTooltip(window, follow = False, text="找不到模型文件")
+                tooltip = MouseTooltip(window, follow = False, text = "找不到模型文件")
                 tooltip.update()
                 tooltip.after(1000, tooltip.destroy)
 
@@ -293,7 +242,6 @@ def run_wincap():
         else:
             raise ValueError("Unsupported OCR model") # 不支援的 OCR 模式
 
-
         # 模型載入完 → 回主執行緒建立 WindowCapture
         def launch_window():
             stop_event.set()  # 結束動畫
@@ -302,16 +250,17 @@ def run_wincap():
 
             app = WindowCapture(
                 window,
-                prompt_control = prompt_control,
+                prompt_copy = prompt_copy,
                 on_capture = receive_coordinates,
                 on_result = handle_result,
-                prompt = prompt,
+                prompt = PerEdit.updated_persona["Prompt"],
                 dtype = dtype,
                 langs = langs,
                 ocr_model = ocr_model,
                 mocr = mocr,
                 recognition_predictor = recognition_predictor,
-                detection_predictor = detection_predictor
+                detection_predictor = detection_predictor,
+                google_ocr_key = google_ocr_key         
             )
             app.deiconify()
 
@@ -390,8 +339,9 @@ def handle_result(prompt_text, extracted_text, final_text, is_dragging):
 
             try:
                 # 讀取提示詞與發送至 Groq
-                system_prompt = load_prompt(system_prompt_file)
-                memory_prompt = load_prompt(memory_prompt_file)
+                persona = PerEdit.updated_persona
+                system_prompt = persona["Translator_persona"]
+                memory_prompt = persona["Memory_persona"]
                 response, prompt_tokens, completion_tokens = chat_session.send_to_groq(
                     system_prompt, memory_prompt, user_prompt, user_input
                 )
@@ -427,7 +377,7 @@ def handle_result(prompt_text, extracted_text, final_text, is_dragging):
                 chatroom.append_chatlog(role = chat_session.model, message = last_response)
 
                 # 按鈕狀態
-                resetchat_bt.configure(text = "AI 重製/記憶刪除", fg_color = ["#1e8bba", "#C7712D"])
+                resetchat_bt.configure(text = "AI 重置 / 記憶刪除", fg_color = ["#1e8bba", "#C7712D"])
 
                 # 解鎖按鈕
                 capture_bt.configure(state = "normal")
@@ -457,290 +407,15 @@ def update_token_display(prompt_tokens, completion_tokens):
     t_out_total_wd.configure(text=f"● 累計輸出: {total_completion_tokens}")
 
     # 還原按鈕
-    resetchat_bt.configure(text = "AI 重製/記憶刪除", fg_color = ["#1e8bba", "#C7712D"])
-
-# region 棄用
-# def set_OCR_config():
-#     """設定 OCR 設定"""
-#     global dialog
-#     if dialog:
-#         dialog.destroy()  # 關閉舊視窗
-#     dialog = ctk.CTkToplevel()
-#     dialog.title("OCR 設定")
-#     dialog.geometry(f"240x220+{window.winfo_x() - int(250 * scale_factor)}+{window.winfo_y()}")
-#     dialog.attributes("-topmost", True) # 讓視窗顯示在最前面
-#     # dialog.grab_set() # 鎖定對話框
-#     dialog.after(250, dialog.iconbitmap, 
-#                 (
-#                     os.path.join(PATH, "icon", "logo_dark.ico") 
-#                     if current_theme == "dark" 
-#                     else os.path.join(PATH, "icon", "logo_light.ico")
-#                 )
-#     )
-
-#     def make_ink():
-#         """製作快速啟動捷徑"""
-#         from tkinter import filedialog, messagebox
-#         import win32com.client
-#         import shutil
-#         bat_path = filedialog.askopenfilename(
-#             filetypes = [("Batch Files", "*.bat")], 
-#             initialdir = PATH,
-#             title = "選擇 BeeSeeR 程式啟動檔"
-#         )
-#         if not bat_path:
-#             messagebox.showwarning("取消", "未選擇 .bat 檔案")
-#             return
-        
-#         icon_dir = os.path.join(PATH, "icon")
-#         if not os.path.exists(icon_dir):
-#             icon_dir = PATH  # icon 資料夾不存在時 fallback
-
-#         icon_path = filedialog.askopenfilename(
-#             filetypes = [("Icon Files", "*.ico")],
-#             initialdir = icon_dir,
-#             title = "選擇一個 icon"
-#         )
-
-#         if not icon_path:
-#             messagebox.showwarning("取消", "未選擇 icon 檔案")
-#             return
-        
-#         save_dir = filedialog.askdirectory(
-#             initialdir = PATH,
-#             title = "選擇捷徑存放位置"
-#         )
-
-#         if not save_dir:
-#             messagebox.showwarning("取消", "未選擇捷徑存放位置")
-#             return
-#         shortcut_path = os.path.join(save_dir, "BeeSeeR.lnk")
-
-#         def get_cmd_path():
-#             # 檢查 cmd.exe 是否在 PATH 中
-#             cmd_in_path = shutil.which("cmd.exe")
-#             if cmd_in_path:
-#                 print(f"找到 cmd.exe 在 PATH：{cmd_in_path}")
-#                 return "cmd.exe"  # 使用簡寫，保持 PATH 彈性
-
-#             # fallback 絕對路徑
-#             fallback_path = os.path.join(os.environ["SystemRoot"], "System32", "cmd.exe")
-#             if os.path.exists(fallback_path):
-#                 print(f"使用 fallback cmd.exe：{fallback_path}")
-#                 return fallback_path
-#             else:
-#                 raise FileNotFoundError("找不到 cmd.exe，請確認系統是否正常。")
-
-#         # 組合參數
-#         arguments = f'/c "{bat_path}"'
-
-#         # 建立捷徑
-#         try:
-#             shell = win32com.client.Dispatch("WScript.Shell")
-#             shortcut = shell.CreateShortcut(shortcut_path)
-#             shortcut.TargetPath = get_cmd_path()
-#             shortcut.Arguments = arguments
-#             shortcut.WorkingDirectory = os.path.dirname(bat_path)
-#             shortcut.IconLocation = icon_path
-#             shortcut.Save()
-#             messagebox.showinfo("完成", f"捷徑已儲存：\n{shortcut_path}")  
-#         except Exception as e:
-#             messagebox.showerror("錯誤", f"建立捷徑失敗：{str(e)}") 
-
-#     def toggle_auto_dtype():
-#         """dtype 自動/手動切換"""
-#         global auto_dtype, dtype
-#         if auto_dtype == "ON":
-#             auto_dtype = "OFF"
-#             dtype = current_dtype
-#             dtype_sw.configure(state = "normal")
-#             auto_dtype_bt.configure(fg_color = "gray60", hover_color = ["#325882", "#A85820"])
-#             dtype_sw.configure(
-#                 fg_color = ["#325882", "#A85820"],
-#                 progress_color = ["#325882", "#A85820"],
-#                 button_color = ["#1e8bba", "#C7712D"]
-#             )
-#         else:
-#             auto_dtype = "ON"
-#             dtype = None # 自動偵測
-#             dtype_sw_var.set(current_dtype)
-#             dtype_sw.configure(state = "disabled", text = "辨識模型: 全精度" if current_dtype == "float32" else "辨識模型: 半精度")
-#             auto_dtype_bt.configure(fg_color = ["#1e8bba", "#C7712D"], hover_color = ["#325882", "#A85820"])
-#             dtype_sw.configure(fg_color = "gray60", progress_color = "gray60", button_color = "gray60")
-#         save_config()
-
-#     def toggle_dtype():
-#         """dtype 切換"""
-#         global dtype
-#         if dtype == "float32":
-#             dtype = "float16"
-#             dtype_sw.configure(text = "辨識模型: 半精度")
-#         else:
-#             dtype = "float32"
-#             dtype_sw.configure(text = "辨識模型: 全精度")
-#         save_config()
-
-#     def update_langs():
-#         """根據 Checkbox 狀態更新 self.langs"""
-#         global langs
-#         selected = []
-
-#         if langs_zh_cb_var.get() == "ON":
-#             selected.append("zh")
-#         if langs_en_cb_var.get() == "ON":
-#             selected.append("en")
-#         if langs_ja_cb_var.get() == "ON":
-#             selected.append("ja")
-#         if langs_ko_cb_var.get() == "ON":
-#             selected.append("ko")
-
-#         # 如果有選取語言，更新 self.langs，否則設為 None
-#         langs = selected if selected else None
-#         save_config()
-
-#     def toggle_manga_ocr():
-#         """漫畫 OCR 開關"""
-#         global manga_ocr
-#         if manga_ocr_sw_var.get() == "ON":
-#             manga_ocr = True
-#             langs_zh_cb.configure(state = "disabled", border_color = "gray60", fg_color = "gray60")
-#             langs_en_cb.configure(state = "disabled", border_color = "gray60", fg_color = "gray60")
-#             langs_ja_cb.configure(state = "disabled", border_color = "gray60", fg_color = "gray60")
-#             langs_ko_cb.configure(state = "disabled", border_color = "gray60", fg_color = "gray60")
-
-#         else:
-#             manga_ocr = False
-#             langs_zh_cb.configure(state = "normal", border_color = ["#3E454A", "#4F5151"], fg_color = ["#56778c", "#c7712d"])
-#             langs_en_cb.configure(state = "normal", border_color = ["#3E454A", "#4F5151"], fg_color = ["#56778c", "#c7712d"])
-#             langs_ja_cb.configure(state = "normal", border_color = ["#3E454A", "#4F5151"], fg_color = ["#56778c", "#c7712d"])
-#             langs_ko_cb.configure(state = "normal", border_color = ["#3E454A", "#4F5151"], fg_color = ["#56778c", "#c7712d"])
-#         save_config()
-    
-#     # 區域規劃
-#     dialog.grid_columnconfigure(0, weight = 1)
-#     dialog.grid_rowconfigure((0, 1), weight = 0)
-#     dialog.grid_rowconfigure((2), weight = 1)
-
-#     f1 = ctk.CTkFrame(dialog)
-#     f1.grid(row = 0, column = 0, padx = 5, pady = (10, 0), sticky = "nswe")
-#     f1.grid_columnconfigure(0, weight = 0)
-#     f1.grid_rowconfigure(0, weight = 1)
-
-#     f2 = ctk.CTkFrame(dialog)
-#     f2.grid(row = 1, column = 0, padx = 5, pady = (0, 0), sticky = "nswe")
-#     f2.grid_columnconfigure((0, 1), weight = 1)
-#     f2.grid_rowconfigure(0, weight = 1)
-
-#     f3 = ctk.CTkFrame(dialog)
-#     f3.grid(row = 2, column = 0, padx = 5, pady = (0, 5), sticky = "nswe")
-#     f3.grid_columnconfigure(0, weight = 1)
-#     f3.grid_rowconfigure((0), weight = 1)
-
-#     # 自動/手動按鈕
-#     auto_dtype_bt = ctk.CTkButton(f1, text = "自動", font = text_font, width = 20, anchor = "c", command = toggle_auto_dtype)
-#     auto_dtype_bt.grid(row = 0, column = 0, padx = (5, 0), pady = 0, sticky = "nsew")
-
-#     # 精度設定
-#     dtype_sw_var = ctk.StringVar(value = "float32" if args.force_cpu else "float16")
-#     current_dtype = dtype_sw_var.get()
-#     dtype_sw = ctk.CTkSwitch(f1, text = "辨識模型: 全精度" if current_dtype == "float32" else "辨識模型: 半精度", 
-#                              height = 28, corner_radius = 4, button_length = 10, font = text_font,
-#                              variable = dtype_sw_var, onvalue = "float32", offvalue = "float16", command = toggle_dtype)
-#     dtype_sw.grid(row = 0, column = 1, padx = 5, pady = 0, sticky = "ns")
-#     dtype_sw.configure(state = "disabled" if auto_dtype == "ON" else "normal")
-
-#     if args.force_cpu: auto_dtype_bt.configure(state = "disabled")
-#     if auto_dtype == "OFF": 
-#         auto_dtype_bt.configure(fg_color = ["gray60", "gray60"], hover_color = ["#325882", "#A85820"])
-#         dtype_sw_var.set(dtype)
-#         dtype_sw.configure(text = "辨識模型: 全精度" if dtype == "float32" else "辨識模型: 半精度")
-#     else: 
-#         auto_dtype_bt.configure(fg_color = ["#1e8bba", "#C7712D"], hover_color = ["#325882", "#A85820"])
-#         dtype_sw_var.set("float32" if args.force_cpu else "float16")
-#         dtype_sw.configure(fg_color = "gray60", progress_color = "gray60", button_color = "gray60",
-#                            text = "辨識模型: 全精度" if current_dtype == "float32" else "辨識模型: 半精度")
-#         dtype_sw.configure(state = "disabled")
-
-#     # 限定語言模式
-#     langs_wd = ctk.CTkLabel(f2, text = "限定語言(可複選): ", font = text_font, anchor = "w")
-#     langs_wd.grid(row = 0, column = 0, columnspan = 2, padx = 5, pady = (5, 0), sticky = "w")
-
-#     langs_zh_cb_var = ctk.StringVar(value = "OFF")
-#     langs_zh_cb = ctk.CTkCheckBox(
-#         f2, text = "中文", height = 28, font = text_font, variable = langs_zh_cb_var, 
-#         onvalue = "ON", offvalue = "OFF", command = update_langs
-#     )
-#     langs_zh_cb.grid(row = 1, column = 0, padx = (5, 0), pady = 0, sticky = "w")
-
-#     langs_en_cb_var = ctk.StringVar(value = "OFF")
-#     langs_en_cb = ctk.CTkCheckBox(
-#         f2, text = "英文", height = 28, font = text_font, variable = langs_en_cb_var, 
-#         onvalue = "ON", offvalue = "OFF", command = update_langs
-#     )
-#     langs_en_cb.grid(row = 2, column = 0, padx = (5, 0), pady = (5, 0), sticky = "w")
-
-#     langs_ja_cb_var = ctk.StringVar(value = "OFF")
-#     langs_ja_cb = ctk.CTkCheckBox(
-#         f2, text = "日文", height = 28, font = text_font, variable = langs_ja_cb_var, 
-#         onvalue = "ON", offvalue = "OFF", command = update_langs
-#     )
-#     langs_ja_cb.grid(row = 1, column = 1, padx = 5, pady = 0, sticky = "w")
-
-#     langs_ko_cb_var = ctk.StringVar(value = "OFF")
-#     langs_ko_cb = ctk.CTkCheckBox(
-#         f2, text = "韓文", height = 28, font = text_font, variable = langs_ko_cb_var, 
-#         onvalue = "ON", offvalue = "OFF", command = update_langs
-#     )
-#     langs_ko_cb.grid(row = 2, column = 1, padx = 5, pady = (5, 0), sticky = "w")
-
-#     # 支援 manga-ocr 
-#     manga_ocr_sw_var = ctk.StringVar(value = "OFF")
-#     manga_ocr_sw = ctk.CTkCheckBox(
-#         f2, text = "漫畫 OCR (只支援日文)", height = 28, font = text_font, variable = manga_ocr_sw_var, 
-#         onvalue = "ON", offvalue = "OFF", command = toggle_manga_ocr
-#     )
-#     manga_ocr_sw.grid(row = 3, column = 0, columnspan = 2, padx = 5, pady = 5, sticky = "w")
-
-#     # 初始化 CheckBox 狀態
-#     if langs is not None:
-#         langs_zh_cb_var.set("ON" if "zh" in langs else "OFF")
-#         langs_en_cb_var.set("ON" if "en" in langs else "OFF")
-#         langs_ja_cb_var.set("ON" if "ja" in langs else "OFF")
-#         langs_ko_cb_var.set("ON" if "ko" in langs else "OFF")
-#     else:
-#         # 沒設定，全部 OFF
-#         langs_zh_cb_var.set("OFF")
-#         langs_en_cb_var.set("OFF")
-#         langs_ja_cb_var.set("OFF")
-#         langs_ko_cb_var.set("OFF")
-
-#     if manga_ocr:
-#         manga_ocr_sw_var.set("ON")
-#         langs_zh_cb.configure(state = "disabled", border_color = "gray60", fg_color = "gray60")
-#         langs_en_cb.configure(state = "disabled", border_color = "gray60", fg_color = "gray60")
-#         langs_ja_cb.configure(state = "disabled", border_color = "gray60", fg_color = "gray60")
-#         langs_ko_cb.configure(state = "disabled", border_color = "gray60", fg_color = "gray60")
-
-#     # 製作捷徑
-#     make_ink_bt = ctk.CTkButton(f3, text = "製作快速啟動捷徑", font = text_font, width = 20, anchor = "c", command = make_ink)
-#     make_ink_bt.grid(row = 0, column = 0, columnspan = 2, padx = 5, pady = 5, sticky = "ws")
-
-#     # 顯示版本號
-#     version_lab = ctk.CTkLabel(f3, text = "v2.1.4", font = text_font, anchor = "e", text_color = ["gray60", "gray40"])
-#     version_lab.grid(row = 0, column = 0, columnspan = 2, padx = 5, pady = 5, sticky = "es")
-# endregion
+    resetchat_bt.configure(text = "AI 重置 / 記憶刪除", fg_color = ["#1e8bba", "#C7712D"])
 
 def open_ModelSetting():
     """開啟模型設定視窗"""
     ModSet.geometry(f"{ModSet.w}x{ModSet.h}+{window.winfo_x() - int((ModSet.w + 10) * scale_factor)}+{window.winfo_y()}")
     ModSet.deiconify()
 
-def open_APISetting():
-    """開啟 API 設定視窗"""
-    APISet.geometry(f"{APISet.w}x{APISet.h}+{window.winfo_x() - int((APISet.w + ModSet.w + 20) * scale_factor)}+{window.winfo_y()}")
-    APISet.deiconify()
-
 def update_ModelSetting():
+    """更新模型設定"""
     global capture_hotkey, toggle_overlay_hotkey, auto_dtype, dtype, langs, ocr_model
     ocr_model = ModSet.ocr_model
     langs = ModSet.langs
@@ -749,11 +424,30 @@ def update_ModelSetting():
     capture_hotkey = ModSet.capture_hotkey
     toggle_overlay_hotkey = ModSet.toggle_overlay_hotkey
 
+def open_APISetting():
+    """開啟 API 設定視窗"""
+    APISet.geometry(f"{APISet.w}x{APISet.h}+{window.winfo_x() - int((APISet.w + ModSet.w + 20) * scale_factor)}+{window.winfo_y()}")
+    APISet.deiconify()
+
 def update_APISetting():
+    """更新 API 設定"""
     global google_ocr_key, groq_key
     google_ocr_key = APISet.google_ocr_key
     groq_key = APISet.groq_key
     restart_app()
+
+def open_chatroom():
+    """打開聊天室"""
+    chatroom.geometry(f"630x750+{window.winfo_x() - int(640 * scale_factor)}+{window.winfo_y()}")
+    chatroom.deiconify()
+
+def link_persona():
+    """將人格指令連結到聊天室"""
+    chatroom.updated_persona = PerEdit.updated_persona  # 更新聊天室的 persona 變數
+
+def open_PersonaEditor(): # 打開子視窗的函數
+    PerEdit.geometry(f"{PerEdit.w}x{PerEdit.h}+{window.winfo_x() - int((APISet.w + ModSet.w + 20) * scale_factor)}+{window.winfo_y() + int((APISet.h - 50)) * scale_factor}")
+    PerEdit.deiconify() # 顯示子視窗
 
 def is_frozen():
     """判斷是否為 Nuitka 或其他打包環境"""
@@ -785,21 +479,27 @@ def restart_app():
             os.execl(python, python, *sys.argv)  # 開發階段保留參數
 
 def save_config():
-    """讀取現有設定，更新後再存入 JSON 檔案"""
-    config = load_config()  # 先載入現有設定
-
-    # 更新設定
-    config.update({
-        # "groq_key": groq_key,
+    """只有當設定異動時，才更新 config.json"""
+    old_config = load_config()
+    
+    # 準備要寫入的內容
+    new_config = {
         "ost_control": ost_control,
         "theme": current_theme,
         "model": model,
-        "enable_short_term_memory": enable_short_term_memory
-    })
-
-    # 將更新後的設定存回 JSON
-    with open(os.path.join(PATH, "config.json"), "w") as f:
-        json.dump(config, f, indent = 4)  # `indent = 4` 讓 JSON 易讀
+        "enable_short_term_memory": enable_short_term_memory,
+        "prompt_copy": prompt_copy
+    }
+    
+    # 只有內容不同時才寫入
+    if old_config != {**old_config, **new_config}:
+        old_config.update(new_config)
+        with open(os.path.join(PATH, "config.json"), "w", encoding = "utf-8") as f:
+            json.dump(old_config, f, ensure_ascii = False, indent = 4)
+        # print("\033[32m[INFO] 設定檔已更新\033[0m")
+    else:
+        # print("\033[34m[INFO] 設定無變更，跳過寫入\033[0m")
+        pass
 
 # 產生 config 檔案
 save_config()
@@ -807,9 +507,10 @@ save_config()
 def prompt_sw():
     """控制 Prompt 開關"""
     sw = prompt_cb_var.get()
-    global prompt_control
-    prompt_control = True if sw == "ON" else False
-    print(f"\033[33m[INFO] Prompt 開關: {sw}\033[0m")
+    global prompt_copy
+    prompt_copy = True if sw == "ON" else False
+    save_config()
+    # print(f"\033[33m[INFO] Prompt 開關: {sw}\033[0m")
 
 def ost_sw():
     """控制 AI 自動翻譯開關"""
@@ -817,7 +518,7 @@ def ost_sw():
     global ost_control
     ost_control = True if sw == "ON" else False
     save_config()
-    print(f"\033[33m[INFO] AI 自動翻譯開關: {sw}\033[0m")
+    # print(f"\033[33m[INFO] AI 自動翻譯開關: {sw}\033[0m")
 
 def toggle_theme():
     """切換 Light/Dark 模式"""
@@ -826,21 +527,23 @@ def toggle_theme():
         current_theme = "light"
         ctk.set_appearance_mode(current_theme)  # 切換為 Light 模式
         window.iconbitmap(os.path.join(PATH, "icon", "logo_light.ico"))
-        if chatroom and chatroom.winfo_exists(): chatroom.iconbitmap(os.path.join(PATH, "icon", "logo_light.ico"))
-        if dialog and dialog.winfo_exists(): dialog.iconbitmap(os.path.join(PATH, "icon", "logo_light.ico"))
-        if dialog_api and dialog_api.winfo_exists(): dialog_api.iconbitmap(os.path.join(PATH, "icon", "logo_light.ico"))
+        if chatroom and chatroom.winfo_exists(): 
+            chatroom.iconbitmap(os.path.join(PATH, "icon", "logo_light.ico"))
+            chatroom.current_theme = "light"
+        if ModSet and ModSet.winfo_exists(): ModSet.iconbitmap(os.path.join(PATH, "icon", "logo_light.ico"))
+        if APISet and APISet.winfo_exists(): APISet.iconbitmap(os.path.join(PATH, "icon", "logo_light.ico"))
+        if PerEdit and PerEdit.winfo_exists(): PerEdit.iconbitmap(os.path.join(PATH, "icon", "logo_light.ico"))
     else:
         current_theme = "dark"
         ctk.set_appearance_mode(current_theme)  # 切換為 Dark 模式
         window.iconbitmap(os.path.join(PATH, "icon", "logo_dark.ico"))
-        if chatroom and chatroom.winfo_exists(): chatroom.iconbitmap(os.path.join(PATH, "icon", "logo_dark.ico"))
-        if dialog and dialog.winfo_exists(): dialog.iconbitmap(os.path.join(PATH, "icon", "logo_dark.ico"))
-        if dialog_api and dialog_api.winfo_exists(): dialog_api.iconbitmap(os.path.join(PATH, "icon", "logo_dark.ico"))
+        if chatroom and chatroom.winfo_exists(): 
+            chatroom.iconbitmap(os.path.join(PATH, "icon", "logo_dark.ico"))
+            chatroom.current_theme = "dark"
+        if ModSet and ModSet.winfo_exists(): ModSet.iconbitmap(os.path.join(PATH, "icon", "logo_dark.ico"))
+        if APISet and APISet.winfo_exists(): APISet.iconbitmap(os.path.join(PATH, "icon", "logo_dark.ico"))
+        if PerEdit and PerEdit.winfo_exists(): PerEdit.iconbitmap(os.path.join(PATH, "icon", "logo_dark.ico"))
     save_config()
-
-def open_prompt_folder():
-    """打開 prompt 資料夾"""
-    os.startfile(os.path.join(PATH, "prompt"))
 
 def toggle_memory():
     """切換 AI 短期記憶力"""
@@ -887,7 +590,7 @@ def reset_chat():
     t_output_wd.configure(text = "● 輸出: 0")
 
     # 更改按鈕外觀作為信號（變色或改變文字）
-    resetchat_bt.configure(text = "已重製", fg_color = "firebrick")
+    resetchat_bt.configure(text = "已重置", fg_color = "firebrick")
     print("\033[32m[INFO] 已重置 AI，等待新輸入。\033[0m")
 
 def set_model(choice):
@@ -902,11 +605,6 @@ def set_model(choice):
 
     # 把焦點移開，讓游標從輸入框消失
     model_change_op.master.focus_set()
-
-def pop_chatroom():
-    """打開聊天室"""
-    chatroom.geometry(f"630x750+{window.winfo_x() - int(640 * scale_factor)}+{window.winfo_y()}")
-    chatroom.deiconify()
 
 # 獲取螢幕資訊
 def get_refresh_rate():
@@ -1051,20 +749,16 @@ def update_hotkey(name):
         pass
     
 # GUI ===========================================================================================================================
-# 設定主題
 ctk.set_appearance_mode(current_theme)
 ctk.set_default_color_theme(os.path.join(PATH, "theme", "nectar.json"))
 
-# 建立視窗
 window = ctk.CTk() # 主視窗 (root)
 freeze_overlay = FreezeOverlay(window) # 模擬螢幕凍結的 overlay (toplevel)
-# freeze_overlay.show() # 顯示 overlay
-# freeze_overlay.hide() # 隱藏 overlay
 APISet = APISetting(current_theme, on_activate = update_APISetting) # API 設定視窗 (toplevel)
 ModSet = ModelSetting(current_theme, on_activate = update_ModelSetting, on_restart = restart_app, on_update_hotkey = update_hotkey) # OCR 模型設定視窗 (toplevel)
+PerEdit = PersonaEditor(current_theme) # 人格指令編輯器 (toplevel)
 if groq_available:
-    # 聊天室視窗 (toplevel)
-    chatroom = chatroomWindow(current_theme, chat_session, groq_key, token_update_callback = update_token_display)
+    chatroom = chatroomWindow(current_theme, chat_session, groq_key, on_activate = update_token_display, on_link_persona = link_persona) # 聊天室 / 翻譯紀錄 (toplevel)
 else:
     chatroom = None
 
@@ -1128,9 +822,9 @@ capture_bt = ctk.CTkButton(master = f1, text = "Capture", font = title_font, hei
 capture_bt.bind("<Button-3>", lambda e: open_ModelSetting())
 capture_bt.grid(row = 0, column = 0, padx = 5, pady = 5, sticky = "swe")
 
-# User Prompt 開關
-prompt_cb_var = tk.StringVar(master = f1, value = "ON")
-prompt_cb = ctk.CTkCheckBox(master = f1, text = "複製 Prompt (提示詞)", font = text_font,
+# 複製 Prompt 開關
+prompt_cb_var = tk.StringVar(master = f1, value = "ON" if prompt_copy else "OFF")
+prompt_cb = ctk.CTkCheckBox(master = f1, text = "複製提示詞 (Prompt)", font = text_font,
                            variable = prompt_cb_var, onvalue = "ON", offvalue = "OFF",
                            command = prompt_sw)
 prompt_cb.grid(row = 1, column = 0, padx = 5, pady = 5, sticky = "w")
@@ -1164,17 +858,17 @@ theme_bt = ctk.CTkButton(master = f2, text = "主題切換", font = text_font, h
                            anchor = "c", command = toggle_theme)
 theme_bt.grid(row = 0, column = 0, padx = 5, pady = 5, sticky = "we")
 
-pfolder_bt = ctk.CTkButton(master = f2, text = "Prompt 資料夾", font = text_font, height = 28,
-                           anchor = "c", command = open_prompt_folder)
+pfolder_bt = ctk.CTkButton(master = f2, text = "Persona 指令", font = text_font, height = 28,
+                           anchor = "c", command = open_PersonaEditor)
 pfolder_bt.grid(row = 1, column = 0, padx = 5, pady = (0, 5), sticky = "we")
 
 chatroom_bt = ctk.CTkButton(
-    master = f2, text = "AI 聊天室 / LOG", font = text_font, height = 28, anchor = "c", 
-    command = lambda: pop_chatroom()
+    master = f2, text = "聊天室 / 翻譯紀錄", font = text_font, height = 28, anchor = "c", 
+    command = lambda: open_chatroom()
 )
 chatroom_bt.grid(row = 2, column = 0, padx = 5, pady = (0, 5), sticky = "we")
 
-resetchat_bt = ctk.CTkButton(master = f2, text = "重製 AI 記憶", font = text_font, height = 28,
+resetchat_bt = ctk.CTkButton(master = f2, text = "AI 重置 / 記憶刪除", font = text_font, height = 28,
                            anchor = "c", command = reset_chat)
 resetchat_bt.grid(row = 3, column = 0, padx = 5, pady = (0, 5), sticky = "we")
 
@@ -1222,7 +916,7 @@ model_change_wd = ctk.CTkLabel(master = f2, text = "目前使用的 AI 模型", 
 model_change_wd.grid(row = 15, column = 0, padx = 5, pady = (15, 5), sticky = "swe")
 model_change_op = ctk.CTkComboBox(
     master = f2, 
-    values = ["llama-3.3-70b-versatile", "llama-3.3-70b-specdec", "llama-3.1-8b-instant", "gemma2-9b-it"], 
+    values = ["llama-3.3-70b-versatile", "llama-3.1-8b-instant", "gemma2-9b-it", "compound-beta-mini"], 
     command = set_model
 )
 model_change_op.set(model)

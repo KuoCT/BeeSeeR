@@ -386,25 +386,30 @@ class overlayWindow(ctk.CTkToplevel):
     def load_config(self):
         """讀取設定檔案"""
         if os.path.exists(os.path.join(PATH, "config.json")):
-            with open(os.path.join(PATH, "config.json"), "r") as f:
+            with open(os.path.join(PATH, "config.json"), "r", encoding="utf-8") as f:
                 return json.load(f)
         return {}  # 如果沒有設定檔，回傳空字典
     
     def save_config(self):
-        """讀取現有設定，更新後再存入 JSON 檔案"""
-        config = self.load_config()  # 先載入現有設定
+        """只有當設定異動時，才更新 config.json"""
+        old_config = self.load_config()
 
-        # 更新設定
-        config.update({
+        # 準備要寫入的內容
+        new_config = {
             "font_size": self.font_size,
-            # "opacity": self.opacity,
             "lock_movement": self.lock_movement,
             "hide": self.hide
-        })
+        }
 
-        # 將更新後的設定存回 JSON
-        with open(os.path.join(PATH, "config.json"), "w") as f:
-            json.dump(config, f, indent = 4)  # `indent=4` 讓 JSON 易讀
+        # 只有內容不同時才寫入
+        if old_config != {**old_config, **new_config}:
+            old_config.update(new_config)
+            with open(os.path.join(PATH, "config.json"), "w", encoding = "utf-8") as f:
+                json.dump(old_config, f, ensure_ascii = False, indent = 4)
+            # print("\033[32m[INFO] 設定檔已更新\033[0m")
+        else:
+            # print("\033[34m[INFO] 設定無變更，跳過寫入\033[0m")
+            pass
 
     def withdraw(self):
         super().withdraw()

@@ -1,1 +1,0 @@
-Extract and store key academic terms, technical jargon, author names, and citation formats to ensure consistency. Focus on translating domain-specific terminology accurately. Maintain concise summaries (max 250 characters) to optimize token usage. Reference prior translations for consistency, but avoid unnecessary duplication.

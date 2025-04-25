@@ -2,6 +2,7 @@ import os
 import json
 import colorama
 import markdown
+import tkinter as tk
 import customtkinter as ctk
 from bs4 import BeautifulSoup
 
@@ -15,27 +16,34 @@ class chatroomWindow(ctk.CTkToplevel):
             current_theme, 
             chat_session = None,
             groq_key = None,
-            token_update_callback = None
+            on_activate = None,
+            on_link_persona = None,
         ):
         super().__init__()
 
+        # Callbask 函數
+        self.on_activate = on_activate # 更新主視窗的 token 計數器
+        self.on_link_persona = on_link_persona # 連結 persona 指令集
+
+        # 讀取設定
         self.settings  = self.load_config()
         self.chat_font_size = self.settings.get("chat_font_size", 14) # 文字大小
+        self.chat_save_path = self.settings.get("chat_save_path", None) # 初始化儲存位置
+        self.message_font = ctk.CTkFont(family = "Helvetica", size = self.chat_font_size, weight = "bold")
+        text_fix_font = ctk.CTkFont(family = "Helvetica", size = 16, weight = "bold")
+
+        self.updated_persona = None # 初始化 persona
         self.prompt_tokens = 0 # 初始化 token 計數器
         self.completion_tokens = 0 # 初始化 token 計數器
         self.chatlog =  "" # 初始化對話紀錄
         self.user_input = "" # 初始化聊天輸入
-        self.token_update_callback = token_update_callback # 回呼函數
-        self.last_save_path = self.settings.get("last_save_path", None) # 初始化儲存位置
-        self.message_font = ctk.CTkFont(family = "Helvetica", size = self.chat_font_size, weight = "bold")
-        text_fix_font = ctk.CTkFont(family = "Helvetica", size = 16, weight = "bold")
-
         self.groq_key = groq_key
         self.model = "llama-3.3-70b-versatile"
         self.enable_short_term_memory = True
         self.max_history = 3
         self.temperature = 0.6
         self.silent = True
+        self.current_theme = current_theme
 
         if chat_session is None:
             self.chat_session = chat.GroqChatSession(
@@ -133,26 +141,32 @@ class chatroomWindow(ctk.CTkToplevel):
     def load_config(self):
         """讀取設定檔案"""
         if os.path.exists(os.path.join(PATH, "config.json")):
-            with open(os.path.join(PATH, "config.json"), "r") as f:
+            with open(os.path.join(PATH, "config.json"), "r", encoding="utf-8") as f:
                 return json.load(f)
         return {}  # 如果沒有設定檔，回傳空字典
     
     def save_config(self):
-        """讀取現有設定，更新後再存入 JSON 檔案"""
-        config = self.load_config()  # 先載入現有設定
+        """只有當設定異動時，才更新 config.json"""
+        old_config = self.load_config()
 
-        # 更新設定
-        config.update({
+        # 準備要寫入的內容
+        new_config = {
             "chat_font_size": self.chat_font_size,
-            "last_save_path": self.last_save_path
-        })
+            "chat_save_path": self.chat_save_path
+        }
 
-        # 將更新後的設定存回 JSON
-        with open(os.path.join(PATH, "config.json"), "w") as f:
-            json.dump(config, f, indent = 4)  # `indent=4` 讓 JSON 易讀
+        # 只有內容不同時才寫入
+        if old_config != {**old_config, **new_config}:
+            old_config.update(new_config)
+            with open(os.path.join(PATH, "config.json"), "w", encoding = "utf-8") as f:
+                json.dump(old_config, f, ensure_ascii = False, indent = 4)
+            # print("\033[32m[INFO] 設定檔已更新\033[0m")
+        else:
+            # print("\033[34m[INFO] 設定無變更，跳過寫入\033[0m")
+            pass
 
     def append_chatbubble(self, role, message):
-        """新增對話泡泡"""
+        """新增對話泡泡，支援點擊展開選取視窗"""
         # 根據角色決定顏色與對齊
         if role == "User":
             anchor_side = "e"
@@ -188,12 +202,43 @@ class chatroomWindow(ctk.CTkToplevel):
 
         text.pack(anchor = "w", padx = 10, pady = 5)
 
+        # 綁定點擊 → 展開 Toplevel 供選取
+        text.bind("<Button-1>", lambda e: self.show_popup(e, message))
+
         # 對齊左右並加內邊距
         bubble_frame.pack(anchor = anchor_side, pady = 5, padx = (5, 0), fill = b_fill, expand = b_expand)
 
         # 自動捲動到底部
         self.update_idletasks()  # 確保渲染完成
         self.text_f._parent_canvas.yview_moveto(1.0)
+
+    def show_popup(self, event, message):
+        """點擊時展開 Toplevel 供選取"""
+        popup = ctk.CTkToplevel(self)
+        popup.title("對話內容")
+
+        # 設定彈出視窗的寬高
+        popup_width = 400
+        popup_height = 200
+
+        # 計算讓滑鼠點擊位置在視窗中心
+        x = event.x_root - popup_width // 2
+        y = event.y_root
+
+        popup.geometry(f"{popup_width}x{popup_height}+{x}+{y}")
+        popup.attributes("-topmost", True) # 讓視窗顯示在最前面
+        popup.after(250, popup.iconbitmap, 
+                (
+                    os.path.join(PATH, "icon", "logo_dark.ico") 
+                    if self.current_theme == "dark" 
+                    else os.path.join(PATH, "icon", "logo_light.ico")
+                )
+        )
+
+        textbox = ctk.CTkTextbox(popup, wrap = "word", width = 400, height = 200)
+        textbox.pack(padx = 5, pady = 5, fill = "both", expand = True)
+        textbox.insert("1.0", message)
+        textbox.configure(state="disabled")
 
     def markdown_to_plaintext(self, md_text):
         """Markdown 轉純文字，保留結構且項目之間僅單換行"""
@@ -242,40 +287,26 @@ class chatroomWindow(ctk.CTkToplevel):
             for grandchild in child.winfo_children():
                 if isinstance(grandchild, ctk.CTkLabel):
                     grandchild.configure(font = ("Helvetica", self.chat_font_size))
-    
-    def load_prompt(self, file):
-        """ 從文件載入提示詞，並回傳 (絕對路徑, 內容) """
-        # 取得目前腳本所在的資料夾
-        script_dir = os.path.dirname(os.path.abspath(__file__))
-
-        # 構建絕對路徑
-        prompt_path = os.path.join(script_dir, "..", "prompt", file)
-
-        try:
-            with open(prompt_path, "r", encoding="utf-8") as f:
-                content = f.read().strip()
-            return content  # 回傳
-
-        except Exception as e:
-            print(f"\033[31m[INFO] 找不到 {prompt_path} 文件，將會使用預設的提示詞。\033[0m")
-            return None  # 讀取失敗時回傳 None
-        
+           
     def on_return_key(self, event):
         if event.state & 0x0001:  # Shift+Enter 換行
             self.textbox.insert("insert", "\n")
         else:  # 單獨 Enter：送出
             self.talk_to_llm()
         return "break"
+    
         
     def talk_to_llm(self, event = None):
         """輸入文字與模型對話"""
+        self.on_link_persona() # 連接 persona
+        persona = self.updated_persona # 傳入 persona
         self.user_input = self.textbox.get("0.0", "end").strip()
         if self.user_input:  # 避免空輸入
             self.append_chatbubble(role = "User", message = self.user_input)
             self.append_chatlog(role = "User", message = self.user_input)
             self.textbox.delete("0.0", "end")  # 清空輸入框內容
-            system_prompt = self.load_prompt("Chat_system_prompt.txt") # 讀取系統提示詞
-            memory_prompt = self.load_prompt("Chat_memory_prompt.txt") # 讀取記憶提示詞
+            system_prompt = persona["Chat_persona"]
+            memory_prompt = persona["Memory_persona"]
             response, prompt_tokens, completion_tokens = self.chat_session.send_to_groq(
                 system_prompt, 
                 memory_prompt, 
@@ -287,8 +318,8 @@ class chatroomWindow(ctk.CTkToplevel):
             self.append_chatbubble(role = self.chat_session.model, message = response)
             self.append_chatlog(role = self.chat_session.model, message = response)
             # 呼叫 callback → 通知主視窗更新 token 顯示
-            if self.token_update_callback:
-                self.token_update_callback(prompt_tokens, completion_tokens)
+            if self.on_activate:
+                self.on_activate(prompt_tokens, completion_tokens)
     
     def append_chatlog(self, role, message):
         """將單筆對話追加到 chatlog"""
@@ -312,14 +343,14 @@ class chatroomWindow(ctk.CTkToplevel):
             filetypes = [("Markdown files", "*.md"), ("All files", "*.*")],
             title = "Save Chatlog",
             initialfile = default_filename,
-            initialdir = getattr(self, "last_save_path", PATH)
+            initialdir = getattr(self, "chat_save_path", PATH)
         )
 
         if filepath:  # 若使用者有選擇檔案
             try:
                 with open(filepath, 'w', encoding = 'utf-8') as file:
                     file.write(self.chatlog)
-                self.last_save_path = os.path.dirname(filepath) # 記錄新儲存路徑
+                self.chat_save_path = os.path.dirname(filepath) # 記錄新儲存路徑
                 self.save_config()
                 print(f"Chatlog successfully saved to {filepath}")
             except Exception as e:
@@ -328,7 +359,13 @@ class chatroomWindow(ctk.CTkToplevel):
             print("Save operation cancelled.")
 
 if __name__ == "__main__":
-    import chat
+    import sys
+    PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..") # 設定相對路徑
+    sys.path.append(PATH) # 將路徑加入到系統路徑中
+
+    import llm.chat as chat
+    from tool.PersonaEditor import PersonaEditor
+
     # 輸入 groq_key
     print("\033[32m[INFO] 請提供Groq API key。\033[0m")
     groq_key = input("\033[33mGroq API key: \033[0m")
@@ -354,8 +391,13 @@ if __name__ == "__main__":
             ctk.set_appearance_mode("dark") # 切換到深色主題
             current_theme = "dark" # 更新當前主題變數
 
+    def link_persona():
+        """將人格指令連結到聊天室"""
+        chatroom.updated_persona = PerEdit.updated_persona  # 更新聊天室的 persona 變數
+
     root = ctk.CTk() # 創建主視窗
-    chatroom = chatroomWindow(current_theme, groq_key = groq_key)
+    PerEdit = PersonaEditor(current_theme) # 創建子視窗
+    chatroom = chatroomWindow(current_theme, groq_key = groq_key, on_link_persona = link_persona)
     chatroom.deiconify() # 顯示視窗
 
     toggle_theme_bt = ctk.CTkButton(root, text = "切換主題", command = toggle_theme)

@@ -257,7 +257,7 @@ class ModelSetting(ctk.CTkToplevel):
     def load_config(self):
         """讀取設定檔案"""
         if os.path.exists(os.path.join(PATH, "config.json")):
-            with open(os.path.join(PATH, "config.json"), "r") as f:
+            with open(os.path.join(PATH, "config.json"), "r", encoding = "utf-8") as f:
                 return json.load(f)
         return {}  # 如果沒有設定檔，回傳空字典
     
@@ -278,8 +278,8 @@ class ModelSetting(ctk.CTkToplevel):
         # 只有內容不同時才寫入
         if old_config != {**old_config, **new_config}:
             old_config.update(new_config)
-            with open(os.path.join(PATH, "config.json"), "w") as f:
-                json.dump(old_config, f, indent = 4)
+            with open(os.path.join(PATH, "config.json"), "w", encoding = "utf-8") as f:
+                json.dump(old_config, f, ensure_ascii = False, indent = 4)
             # print("\033[32m[INFO] 設定檔已更新\033[0m")
         else:
             # print("\033[34m[INFO] 設定無變更，跳過寫入\033[0m")
@@ -401,8 +401,8 @@ class ModelSetting(ctk.CTkToplevel):
             use_exe = False
             # messagebox.showinfo("未偵測到 BeeSeeR.exe", "請手動選擇 BeeSeeR.bat 檔案。")
             bat_path = filedialog.askopenfilename(
-                filetypes=[("Batch Files", "*.bat")],
-                initialdir=PATH,
+                filetypes = [("Batch Files", "*.bat")],
+                initialdir = PATH,
                 title="選擇 BeeSeeR 啟動用 .bat 檔"
             )
             if not bat_path:
@@ -415,9 +415,9 @@ class ModelSetting(ctk.CTkToplevel):
             icon_dir = PATH  # fallback
 
         icon_path = filedialog.askopenfilename(
-            filetypes=[("Icon Files", "*.ico")],
-            initialdir=icon_dir,
-            title="選擇 icon 檔"
+            filetypes = [("Icon Files", "*.ico")],
+            initialdir = icon_dir,
+            title = "選擇 icon 檔"
         )
 
         if not icon_path:
@@ -426,7 +426,7 @@ class ModelSetting(ctk.CTkToplevel):
 
         # 選取儲存位置
         save_dir = filedialog.askdirectory(
-            initialdir=PATH,
+            initialdir = PATH,
             title="選擇捷徑儲存位置"
         )
 
