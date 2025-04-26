@@ -11,7 +11,8 @@ class PersonaEditor(ctk.CTkToplevel):
             self,
             current_theme,
             width = None, 
-            height = None
+            height = None,
+            APPDATA = PATH
         ):
         super().__init__()
 
@@ -31,6 +32,7 @@ class PersonaEditor(ctk.CTkToplevel):
         self.protocol("WM_DELETE_WINDOW", self.withdraw) # 攔截關閉行為 → 改為隱藏（withdraw）
 
         # 讀取設定檔案
+        self.APPDATA = APPDATA
         self.settings = self.load_config()
         self.persona_file = self.settings.get("persona_file", None) # AI 人格與提示詞
         self.persona_save_path = self.settings.get("persona_save_path", None) # persona 設定檔儲存位置
@@ -132,8 +134,8 @@ class PersonaEditor(ctk.CTkToplevel):
 
     def load_config(self):
         """讀取設定檔案"""
-        if os.path.exists(os.path.join(PATH, "config.json")):
-            with open(os.path.join(PATH, "config.json"), "r", encoding="utf-8") as f:
+        if os.path.exists(os.path.join(self.APPDATA, "config.json")):
+            with open(os.path.join(self.APPDATA, "config.json"), "r", encoding="utf-8") as f:
                 return json.load(f)
         return {}  # 如果沒有設定檔，回傳空字典
     
@@ -152,7 +154,7 @@ class PersonaEditor(ctk.CTkToplevel):
         # 只有內容不同時才寫入
         if old_config != {**old_config, **new_config}:
             old_config.update(new_config)
-            with open(os.path.join(PATH, "config.json"), "w", encoding = "utf-8") as f:
+            with open(os.path.join(self.APPDATA, "config.json"), "w", encoding = "utf-8") as f:
                 json.dump(old_config, f, ensure_ascii = False, indent = 4)
             # print("\033[32m[INFO] 設定檔已更新\033[0m")
         else:
@@ -165,7 +167,7 @@ class PersonaEditor(ctk.CTkToplevel):
         if dialog:
             from tkinter import filedialog, messagebox
             # 跳出檔案選擇對話框
-            initial_dir = self.persona_save_path if self.persona_save_path else os.path.join(PATH, "persona")
+            initial_dir = self.persona_save_path if self.persona_save_path else os.path.join(self.APPDATA, "persona")
             file_path = filedialog.askopenfilename(
                 filetypes = [("JSON Files", "*.json")],
                 initialdir = initial_dir,
@@ -188,7 +190,7 @@ class PersonaEditor(ctk.CTkToplevel):
             if self.persona_file and not os.path.exists(self.persona_file):
                 from tkinter import messagebox
                 messagebox.showwarning("警告", "找不到 persona 設定檔，將使用預設 persona 檔案開啟。")
-                fallback_file = os.path.join(PATH, "persona", "default_persona.json")
+                fallback_file = os.path.join(self.APPDATA, "persona", "default_persona.json")
                 if not os.path.exists(fallback_file):
                     default_data = {
                         "Translator_persona": "You are a translator. Please translate into {{language}}, adapting for {{locale}}.",
@@ -201,20 +203,20 @@ class PersonaEditor(ctk.CTkToplevel):
                         json.dump(default_data, f, ensure_ascii = False, indent = 4)
 
                     # 修補完成後提示
-                    messagebox.showwarning("警告", "找不到預設 persona 設定檔，已臨時修補設定檔。\n建議至官網下載完整預設設定檔以確保功能完整。")
+                    messagebox.showwarning("警告", "找不到預設 persona 設定檔，已臨時修補設定檔。\n建議至官網下載完整檔案以確保功能完整。")
 
                 # 使用 fallback
                 self.persona_file = fallback_file
                 self.save_config()
 
             if not self.persona_file:
-                self.persona_file = os.path.join(PATH, "persona", "default_persona.json")
+                self.persona_file = os.path.join(self.APPDATA, "persona", "default_persona.json")
 
     def save_persona_file(self):
         """儲存目前的 persona 到 JSON 檔案"""
         from tkinter import filedialog
         # 跳出儲存對話框
-        initial_dir = self.persona_save_path if self.persona_save_path else os.path.join(PATH, "persona")
+        initial_dir = self.persona_save_path if self.persona_save_path else os.path.join(self.APPDATA, "persona")
         file_path = filedialog.asksaveasfilename(
             defaultextension = ".json",
             filetypes = [("JSON Files", "*.json")],
@@ -237,7 +239,7 @@ class PersonaEditor(ctk.CTkToplevel):
             json.dump(persona_data, f, ensure_ascii = False, indent = 4)
 
         # 記錄儲存路徑
-        self.persona_save_path = file_path
+        self.persona_save_path = os.path.dirname(file_path)
         self.save_config()  # 儲存設定檔
 
     def load_persona(self, file_or_data, language, locale):

@@ -13,7 +13,8 @@ class APISetting(ctk.CTkToplevel):
             current_theme, 
             width = None, 
             height = None, 
-            on_activate = None
+            on_activate = None,
+            APPDATA = PATH
         ):
         super().__init__()
 
@@ -36,6 +37,7 @@ class APISetting(ctk.CTkToplevel):
         self.protocol("WM_DELETE_WINDOW", self.withdraw) # 攔截關閉行為 → 改為隱藏（withdraw）
 
         # 讀取設定檔案
+        self.APPDATA = APPDATA
         self.settings = self.load_config()
         self.google_ocr_key = self.settings.get("google_ocr_key", None) # Google Vision API Key 文字辨識
         self.groq_key = self.settings.get("groq_key", None) # Groq API Key 翻譯 / 聊天 語言模型
@@ -96,8 +98,8 @@ class APISetting(ctk.CTkToplevel):
 
     def load_config(self):
         """讀取設定檔案"""
-        if os.path.exists(os.path.join(PATH, "config.json")):
-            with open(os.path.join(PATH, "config.json"), "r", encoding = "utf-8") as f:
+        if os.path.exists(os.path.join(self.APPDATA, "config.json")):
+            with open(os.path.join(self.APPDATA, "config.json"), "r", encoding = "utf-8") as f:
                 return json.load(f)
         return {}  # 如果沒有設定檔，回傳空字典
     
@@ -114,7 +116,7 @@ class APISetting(ctk.CTkToplevel):
         # 只有內容不同時才寫入
         if old_config != {**old_config, **new_config}:
             old_config.update(new_config)
-            with open(os.path.join(PATH, "config.json"), "w", encoding = "utf-8") as f:
+            with open(os.path.join(self.APPDATA, "config.json"), "w", encoding = "utf-8") as f:
                 json.dump(old_config, f, ensure_ascii = False, indent = 4)
             # print("\033[32m[INFO] 設定檔已更新\033[0m")
         else:

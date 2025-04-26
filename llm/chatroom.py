@@ -18,6 +18,7 @@ class chatroomWindow(ctk.CTkToplevel):
             groq_key = None,
             on_activate = None,
             on_link_persona = None,
+            APPDATA = PATH
         ):
         super().__init__()
 
@@ -28,9 +29,10 @@ class chatroomWindow(ctk.CTkToplevel):
         # 讀取設定
         self.settings  = self.load_config()
         self.chat_font_size = self.settings.get("chat_font_size", 14) # 文字大小
-        self.chat_save_path = self.settings.get("chat_save_path", None) # 初始化儲存位置
+        self.chat_save_path = self.settings.get("chat_save_path", APPDATA) # 初始化儲存位置
         self.message_font = ctk.CTkFont(family = "Helvetica", size = self.chat_font_size, weight = "bold")
         text_fix_font = ctk.CTkFont(family = "Helvetica", size = 16, weight = "bold")
+        self.APPDATA = APPDATA
 
         self.updated_persona = None # 初始化 persona
         self.prompt_tokens = 0 # 初始化 token 計數器
@@ -46,6 +48,7 @@ class chatroomWindow(ctk.CTkToplevel):
         self.current_theme = current_theme
 
         if chat_session is None:
+            import llm.chat as chat
             self.chat_session = chat.GroqChatSession(
                 groq_key = self.groq_key, 
                 model = self.model, 
@@ -140,8 +143,8 @@ class chatroomWindow(ctk.CTkToplevel):
     
     def load_config(self):
         """讀取設定檔案"""
-        if os.path.exists(os.path.join(PATH, "config.json")):
-            with open(os.path.join(PATH, "config.json"), "r", encoding="utf-8") as f:
+        if os.path.exists(os.path.join(self.APPDATA, "config.json")):
+            with open(os.path.join(self.APPDATA, "config.json"), "r", encoding="utf-8") as f:
                 return json.load(f)
         return {}  # 如果沒有設定檔，回傳空字典
     
@@ -158,7 +161,7 @@ class chatroomWindow(ctk.CTkToplevel):
         # 只有內容不同時才寫入
         if old_config != {**old_config, **new_config}:
             old_config.update(new_config)
-            with open(os.path.join(PATH, "config.json"), "w", encoding = "utf-8") as f:
+            with open(os.path.join(self.APPDATA, "config.json"), "w", encoding = "utf-8") as f:
                 json.dump(old_config, f, ensure_ascii = False, indent = 4)
             # print("\033[32m[INFO] 設定檔已更新\033[0m")
         else:
@@ -305,6 +308,8 @@ class chatroomWindow(ctk.CTkToplevel):
             self.append_chatbubble(role = "User", message = self.user_input)
             self.append_chatlog(role = "User", message = self.user_input)
             self.textbox.delete("0.0", "end")  # 清空輸入框內容
+            print(f"\n\033[33m[INFO] 使用者輸入：\033[0m")
+            print(self.user_input)
             system_prompt = persona["Chat_persona"]
             memory_prompt = persona["Memory_persona"]
             response, prompt_tokens, completion_tokens = self.chat_session.send_to_groq(
@@ -343,7 +348,7 @@ class chatroomWindow(ctk.CTkToplevel):
             filetypes = [("Markdown files", "*.md"), ("All files", "*.*")],
             title = "Save Chatlog",
             initialfile = default_filename,
-            initialdir = getattr(self, "chat_save_path", PATH)
+            initialdir = self.chat_save_path
         )
 
         if filepath:  # 若使用者有選擇檔案
@@ -352,56 +357,9 @@ class chatroomWindow(ctk.CTkToplevel):
                     file.write(self.chatlog)
                 self.chat_save_path = os.path.dirname(filepath) # 記錄新儲存路徑
                 self.save_config()
-                print(f"Chatlog successfully saved to {filepath}")
+                print(f"\033[32m[INFO] 對話紀錄已儲存至: {filepath}\033[0m")
             except Exception as e:
-                print(f"Failed to save chatlog: {e}")
+                print(f"\033[31m[ERROR] 儲存對話紀錄失敗: {e}\033[0m")
         else:
-            print("Save operation cancelled.")
-
-if __name__ == "__main__":
-    import sys
-    PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..") # 設定相對路徑
-    sys.path.append(PATH) # 將路徑加入到系統路徑中
-
-    import llm.chat as chat
-    from tool.PersonaEditor import PersonaEditor
-
-    # 輸入 groq_key
-    print("\033[32m[INFO] 請提供Groq API key。\033[0m")
-    groq_key = input("\033[33mGroq API key: \033[0m")
-
-    # 設定主題
-    current_theme = "dark"
-
-    # 設定主題
-    if current_theme == "dark":
-        ctk.set_appearance_mode("dark")
-    else:
-        ctk.set_appearance_mode("light")
-
-    ctk.set_default_color_theme(os.path.join(PATH, "theme", "nectar.json"))
-
-    def toggle_theme():
-        """切換主題的函數"""
-        global current_theme # 使用全域變數
-        if current_theme == "dark": # 如果當前主題是深色
-            ctk.set_appearance_mode("light") # 切換到淺色主題
-            current_theme = "light" # 更新當前主題變數
-        else: # 如果當前主題是淺色
-            ctk.set_appearance_mode("dark") # 切換到深色主題
-            current_theme = "dark" # 更新當前主題變數
-
-    def link_persona():
-        """將人格指令連結到聊天室"""
-        chatroom.updated_persona = PerEdit.updated_persona  # 更新聊天室的 persona 變數
-
-    root = ctk.CTk() # 創建主視窗
-    PerEdit = PersonaEditor(current_theme) # 創建子視窗
-    chatroom = chatroomWindow(current_theme, groq_key = groq_key, on_link_persona = link_persona)
-    chatroom.deiconify() # 顯示視窗
-
-    toggle_theme_bt = ctk.CTkButton(root, text = "切換主題", command = toggle_theme)
-    toggle_theme_bt.pack(padx = 10, pady = 10) 
-
-    root.attributes("-topmost", True) # 讓視窗顯示在最前面
-    root.mainloop()
+            # print("Save operation cancelled.")
+            pass

@@ -12,6 +12,26 @@ args = parser.parse_args()
 
 PATH = os.path.join(os.path.dirname(os.path.abspath(__file__))) # 設定相對路徑
 
+def is_frozen():
+    """判斷是否為 Nuitka 或其他打包環境"""
+    exe = sys.executable.lower()
+    return (
+        hasattr(sys, "frozen")  # PyInstaller、cx_Freeze 常見特徵
+        or hasattr(sys, "_MEIPASS")  # PyInstaller 特有
+        or exe.endswith(".exe") and not exe.endswith("python.exe")  # Nuitka 判斷法
+        or "nuitka" in exe  # fallback：Nuitka 路徑中有 nuitka 字樣
+    )
+
+# 將需要讀取/寫入的文件另存到 LOCALAPPDATA 
+if is_frozen(): 
+    APPDATA = os.path.join(os.getenv("LOCALAPPDATA"), "BeeSeeR")
+    os.makedirs(APPDATA, exist_ok=True)
+    if not os.path.exists(os.path.join(PATH, "persona")):
+        import shutil
+        shutil.copytree(os.path.join(PATH, "persona"), os.path.join(APPDATA, "persona"))
+else:
+    APPDATA = PATH  # 如果是腳本使用當前目錄
+
 # 檢查是否已經有執行中的程式
 lock_file_path = os.path.join(os.getenv("TEMP"), "beeseer.lock")
 lock_file = open(lock_file_path, "w")
@@ -23,11 +43,11 @@ except portalocker.exceptions.LockException:
     import tkinter as tk
     from tkinter import messagebox
     if args.background:
-        with open(os.path.join(PATH, "GUI_open.flag"), "w") as f:
+        with open(os.path.join(APPDATA, "GUI_open.flag"), "w") as f:
             f.write("GUI_is_opened")
     root = tk.Tk()
     root.withdraw()
-    messagebox.showwarning("重複執行", "BeeSeeR 已啟動！")
+    messagebox.showinfo("偵測到重複執行", "BeeSeeR 正在運行中，無須重複啟動程式。")
     sys.exit(0)
 
 # 根據 `--force-cpu` 設置環境變數
@@ -74,8 +94,8 @@ except Exception as e:
 
 def load_config():
     """讀取設定檔案"""
-    if os.path.exists(os.path.join(PATH, "config.json")):
-        with open(os.path.join(PATH, "config.json"), "r", encoding = "utf-8") as f:
+    if os.path.exists(os.path.join(APPDATA, "config.json")):
+        with open(os.path.join(APPDATA, "config.json"), "r", encoding = "utf-8") as f:
             return json.load(f)
     return {}  # 如果沒有設定檔，回傳空字典
 
@@ -129,8 +149,14 @@ if groq_available:
         silent
     )
 
+def receive_coordinates(coords):
+    """Callback 函數，獲取座標"""
+    global cb_coords
+    cb_coords = coords
+    print(f"\033[36m[INFO] 即時回傳選取範圍座標: {coords}\033[0m")
+
 # 螢幕文字辨識
-def run_wincap():
+def run_wincap(coords = None):
     """啟動 WindowCapture 取得螢幕訊息"""
     global ocr_model, hotkey_enabled
 
@@ -138,12 +164,6 @@ def run_wincap():
         return  # 忽略重複觸發
     
     hotkey_enabled = False  # 禁用快捷鍵
-
-    def receive_coordinates(coords):
-        """回呼函數，獲取座標"""
-        global cb_coords
-        cb_coords = coords
-        # print(f"\033[34m[INFO] 即時回傳選取範圍座標: {coords}\033[0m")
 
     capture_bt.configure(state = "disabled") # 鎖定按鈕防止重複觸發
 
@@ -183,7 +203,7 @@ def run_wincap():
             global hotkey_enabled
             stop_event.set()  # 結束動畫
             loading_tip.destroy()
-            capture_bt.configure(state="normal")  # 解鎖按鈕
+            capture_bt.configure(state = "normal")  # 解鎖按鈕
             hotkey_enabled = True  # 恢復快捷鍵
 
             # 延遲 100 毫秒再建立 tooltip，讓 window 回穩
@@ -254,15 +274,21 @@ def run_wincap():
                 on_capture = receive_coordinates,
                 on_result = handle_result,
                 prompt = PerEdit.updated_persona["Prompt"],
+                ocr_model = ocr_model,
+                google_ocr_key = google_ocr_key,
+                google_ocr_feature = ModSet.google_ocr_feature,
                 dtype = dtype,
                 langs = langs,
-                ocr_model = ocr_model,
                 mocr = mocr,
                 recognition_predictor = recognition_predictor,
                 detection_predictor = detection_predictor,
-                google_ocr_key = google_ocr_key         
+                bind = not bool(coords), # 如果有座標，取消滑鼠綁定 (自動操作)     
             )
-            app.deiconify()
+
+            if bool(coords):
+                app.auto_capture(coords)
+            else:
+                app.deiconify()
 
         window.after(0, launch_window)
 
@@ -302,9 +328,9 @@ def handle_result(prompt_text, extracted_text, final_text, is_dragging):
     user_input = ext
 
     if isinstance(ext, str) and ext.strip():
-        print("\033[33m[INFO] 文字辨識結果：\033[0m")
+        print("\n\033[33m[INFO] 光學字元辨識 (OCR) 結果：\033[0m")
         print(ext)
-        if not ost_control: capture_bt.configure(state="normal") # 解鎖按鈕
+        if not ost_control: capture_bt.configure(state = "normal") # 解鎖按鈕
     else:
         print("\033[31m[INFO] 無法獲取文字辨識結果。\033[0m")
         # 顯示短暫提示：無法獲取文字辨識結果
@@ -319,7 +345,7 @@ def handle_result(prompt_text, extracted_text, final_text, is_dragging):
     if groq_available and ost_control and isinstance(ext, str) and ext.strip() and is_dragging:
         # 粗略統計單詞數
         word_count = estimate_word_count(ext)
-        print(f"[INFO] OCR 分析結果: {word_count} 單字")
+        print(f"\033[36m[INFO] OCR 結果分析: {word_count} 單字\033[0m")
         word_threshold = 1000  # 可自行調整單字上限
 
         if word_count > word_threshold:
@@ -358,7 +384,7 @@ def handle_result(prompt_text, extracted_text, final_text, is_dragging):
                 loading_tip.destroy()
 
                 # 顯示翻譯結果 overlay 
-                overlay = overlayWindow(window, last_response, cb_coords, scale_factor)
+                overlay = overlayWindow(window, last_response, cb_coords, scale_factor, run_again, APPDATA = APPDATA)
                 overlay_windows.append(overlay)
                 overlay.deiconify()
 
@@ -391,6 +417,10 @@ def handle_result(prompt_text, extracted_text, final_text, is_dragging):
 
         # 背景執行 AI 翻譯任務
         threading.Thread(target = translate_in_background, daemon = True).start()
+
+def run_again(coords):
+    """Callback 函數，再翻譯一次"""
+    run_wincap(coords)
 
 def update_token_display(prompt_tokens, completion_tokens):
     """更新主視窗 token 顯示"""
@@ -449,16 +479,6 @@ def open_PersonaEditor(): # 打開子視窗的函數
     PerEdit.geometry(f"{PerEdit.w}x{PerEdit.h}+{window.winfo_x() - int((APISet.w + ModSet.w + 20) * scale_factor)}+{window.winfo_y() + int((APISet.h - 50)) * scale_factor}")
     PerEdit.deiconify() # 顯示子視窗
 
-def is_frozen():
-    """判斷是否為 Nuitka 或其他打包環境"""
-    exe = sys.executable.lower()
-    return (
-        hasattr(sys, "frozen")  # PyInstaller、cx_Freeze 常見特徵
-        or hasattr(sys, "_MEIPASS")  # PyInstaller 特有
-        or exe.endswith(".exe") and not exe.endswith("python.exe")  # Nuitka 判斷法
-        or "nuitka" in exe  # fallback：Nuitka 路徑中有 nuitka 字樣
-    )
-
 def restart_app():
     """根據是否被打包，選擇適當的重啟方式"""
     from tkinter import messagebox
@@ -494,7 +514,7 @@ def save_config():
     # 只有內容不同時才寫入
     if old_config != {**old_config, **new_config}:
         old_config.update(new_config)
-        with open(os.path.join(PATH, "config.json"), "w", encoding = "utf-8") as f:
+        with open(os.path.join(APPDATA, "config.json"), "w", encoding = "utf-8") as f:
             json.dump(old_config, f, ensure_ascii = False, indent = 4)
         # print("\033[32m[INFO] 設定檔已更新\033[0m")
     else:
@@ -754,11 +774,11 @@ ctk.set_default_color_theme(os.path.join(PATH, "theme", "nectar.json"))
 
 window = ctk.CTk() # 主視窗 (root)
 freeze_overlay = FreezeOverlay(window) # 模擬螢幕凍結的 overlay (toplevel)
-APISet = APISetting(current_theme, on_activate = update_APISetting) # API 設定視窗 (toplevel)
-ModSet = ModelSetting(current_theme, on_activate = update_ModelSetting, on_restart = restart_app, on_update_hotkey = update_hotkey) # OCR 模型設定視窗 (toplevel)
-PerEdit = PersonaEditor(current_theme) # 人格指令編輯器 (toplevel)
+APISet = APISetting(current_theme, on_activate = update_APISetting, APPDATA = APPDATA) # API 設定視窗 (toplevel)
+ModSet = ModelSetting(current_theme, on_activate = update_ModelSetting, on_restart = restart_app, on_update_hotkey = update_hotkey, APPDATA = APPDATA) # OCR 模型設定視窗 (toplevel)
+PerEdit = PersonaEditor(current_theme, APPDATA = APPDATA) # 人格指令編輯器 (toplevel)
 if groq_available:
-    chatroom = chatroomWindow(current_theme, chat_session, groq_key, on_activate = update_token_display, on_link_persona = link_persona) # 聊天室 / 翻譯紀錄 (toplevel)
+    chatroom = chatroomWindow(current_theme, chat_session, groq_key, on_activate = update_token_display, on_link_persona = link_persona, APPDATA = APPDATA) # 聊天室 / 翻譯紀錄 (toplevel)
 else:
     chatroom = None
 
@@ -916,7 +936,18 @@ model_change_wd = ctk.CTkLabel(master = f2, text = "目前使用的 AI 模型", 
 model_change_wd.grid(row = 15, column = 0, padx = 5, pady = (15, 5), sticky = "swe")
 model_change_op = ctk.CTkComboBox(
     master = f2, 
-    values = ["llama-3.3-70b-versatile", "llama-3.1-8b-instant", "gemma2-9b-it", "compound-beta-mini"], 
+    values = [
+        "llama-3.3-70b-versatile", 
+        "compound-beta-mini", 
+        "meta-llama/llama-4-maverick-17b-128e-instruct",
+        "deepseek-r1-distill-llama-70b",
+        "qwen-qwq-32b",
+        "meta-llama/llama-4-scout-17b-16e-instruct",
+        "Llama3-70B-8192", 
+        "llama-3.1-8b-instant", 
+        "llama-guard-3-8b",
+        "gemma2-9b-it"
+    ], 
     command = set_model
 )
 model_change_op.set(model)
@@ -968,7 +999,7 @@ window.protocol("WM_DELETE_WINDOW", on_exit) # 關閉視窗時停止程式
 # 啟動 GUI
 if __name__ == "__main__":
     if args.background:
-        with open(os.path.join(PATH, "GUI_open.flag"), "w") as f:
+        with open(os.path.join(APPDATA, "GUI_open.flag"), "w") as f:
             f.write("GUI_is_opened")
     print("\033[32m[INFO] BeeSeeR GUI 已啟動，系統正常運行\033[0m")
     window.mainloop()

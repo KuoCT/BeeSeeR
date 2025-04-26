@@ -15,7 +15,8 @@ class ModelSetting(ctk.CTkToplevel):
             height = None,
             on_activate = None,
             on_restart = None,
-            on_update_hotkey = None
+            on_update_hotkey = None,
+            APPDATA = PATH
         ):
         super().__init__()
 
@@ -40,11 +41,13 @@ class ModelSetting(ctk.CTkToplevel):
         self.protocol("WM_DELETE_WINDOW", self.withdraw) # 攔截關閉行為 → 改為隱藏（withdraw）
 
         # 讀取設定檔案
+        self.APPDATA = APPDATA
         self.settings = self.load_config()
+        self.ocr_model = self.settings.get("ocr_model", "surya")
         self.auto_dtype = self.settings.get("auto_dtype", "ON")
         self.dtype = self.settings.get("dtype", None)
-        self.langs = self.settings.get("langs", None) 
-        self.ocr_model = self.settings.get("ocr_model", "surya") 
+        self.langs = self.settings.get("langs", None)
+        self.google_ocr_feature = self.settings.get("google_ocr_feature", "image")
         self.toggle_overlay_hotkey = self.settings.get("toggle_overlay_hotkey", "ctrl+shift+windows+a")
         self.capture_hotkey = self.settings.get("capture_hotkey", "ctrl+shift+windows+s")
         self.text_font = ctk.CTkFont(family = "Helvetica", size = 14, weight = "bold") # 設定字體
@@ -96,14 +99,14 @@ class ModelSetting(ctk.CTkToplevel):
         self.feature_img_cb_var = ctk.StringVar(value = "OFF")
         self.feature_img_cb = ctk.CTkCheckBox(
             self.f1, text = "影像", height = 28, font = self.text_font, variable = self.feature_img_cb_var, 
-            onvalue = "ON", offvalue = "OFF", command = None
+            text_color_disabled = ["gray14", "gray84"], onvalue = "ON", offvalue = "OFF", command = self.update_feature
         )
         self.feature_img_cb.grid(row = 2, column = 1, padx = (5, 0), pady = (0, 5), sticky = "w")
 
         self.feature_doc_cb_var = ctk.StringVar(value = "OFF")
         self.feature_doc_cb = ctk.CTkCheckBox(
             self.f1, text = "文件影像", height = 28, font = self.text_font, variable = self.feature_doc_cb_var, 
-            onvalue = "ON", offvalue = "OFF", command = None
+            text_color_disabled = ["gray14", "gray84"], onvalue = "ON", offvalue = "OFF", command = self.update_feature
         )
         self.feature_doc_cb.grid(row = 2, column = 2, padx = (5, 0), pady = (0, 5), sticky = "w")
 
@@ -254,10 +257,18 @@ class ModelSetting(ctk.CTkToplevel):
             self.f3.configure(fg_color = ["gray88", "gray12"])
             self.surya_ocr_sw.configure(state = "disabled")
 
+        # 初始化設定選項狀態 (Google-OCR: 模型)
+        if self.google_ocr_feature == "image":
+            self.feature_img_cb_var.set("ON")
+            self.feature_img_cb.configure(state = "disabled")
+        else:
+            self.feature_doc_cb_var.set("ON")
+            self.feature_doc_cb.configure(state = "disabled")
+
     def load_config(self):
         """讀取設定檔案"""
-        if os.path.exists(os.path.join(PATH, "config.json")):
-            with open(os.path.join(PATH, "config.json"), "r", encoding = "utf-8") as f:
+        if os.path.exists(os.path.join(self.APPDATA, "config.json")):
+            with open(os.path.join(self.APPDATA, "config.json"), "r", encoding = "utf-8") as f:
                 return json.load(f)
         return {}  # 如果沒有設定檔，回傳空字典
     
@@ -271,6 +282,7 @@ class ModelSetting(ctk.CTkToplevel):
             "auto_dtype": self.auto_dtype,
             "dtype": self.dtype,
             "langs": self.langs,
+            "google_ocr_feature": self.google_ocr_feature,
             "capture_hotkey": self.capture_hotkey,
             "toggle_overlay_hotkey": self.toggle_overlay_hotkey
         }
@@ -278,7 +290,7 @@ class ModelSetting(ctk.CTkToplevel):
         # 只有內容不同時才寫入
         if old_config != {**old_config, **new_config}:
             old_config.update(new_config)
-            with open(os.path.join(PATH, "config.json"), "w", encoding = "utf-8") as f:
+            with open(os.path.join(self.APPDATA, "config.json"), "w", encoding = "utf-8") as f:
                 json.dump(old_config, f, ensure_ascii = False, indent = 4)
             # print("\033[32m[INFO] 設定檔已更新\033[0m")
         else:
@@ -381,6 +393,22 @@ class ModelSetting(ctk.CTkToplevel):
         if self.on_activate: self.on_activate() # Callback 函數
         self.save_config()
 
+    def update_feature(self):
+        """更新 google OCR 模型"""
+        if self.google_ocr_feature == "image":
+            self.google_ocr_feature = "document"
+            self.feature_img_cb_var.set("OFF")
+            self.feature_doc_cb_var.set("ON")
+            self.feature_doc_cb.configure(state = "disabled")
+            self.feature_img_cb.configure(state = "normal")
+        else:
+            self.google_ocr_feature = "image"
+            self.feature_doc_cb_var.set("OFF")
+            self.feature_img_cb_var.set("ON")
+            self.feature_img_cb.configure(state = "disabled")
+            self.feature_doc_cb.configure(state = "normal")
+
+
     def open_checkpoint_folder(self): 
         """打開 checkpoint 資料夾"""
         os.startfile(os.path.join(PATH, "checkpoint"))
@@ -425,9 +453,13 @@ class ModelSetting(ctk.CTkToplevel):
             return
 
         # 選取儲存位置
+        desktop = os.path.join(os.getenv('USERPROFILE'), 'Desktop')
+        if not os.path.exists(desktop):
+            # Fallback
+            desktop = os.getenv('USERPROFILE')
         save_dir = filedialog.askdirectory(
-            initialdir = PATH,
-            title="選擇捷徑儲存位置"
+            initialdir = desktop,
+            title = "選擇捷徑儲存位置"
         )
 
         if not save_dir:
@@ -474,7 +506,7 @@ class ModelSetting(ctk.CTkToplevel):
         response = messagebox.askyesno("系統提示", "您確定要重置所有設定嗎？")
         if response:
             try:
-                config_path = os.path.join(PATH, "config.json")
+                config_path = os.path.join(self.APPDATA, "config.json")
                 if os.path.exists(config_path):
                     os.remove(config_path)  # 正確刪除設定檔
             except Exception as e:
@@ -523,8 +555,3 @@ class ModelSetting(ctk.CTkToplevel):
         # 嘗試更新每一個熱鍵項目
         _try_update_hotkey("capture", self.capture_hotkey_entry, "capture_hotkey")
         _try_update_hotkey("toggle_overlay", self.toggle_overlay_hotkey_entry, "toggle_overlay_hotkey")
-
-    
-
-
-

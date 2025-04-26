@@ -1,5 +1,4 @@
 import io
-# import time
 import tkinter as tk
 import pyautogui
 import pyperclip # 剪貼簿
@@ -51,24 +50,27 @@ class WindowCapture(tk.Toplevel):
             prompt_copy = True, 
             on_capture = None, 
             on_result = None, 
-            prompt = None, 
+            prompt = None,
+            ocr_model = None,
+            google_ocr_key = None,
+            google_ocr_feature = None,
             dtype = None, 
             langs = None, 
-            ocr_model = None,
             mocr = None,
             recognition_predictor = None,
             detection_predictor = None,
-            google_ocr_key = None
+            bind = True
         ):
         super().__init__(window)
         self.prompt_copy = prompt_copy
         self.on_capture = on_capture  # 回呼函數
         self.on_result = on_result # 回呼函數
+        self.ocr_model = ocr_model if ocr_model else "surya"  # 初始化 OCR 模型
+        self.google_ocr_key = google_ocr_key
+        self.google_ocr_feature = google_ocr_feature
         self.prompt = prompt
         self.dtype = dtype
         self.langs = langs
-        self.ocr_model = ocr_model if ocr_model else "surya"  # 初始化 OCR 模型
-        self.google_ocr_key = google_ocr_key
 
         # 初始化辨識結果
         self.prompt_text = None
@@ -89,15 +91,16 @@ class WindowCapture(tk.Toplevel):
         self.canvas.pack(fill=tk.BOTH, expand=True)
 
         # 綁定滑鼠事件
-        self.canvas.bind("<ButtonPress-1>", self.start_draw)
-        self.canvas.bind("<B1-Motion>", self.update_draw)
-        self.canvas.bind("<ButtonRelease-1>", self.stop_draw)
+        if bind: # 如果 bind 為 True 則綁定滑鼠事件
+            self.canvas.bind("<ButtonPress-1>", self.start_draw)
+            self.canvas.bind("<B1-Motion>", self.update_draw)
+            self.canvas.bind("<ButtonRelease-1>", self.stop_draw)
 
         # 用來存儲當前的矩形
         self.rect_id = None
         self.start_x = 0
         self.start_y = 0
-        self.is_dragging = False # 用來記錄是否有拖曳
+        self.is_dragging = False if bind else True # 用來記錄是否有拖曳 (若 bind 為 False 則直接進入拖曳狀態)
         self.bind("<Escape>", lambda event: self.escape_WinCap())
 
         # 初始化載入 OCR 套件
@@ -109,8 +112,11 @@ class WindowCapture(tk.Toplevel):
 
         if self.ocr_model == "manga":
             self.text = "[漫畫模式] 拖曳偵測文字，點一下退出"
+        elif not bind:
+            self.text = "自動操作中..."
         else:
             self.text = "拖曳偵測文字，點一下退出"
+
         self.tooltip = MouseTooltip(self, text = self.text)
 
     def set_transparent_color(self, color):
@@ -149,9 +155,20 @@ class WindowCapture(tk.Toplevel):
             x1, y1, x2, y2 = int(x1), int(y1), int(x2), int(y2)
             coordinates = (x1, y1, x2, y2)
             # 透過 callback 回傳座標
-            if self.on_capture:
-                self.on_capture(coordinates)
+            if self.on_capture: self.on_capture(coordinates)
 
+        # 呼叫執行緒來執行 OCR
+        ocr_thread = threading.Thread(target = self.perform_ocr_process, args=(coordinates,), daemon = True)
+        ocr_thread.start()
+
+    def auto_capture(self, coordinates):
+        """自動擷取螢幕畫面並進行 OCR 辨識"""
+        global device
+        device = "CUDA" if is_available() else "CPU" # 偵測裝置
+
+        # 透過 callback 回傳座標
+        if self.on_capture:self.on_capture(coordinates)
+        
         # 呼叫執行緒來執行 OCR
         ocr_thread = threading.Thread(target = self.perform_ocr_process, args=(coordinates,), daemon = True)
         ocr_thread.start()
@@ -247,26 +264,31 @@ class WindowCapture(tk.Toplevel):
             img_base64 = base64.b64encode(img_bytes.read()).decode("utf-8")
 
             endpoint = f"https://vision.googleapis.com/v1/images:annotate?key={self.google_ocr_key}"
+            feature_type = "TEXT_DETECTION" if self.google_ocr_feature == "image" else "DOCUMENT_TEXT_DETECTION"
             payload = {
                 "requests": [
                     {
                         "image": {"content": img_base64},
-                        "features": [{"type": "TEXT_DETECTION"}]
+                        "features": [{"type": feature_type}]
                         # 加入語言提示，例如: `"imageContext": {"languageHints": ["zh-Hant"]}` 可以提升辨識率 (以後再考慮)
                     }
                 ]
             }
             try:
-                response = requests.post(endpoint, json = payload, timeout=10)
+                response = requests.post(endpoint, json = payload, timeout = 10)
                 response.raise_for_status()
                 result = response.json()
                 
-                annotations = result.get("responses", [{}])[0].get("textAnnotations", [])
-                if annotations:
-                    return annotations[0]["description"]
+                if self.google_ocr_feature == "image":
+                    annotations = result.get("responses", [{}])[0].get("textAnnotations", [])
+                    return annotations[0]["description"] if annotations else ""
                 else:
-                    return ""
+                    full_text = result.get("responses", [{}])[0].get("fullTextAnnotation", {}).get("text", "")
+                    return full_text if full_text else ""
+                
             except requests.exceptions.RequestException as e:
+                import tkinter.messagebox as messagebox
+                messagebox.showerror("錯誤", f"Google OCR 請求失敗：{e}")
                 print(f"\033[31m[ERROR] Google OCR 請求失敗：{e}\033[0m")
                 if e.response is not None:
                     print("\033[33m[DEBUG] 回應內容：\033[0m", e.response.text)
@@ -301,7 +323,6 @@ class WindowCapture(tk.Toplevel):
             self.tooltip.destroy()
         self.cleanup_memory()
         self.destroy()
-        # self.quit()
 
     def escape_WinCap(self):
         """中斷操作，釋放綁定與資源"""
@@ -315,73 +336,3 @@ class WindowCapture(tk.Toplevel):
             self.tooltip.destroy()
         self.cleanup_memory()
         self.destroy()
-        # self.quit()
-
-if __name__ == "__main__":
-    import os
-    from surya.recognition import RecognitionPredictor
-    from surya.detection import DetectionPredictor
-    PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
-    checkpoint_path = os.path.join(PATH, "checkpoint", "surya-ocr", "text_recognition")          
-    recognition_predictor = RecognitionPredictor(checkpoint = checkpoint_path)
-
-    checkpoint_path = os.path.join(PATH, "checkpoint", "surya-ocr", "text_detection")
-    detection_predictor = DetectionPredictor(checkpoint = checkpoint_path)
-    prompt_file = "User_prompt.txt"
-
-    def load_prompt(file):
-        """ 從文件載入提示詞 """
-        # 取得目前腳本所在的資料夾
-        script_dir = os.path.dirname(os.path.abspath(__file__))
-
-        # 構建絕對路徑
-        prompt_path = os.path.join(script_dir, "..", "prompt", file)
-
-        try:
-            with open(prompt_path, "r", encoding = "utf-8") as file:
-                return file.read().strip()
-
-        except:
-            print(f"\033[31m[INFO] 找不到 {prompt_path} 文件，將會使用預設的提示詞。\033[0m")
-            return None  # 讀取失敗時返回 None
-    
-    def receive_coordinates(coords):
-        """回呼函數，獲取座標"""
-        global cb_coords
-        cb_coords = coords
-        print(f"\033[34m[INFO] 即時回傳選取範圍座標: {coords}\033[0m")
-
-    def handle_result(prompt_text, extracted_text, final_text, is_dragging):
-        """回呼函數，獲取 OCR 結果"""
-        if final_text:
-            print("\033[33m[INFO] OCR 結果：\033[0m")
-            print(final_text)
-        else:
-            print("\033[31m[INFO] 無法獲取文字辨識結果。\033[0m")
-
-    prompt = load_prompt(prompt_file)
-    prompt_copy = True
-
-    # 啟動最初的「載入中...」提示框
-    
-    root = tk.Tk()
-    # root.withdraw()
-    loading_tip = MouseTooltip(root, follow = False)
-    root.update() # 強制畫面更新一次，避免初期不顯示
-
-    app = WindowCapture(
-        root,
-        prompt_copy = prompt_copy, 
-        on_capture = receive_coordinates, 
-        on_result = handle_result,
-        prompt = prompt,
-        recognition_predictor = recognition_predictor,
-        detection_predictor = detection_predictor
-    )
-    loading_tip.destroy() # 關閉預載入提示視窗
-    app.deiconify()
-
-    root.attributes("-topmost", True) # 讓視窗顯示在最前面
-
-    # 啟動 Tkinter 事件迴圈，才會讓視窗顯示出來
-    root.mainloop()

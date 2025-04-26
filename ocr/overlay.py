@@ -1,12 +1,16 @@
 import customtkinter as ctk
+from PIL import Image
 import json
 import os
 
 PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..") # 設定相對路徑
 
 class overlayWindow(ctk.CTkToplevel):
-    def __init__(self, master, showTEXT = "", coords = None, scale_factor = 1):
+    def __init__(self, master, showTEXT = "", coords = None, scale_factor = None, on_activate = None, APPDATA = PATH):
         super().__init__(master)
+
+        # Callback 函數 
+        self.on_activate = on_activate
 
         # 讀取配置設定
         self.settings  = self.load_config()
@@ -15,8 +19,23 @@ class overlayWindow(ctk.CTkToplevel):
         self.opacity = 0.92
         self.lock_movement = self.settings.get("lock_movement", False)
         self.hide = self.settings.get("hide", "show")
+        self.relocate_mode = self.settings.get("relocate_mode", "center")
         self.scale_factor = scale_factor
         self.showTEXT = showTEXT
+        self.APPDATA = APPDATA
+
+        # 載入圖示
+        self.png_increase = ctk.CTkImage(Image.open(os.path.join(PATH, "icon", "increase.png")), size = (18, 18))
+        self.png_decrease = ctk.CTkImage(Image.open(os.path.join(PATH, "icon", "decrease.png")), size = (18, 18))
+        self.png_lock = ctk.CTkImage(Image.open(os.path.join(PATH, "icon", "lock.png")), size = (14, 18))
+        self.png_unlock = ctk.CTkImage(Image.open(os.path.join(PATH, "icon", "unlock.png")), size = (14, 18))
+        self.png_h_adjust = ctk.CTkImage(Image.open(os.path.join(PATH, "icon", "h_adjust.png")), size = (18, 18))
+        self.png_v_adjust = ctk.CTkImage(Image.open(os.path.join(PATH, "icon", "v_adjust.png")), size = (18, 18))
+        self.png_center = ctk.CTkImage(Image.open(os.path.join(PATH, "icon", "center.png")), size = (18, 18))
+        self.png_bottom = ctk.CTkImage(Image.open(os.path.join(PATH, "icon", "bottom.png")), size = (18, 18))
+        self.png_right = ctk.CTkImage(Image.open(os.path.join(PATH, "icon", "right.png")), size = (18, 18))
+        self.png_reuse = ctk.CTkImage(Image.open(os.path.join(PATH, "icon", "reuse.png")), size = (18, 18))
+        self.png_close = ctk.CTkImage(Image.open(os.path.join(PATH, "icon", "close.png")), size = (18, 18))
 
         # 取得螢幕大小
         self.screen_width = int(self.winfo_screenwidth() * scale_factor)
@@ -61,6 +80,7 @@ class overlayWindow(ctk.CTkToplevel):
         # 設定視窗大小與位置
         self.geometry(f"{width}x{height}+{x1}+{y1}")
         self.width, self.height, self.x1, self.y1 = width, height, x1, y1 # 存入目前視窗訊息
+        self.withdraw()  # 隱藏視窗
 
         # 初始化調整用變數（避免 AttributeError）
         self.adj_width = None
@@ -120,16 +140,16 @@ class overlayWindow(ctk.CTkToplevel):
         self.control_f1.grid_columnconfigure((4,5,6,7), weight = 0)
 
         # 字體調整按鈕
-        self.increase_bt = ctk.CTkButton(self.control_f1, text = "字放大", width = 60, height = 20, corner_radius = 4,
-                                         font = text_fix_font, command = self.increase_font_size)
+        self.increase_bt = ctk.CTkButton(self.control_f1, text = "", width = 0, height = 20, corner_radius = 4,
+                                         image = self.png_increase, command = self.increase_font_size)
         self.increase_bt.grid(row = 0, column = 0, padx = (5, 0), pady = 2, sticky = "w")
-        self.decrease_bt = ctk.CTkButton(self.control_f1, text = "字縮小", width = 60, height = 20, corner_radius = 4,
-                                         font = text_fix_font, command = self.decrease_font_size)
+        self.decrease_bt = ctk.CTkButton(self.control_f1, text = "", width = 0, height = 20, corner_radius = 4,
+                                         image = self.png_decrease, command = self.decrease_font_size)
         self.decrease_bt.grid(row = 0, column = 1, padx = (2, 0), pady = 2, sticky = "w")
 
         # 鎖定按鈕
-        self.lock_bt = ctk.CTkButton(self.control_f1, text="鎖定中" if self.lock_movement else "可移動", width = 60, height = 20,
-                                     font = text_fix_font, corner_radius = 4,
+        self.lock_bt = ctk.CTkButton(self.control_f1, text="", image = self.png_lock if self.lock_movement else self.png_unlock,
+                                     width = 0, height = 20, corner_radius = 4,
                                      fg_color="#454240" if self.lock_movement else ["#2FA572", "#2CC985"],
                                      hover_color="#878584" if self.lock_movement else ["#106A43", "#0C955A"],
                                      command = self.toggle_lock)
@@ -138,35 +158,35 @@ class overlayWindow(ctk.CTkToplevel):
         # 視窗調整按鈕
         adj_size = 50 # 預設幅度
         self.resize_v_bt = ctk.CTkButton(
-            self.control_f1, text = "↕", font = text_fix_font, width = 30, height = 20, corner_radius = 4, 
+            self.control_f1, text = "", image = self.png_v_adjust, width = 0, height = 20, corner_radius = 4, 
             fg_color = ["#c48971", "#2a6475"], hover_color = ["#ed9744", "#3696b3"],
             command = lambda: self.increase_v_size(adj_size))
         self.resize_v_bt.bind("<Button-3>", lambda e: self.decrease_v_size(adj_size))
         self.resize_v_bt.grid(row = 0, column = 4, padx = (2, 0), pady = 2, sticky="e")
 
         self.resize_h_bt = ctk.CTkButton(
-            self.control_f1, text = "↔", font = text_fix_font, width = 30, height = 20, corner_radius = 4, 
+            self.control_f1, text = "", image = self.png_h_adjust, width = 0, height = 20, corner_radius = 4, 
             fg_color = ["#c48971", "#2a6475"], hover_color = ["#ed9744", "#3696b3"],
             command = lambda: self.increase_h_size(adj_size))
         self.resize_h_bt.bind("<Button-3>", lambda e: self.decrease_h_size(adj_size))
         self.resize_h_bt.grid(row = 0, column = 5, padx = (2, 0), pady = 2, sticky="e")
 
-        self.resize_r_bt = ctk.CTkButton(
-            self.control_f1, text = "⛶", font = text_fix_font, width = 30, height = 20, corner_radius = 4, 
+        self.relocate_bt = ctk.CTkButton(
+            self.control_f1, text = "", image = self.png_center, width = 0, height = 20, corner_radius = 4, 
             fg_color = ["#c48971", "#2a6475"], hover_color = ["#ed9744", "#3696b3"],
-            command = lambda: self.undo_size())
-        self.resize_r_bt.grid(row = 0, column = 6, padx = (2, 0), pady = 2, sticky="e")
+            command = lambda: self.relocate())
+        self.relocate_bt.grid(row = 0, column = 6, padx = (2, 0), pady = 2, sticky="e")
+        self.relocate_bt.bind("<Button-3>", lambda e: self.toggle_relocate_mode())
 
         # 退出按鈕
-        self.exit_bt = ctk.CTkButton(self.control_f1, text = "退出", fg_color = "firebrick3", hover_color = "firebrick", 
-                                     corner_radius = 4, width = 40, height = 20,
-                                     font = text_fix_font, command = self.destroy)
+        self.exit_bt = ctk.CTkButton(self.control_f1, text = "", image = self.png_close, fg_color = "firebrick3", hover_color = "firebrick", 
+                                     corner_radius = 4, width = 0, height = 20, command = self.destroy)
         self.exit_bt.grid(row = 0, column = 7, padx = (2, 5), pady = 2, sticky = "e")
 
         # 隱藏
         self.buttons = [
             self.increase_bt, self.decrease_bt, self.resize_v_bt,
-            self.resize_h_bt, self.resize_r_bt, self.lock_bt
+            self.resize_h_bt, self.relocate_bt, self.lock_bt
         ]
         if self.hide == "hide":
             for button in self.buttons:
@@ -201,20 +221,25 @@ class overlayWindow(ctk.CTkToplevel):
         self.opacity_sd = ctk.CTkSlider(self.slider_f, from_ = 0.0, to = 1.0, number_of_steps = 90, width = 20,
                                             orientation = "vertical", command = self.update_opacity)
         self.opacity_sd.set(self.opacity)  # 設定滑桿初始值
-        self.opacity_sd.grid(row = 1, column = 0, padx = 5, pady = (2, 0), sticky = "ns")
+        self.opacity_sd.grid(row = 1, column = 0, padx = 2, pady = (2, 0), sticky = "ns")
 
-        # `再翻一次`按鈕
+        # 再次翻譯按鈕
         self.re_bt = ctk.CTkButton(
-            self.slider_f, text = "R", font = text_fix_font, width = 20, height = 20, corner_radius = 4, 
+            self.slider_f, text = "", image = self.png_reuse, width = 0, height = 20, corner_radius = 4, 
             fg_color = ["#1e8bba", "#C06E2F"], hover_color = ["#325882", "#A85820"],
-            command = None)
-        self.re_bt.grid(row = 2, column = 0, padx = 5, pady = 3)
+            command = lambda: self.re_acivate(coords))
+        self.re_bt.grid(row = 2, column = 0, padx = 2, pady = (2, 5), sticky = "ns")
 
         # 隱藏選項開關
         hide_sw_var = ctk.StringVar(value = self.hide)
-        self.hide_sw = ctk.CTkSwitch(self.slider_f, text = "", height = 28, corner_radius = 4, button_length = 10,
+        self.hide_sw = ctk.CTkSwitch(self.slider_f, text = "", height = 20, width = 0, corner_radius = 20, button_length = 4,
                                      variable = hide_sw_var, onvalue = "hide", offvalue = "show", command = self.toggle_control_f1)
-        self.hide_sw.grid(row = 3, column = 0, padx = 5, pady = 1, sticky = "we")
+        self.hide_sw.grid(row = 3, column = 0, padx = (7, 0), pady = (0, 5), sticky = "ns")
+
+        # 初始化視窗位置
+        self.update_relocate_button_png()
+        self.relocate()
+        self.deiconify()  # 顯示視窗
 
     def increase_font_size(self):
         """增加字體大小"""
@@ -302,8 +327,27 @@ class overlayWindow(ctk.CTkToplevel):
             slider_x = self.adj_x1 + int(self.adj_width * self.scale_factor) # 滑桿仍在右側
             slider_y = self.adj_y1  # 保持相同的 y 座標
             self.slider.geometry(f"50x{self.adj_height}+{slider_x}+{slider_y}")
+
+    def update_relocate_button_png(self):
+        """根據 relocate_mode 更新圖示"""
+        png_map = {
+            "center": self.png_center,
+            "bottom": self.png_bottom,
+            "right": self.png_right
+        }
+        self.relocate_bt.configure(image = png_map[self.relocate_mode])
+
+    def toggle_relocate_mode(self):
+        """切換還原模式"""
+        modes = ["center", "bottom", "right"]
+        current_index = modes.index(self.relocate_mode)
+        next_index = (current_index + 1) % len(modes)
+        self.relocate_mode = modes[next_index]
+
+        self.update_relocate_button_png()  # 更新按鈕文字
+        self.save_config()
     
-    def undo_size(self):
+    def relocate(self):
         """還原視窗大小與位置"""
         # **確保變數完全回歸原始狀態**
         self.adj_width = None
@@ -312,20 +356,28 @@ class overlayWindow(ctk.CTkToplevel):
         self.adj_y1 = None
 
         # 更新視窗大小與位置
-        self.geometry(f"{self.width}x{self.height}+{self.x1}+{self.y1}")
-        # self.overrideredirect(False)  # 恢復標題欄
+        if self.relocate_mode == "bottom":
+            self.geometry(f"{self.width}x{self.height}+{self.x1}+{self.y1 + self.height}")
+        elif self.relocate_mode == "right":
+            self.geometry(f"{self.width}x{self.height}+{(self.x1 + self.width)}+{self.y1}")
+        else:
+            self.geometry(f"{self.width}x{self.height}+{self.x1}+{self.y1}")
 
-        # 同步調整滑桿位置
+        # 延遲調整滑桿位置，確保主視窗位置更新完成
         if hasattr(self, "slider") and self.slider.winfo_exists():
-            slider_x = self.x1 + int(self.width * self.scale_factor)  # 滑桿仍在右側
-            slider_y = self.y1  # 保持相同的 y 座標
-            self.slider.geometry(f"50x{self.height}+{slider_x}+{slider_y}")
+            self.after(10, self.update_slider_position)
+            
+    def update_slider_position(self):
+        """更新滑桿位置"""
+        slider_x = self.winfo_x() + int(self.width * self.scale_factor)
+        slider_y = self.winfo_y()
+        self.slider.geometry(f"50x{self.height}+{slider_x}+{slider_y}")
 
     def toggle_lock(self):
         """切換視窗移動鎖定"""
         self.lock_movement = not self.lock_movement
         self.lock_bt.configure(
-            text="鎖定中" if self.lock_movement else "可移動",
+            image = self.png_lock if self.lock_movement else self.png_unlock,
             fg_color="#454240" if self.lock_movement else ["#2FA572", "#2CC985"],
             hover_color="#878584" if self.lock_movement else ["#106A43", "#0C955A"]
         )
@@ -375,18 +427,19 @@ class overlayWindow(ctk.CTkToplevel):
         self._offset_x = 0
         self._offset_y = 0
 
-    # def on_slider_press(self, event):
-    #     """當使用者開始拖曳滑桿時，暫時取消視窗拖動"""
-    #     self.unbind("<B1-Motion>")
-
-    # def on_slider_release(self, event):
-    #     """當使用者釋放滑桿時，恢復視窗拖動"""
-    #     self.bind("<B1-Motion>", self.on_move)
+    def re_acivate(self, coords):
+        """重新翻譯一次"""
+        # print(f"重新翻譯一次: {coords}")
+        self.withdraw()
+        if self.on_activate:
+            self.on_activate(coords)
+            # 等待 500 毫秒後銷毀
+            self.after(500, self.destroy)
 
     def load_config(self):
         """讀取設定檔案"""
-        if os.path.exists(os.path.join(PATH, "config.json")):
-            with open(os.path.join(PATH, "config.json"), "r", encoding="utf-8") as f:
+        if os.path.exists(os.path.join(self.APPDATA, "config.json")):
+            with open(os.path.join(self.APPDATA, "config.json"), "r", encoding="utf-8") as f:
                 return json.load(f)
         return {}  # 如果沒有設定檔，回傳空字典
     
@@ -398,13 +451,14 @@ class overlayWindow(ctk.CTkToplevel):
         new_config = {
             "font_size": self.font_size,
             "lock_movement": self.lock_movement,
-            "hide": self.hide
+            "hide": self.hide,
+            "relocate_mode": self.relocate_mode
         }
 
         # 只有內容不同時才寫入
         if old_config != {**old_config, **new_config}:
             old_config.update(new_config)
-            with open(os.path.join(PATH, "config.json"), "w", encoding = "utf-8") as f:
+            with open(os.path.join(self.APPDATA, "config.json"), "w", encoding = "utf-8") as f:
                 json.dump(old_config, f, ensure_ascii = False, indent = 4)
             # print("\033[32m[INFO] 設定檔已更新\033[0m")
         else:
@@ -425,39 +479,3 @@ class overlayWindow(ctk.CTkToplevel):
         if hasattr(self, "slider") and self.slider.winfo_exists():
             self.slider.destroy()
         super().destroy()
-
-if __name__ == "__main__":
-
-    showTEXT = "這是一個不可編輯的文字顯示區域，可以調整透明度，可以縮放字體大小，鎖定視窗後可以複製文字。\n" * 20
-    scale_factor = 1
-    current_theme = "dark"
-    coords = (500, 100, 1000, 600)
-
-    # 設定主題
-    if current_theme == "dark":
-        ctk.set_appearance_mode("dark")
-    else:
-        ctk.set_appearance_mode("light")
-
-    ctk.set_default_color_theme(os.path.join(PATH, "theme", "nectar.json"))
-
-    root = ctk.CTk() # 創建主視窗
-    root.geometry("+1600+100") # 設定主視窗位置
-    overlay = overlayWindow(root, showTEXT, coords, scale_factor)
-    overlay.deiconify()
-
-    def toggle_theme():
-        """切換主題的函數"""
-        global current_theme # 使用全域變數
-        if current_theme == "dark": # 如果當前主題是深色
-            ctk.set_appearance_mode("light") # 切換到淺色主題
-            current_theme = "light" # 更新當前主題變數
-        else: # 如果當前主題是淺色
-            ctk.set_appearance_mode("dark") # 切換到深色主題
-            current_theme = "dark" # 更新當前主題變數  
-
-    toggle_theme_bt = ctk.CTkButton(root, text = "切換主題", command = toggle_theme)
-    toggle_theme_bt.pack(padx = 10, pady = 10) 
-
-    root.attributes("-topmost", True) # 讓視窗顯示在最前面
-    root.mainloop()
