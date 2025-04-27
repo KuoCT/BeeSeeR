@@ -29,8 +29,11 @@
 For detailed version updates, please refer to the [changelog](./update_log.md).
 
 ![demo_1](./png/demo_1.png)
+
 ![demo_2](./png/demo_2.png)
+
 ![demo_3](./png/demo_3.png)
+
 ![demo_4](./png/demo_4.png)
 
 ## Credits
