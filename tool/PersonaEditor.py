@@ -190,7 +190,7 @@ class PersonaEditor(ctk.CTkToplevel):
             if self.persona_file and not os.path.exists(self.persona_file):
                 from tkinter import messagebox
                 messagebox.showwarning("警告", "找不到 persona 設定檔，將使用預設 persona 檔案開啟。")
-                fallback_file = os.path.join(self.APPDATA, "persona", "default_persona.json")
+                fallback_file = os.path.join(self.APPDATA, "persona", "default_persona_zh.json")
                 if not os.path.exists(fallback_file):
                     default_data = {
                         "Translator_persona": "You are a translator. Please translate into {{language}}, adapting for {{locale}}.",
@@ -210,7 +210,7 @@ class PersonaEditor(ctk.CTkToplevel):
                 self.save_config()
 
             if not self.persona_file:
-                self.persona_file = os.path.join(self.APPDATA, "persona", "default_persona.json")
+                self.persona_file = os.path.join(self.APPDATA, "persona", "default_persona_zh.json")
 
     def save_persona_file(self):
         """儲存目前的 persona 到 JSON 檔案"""
@@ -240,6 +240,7 @@ class PersonaEditor(ctk.CTkToplevel):
 
         # 記錄儲存路徑
         self.persona_save_path = os.path.dirname(file_path)
+        self.persona_file = os.path.join(file_path)
         self.save_config()  # 儲存設定檔
 
     def load_persona(self, file_or_data, language, locale):
