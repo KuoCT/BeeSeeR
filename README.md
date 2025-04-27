@@ -3,6 +3,7 @@
 
 [View this document in English](./README_en.md)  
 [Batch 腳本使用說明（適合開發者)](./use_batch_file.md)  
+[常見問題](./faq/FAQ.md)  
 BeeSeeR 是一款整合 OCR 與大型語言模型 (LLM) 的 多功能 GUI 工具。  
 使用者可輕鬆框選螢幕上的內容，自動分析文字並複製至剪貼簿，可直接傳遞給 LLM 進行翻譯，也能與模型互動、討論翻譯細節，實現 **即時擷取、即時翻譯、即時對話** 的無縫體驗。
 
