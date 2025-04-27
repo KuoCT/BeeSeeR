@@ -256,7 +256,9 @@ class WindowCapture(tk.Toplevel):
             import requests
 
             if not self.google_ocr_key:
-                print("\033[31m[ERROR] Google OCR API Key 未設定。\033[0m")
+                import tkinter.messagebox as messagebox
+                messagebox.showerror("錯誤", f"Google Vision API 未設定。")
+                # print("\033[31m[ERROR] Google OCR API Key 未設定。\033[0m")
                 return ""
             
             # 將 img_bytes 轉為 base64

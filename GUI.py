@@ -17,14 +17,14 @@ is_nuitka = "__compiled__" in globals()
 
 # 將需要讀取/寫入的文件另存到 LOCALAPPDATA 
 if is_nuitka: 
-    print("\033[32m[INFO] 執行檔模式\033[0m")
+    # print("執行檔模式")
     APPDATA = os.path.join(os.getenv("LOCALAPPDATA"), "BeeSeeR")
     os.makedirs(APPDATA, exist_ok = True)
     if not os.path.exists(os.path.join(APPDATA, "persona")):
         import shutil
         shutil.copytree(os.path.join(PATH, "persona"), os.path.join(APPDATA, "persona"))
 else:
-    print("\033[32m[INFO] 開發者模式\033[0m")
+    # print("開發者模式")
     APPDATA = PATH  # 如果是腳本使用當前目錄
 
 # 檢查是否已經有執行中的程式

@@ -418,8 +418,12 @@ class ModelSetting(ctk.CTkToplevel):
         from tkinter import filedialog, messagebox
         import win32com.client
         import shutil
+        import sys
 
-        exe_path = shutil.which("BeeSeeR.exe")
+        if "__compiled__" in globals():
+            exe_path = sys.executable
+        else:
+            exe_path = None
         bat_path = None
 
         if exe_path:
