@@ -477,21 +477,32 @@ def open_PersonaEditor(): # 打開子視窗的函數
 def restart_app():
     """根據是否被打包，選擇適當的重啟方式"""
     from tkinter import messagebox
+    import subprocess
     # 顯示警告並詢問是否重啟
     response = messagebox.askyesno("系統提示", "設定已更新，需要重新啟動應用程式才會生效。\n是否立即重新啟動？")
     if response:  # 如果使用者選擇 "是"
-        python = sys.executable
+        try:
+            # 釋放程式鎖
+            lock_file.close()
+        except Exception as e:
+            messagebox.showerror("錯誤", f"無法釋放或刪除鎖：{e}")
+            return
+
+        exe = sys.executable
         try:
             # 安全釋放鎖（很重要）
             lock_file.close()
         except Exception as e:
             print(f"\033[31m[ERROR] 無法釋放或刪除鎖：{e}\033[0m")
-        # print(f"是否為打包環境: {is_nuitka}")
+
         if is_nuitka:  # 判斷是否為打包環境
-            # print("\033[33m[INFO] 打包環境，不保留參數\033[0m")
-            os.execl(python, python)  # 只執行主程式
+            # 打包環境，直接執行自身 (sys.executable 就是 .exe 檔)
+            subprocess.Popen([exe], creationflags = subprocess.CREATE_NEW_PROCESS_GROUP)
         else:
-            os.execl(python, python, *sys.argv)  # 開發階段保留參數
+            # 開發環境，執行 Python + 參數
+            subprocess.Popen([exe, *sys.argv])
+
+        sys.exit(0)
 
 def save_config():
     """只有當設定異動時，才更新 config.json"""

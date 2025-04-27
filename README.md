@@ -1,5 +1,5 @@
 # BeeSeeR
-<table>
+<table border="0">
   <tr>
     <td>
       <img src="./icon/logo_dark.ico" alt="ICON" width="100">
