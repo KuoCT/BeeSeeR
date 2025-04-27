@@ -1,5 +1,5 @@
 # BeeSeeR
-<img align="left" src="./icon/logo_dark.ico" alt="ICON" width="120" style="margin-right: 15px; margin-bottom: 30px;">  
+<img align="left" src="./icon/logo_dark.ico" alt="ICON" width="120" style="margin-right: 15px; margin-bottom: 50px;">  
 
 [查看中文版本](./README.md)  
 **BeeSeeR** is a versatile **GUI tool** that integrates **OCR (Optical Character Recognition)** and **Large Language Models (LLMs)**. Users can easily select text from any area on the screen, automatically extract and copy it to the clipboard, and directly pass it to an LLM for translation, or interact with the model to discuss translation details. This enables a seamless experience of **real-time extraction, real-time translation, and real-time interaction**.

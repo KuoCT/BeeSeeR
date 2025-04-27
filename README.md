@@ -1,5 +1,5 @@
 # BeeSeeR
-<img align="left" src="./icon/logo_dark.ico" alt="ICON" width="120" style="margin-right: 15px; margin-bottom: 30px;">  
+<img align="left" src="./icon/logo_dark.ico" alt="ICON" width="120" style="margin-right: 15px; margin-bottom: 50px;">  
 
 [View this document in English](./README_en.md)  
 [Batch 腳本使用說明（適合開發者)](./use_batch_file.md)  
