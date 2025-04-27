@@ -13,6 +13,7 @@ class overlayWindow(ctk.CTkToplevel):
         self.on_activate = on_activate
 
         # 讀取配置設定
+        self.APPDATA = APPDATA
         self.settings  = self.load_config()
         self.font_size = self.settings.get("font_size", 16)
         # self.opacity = self.settings.get("opacity", 0.92)
@@ -22,7 +23,6 @@ class overlayWindow(ctk.CTkToplevel):
         self.relocate_mode = self.settings.get("relocate_mode", "center")
         self.scale_factor = scale_factor
         self.showTEXT = showTEXT
-        self.APPDATA = APPDATA
 
         # 載入圖示
         self.png_increase = ctk.CTkImage(Image.open(os.path.join(PATH, "icon", "increase.png")), size = (18, 18))

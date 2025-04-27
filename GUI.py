@@ -12,24 +12,19 @@ args = parser.parse_args()
 
 PATH = os.path.join(os.path.dirname(os.path.abspath(__file__))) # 設定相對路徑
 
-def is_frozen():
-    """判斷是否為 Nuitka 或其他打包環境"""
-    exe = sys.executable.lower()
-    return (
-        hasattr(sys, "frozen")  # PyInstaller、cx_Freeze 常見特徵
-        or hasattr(sys, "_MEIPASS")  # PyInstaller 特有
-        or exe.endswith(".exe") and not exe.endswith("python.exe")  # Nuitka 判斷法
-        or "nuitka" in exe  # fallback：Nuitka 路徑中有 nuitka 字樣
-    )
+# 判斷是否為 Nuitka 環境
+is_nuitka = "__compiled__" in globals()
 
 # 將需要讀取/寫入的文件另存到 LOCALAPPDATA 
-if is_frozen(): 
+if is_nuitka: 
+    print("\033[32m[INFO] 執行檔模式\033[0m")
     APPDATA = os.path.join(os.getenv("LOCALAPPDATA"), "BeeSeeR")
-    os.makedirs(APPDATA, exist_ok=True)
-    if not os.path.exists(os.path.join(PATH, "persona")):
+    os.makedirs(APPDATA, exist_ok = True)
+    if not os.path.exists(os.path.join(APPDATA, "persona")):
         import shutil
         shutil.copytree(os.path.join(PATH, "persona"), os.path.join(APPDATA, "persona"))
 else:
+    print("\033[32m[INFO] 開發者模式\033[0m")
     APPDATA = PATH  # 如果是腳本使用當前目錄
 
 # 檢查是否已經有執行中的程式
@@ -491,8 +486,8 @@ def restart_app():
             lock_file.close()
         except Exception as e:
             print(f"\033[31m[ERROR] 無法釋放或刪除鎖：{e}\033[0m")
-        # print(f"是否為打包環境: {is_frozen()}")
-        if is_frozen():  # 判斷是否為打包環境
+        # print(f"是否為打包環境: {is_nuitka}")
+        if is_nuitka:  # 判斷是否為打包環境
             # print("\033[33m[INFO] 打包環境，不保留參數\033[0m")
             os.execl(python, python)  # 只執行主程式
         else:

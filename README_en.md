@@ -1,71 +1,44 @@
-**_This page is currently being edited. Most of the content is outdated. Please refer to the Chinese version for the latest information._**
-
 # BeeSeeR
-A screen OCR tool that extracts text using a screenshot-like method.
 
-## Overview
-BeeSeeR is a convenient screen Optical Character Recognition (OCR) tool designed to quickly capture text from any area of the screen and copy it to the clipboard.
+[查看中文版本](./README.md)  
 
-⚠ **Important Notice:** Since this script utilizes automation features like selecting specific areas of the desktop, I am unsure whether it might trigger anti-cheat programs. If you plan to use it in online games (especially competitive games), proceed at your own risk!
+**BeeSeeR** is a versatile **GUI tool** that integrates **OCR (Optical Character Recognition)** and **Large Language Models (LLMs)**. Users can easily select text from any area on the screen, automatically extract and copy it to the clipboard, and directly pass it to an LLM for translation, or interact with the model to discuss translation details. This enables a seamless experience of **real-time extraction, real-time translation, and real-time interaction**.
 
-## Use Cases
-https://github.com/user-attachments/assets/340bdbb9-ad20-4f22-bf8c-2db590b9c0d9
-
-- **Capture text from the screen for LLMs** (e.g., ChatGPT, Claude) without input limitations while enabling multilingual translation.
-- **Directly capture text from PC game screens.**
+⚠️ **Important Notice**: This program includes functionality to capture and analyze specific areas of your desktop screen. It is uncertain whether this could trigger anti-cheat mechanisms. **Please use at your own risk when operating in online games, especially competitive ones!**
 
 ## Features
-- **One-click Text Extraction** – No need to manually save screenshots. 
-- **Intuitive User Interface** - Quickly capture and recognize text.
-- **Clipboard Integration** – Text is automatically copied for easy pasting.
-- **Multi-language Support** – Based on the `Surya model`, adaptable to 90+ languages.  
-- **Optimized Speed** – Option to enable GPU acceleration for improved performance.
+
+- **One-click text extraction**: Instantly capture and extract text from the screen without manual screenshots.
+- **Intuitive user interface**: Simple and easy to use, allowing fast extraction, translation, and interaction workflows.
+- **Clipboard integration**: Extracted text is automatically copied to the clipboard for immediate use.
+- **Multi-language OCR support**: Integrates **Surya OCR** (supports 90+ languages), **Manga OCR** (optimized for Japanese manga), and **Google Vision API** (lightweight cloud-based recognition) to flexibly handle different scenarios.
+- **Multi-model LLM support**: Supports **groq API**, allowing direct use of various Large Language Models (LLMs), with the ability to **freely input any model name** from the menu, offering unlimited expansion of your AI experience.
+- **On-screen overlay translation**: Display translation results directly on the screen for an immersive experience.
+- **Continuous translation**: Designed for scenarios like games and subtitles, supporting fixed-area continuous translation, saving time and effort.
+- **Chatroom with customizable prompts**: Built-in AI chatroom allows prompt DIY, crafting your own personalized translation assistant.
+- **Brand-new command module `Persona`**: Customize AI behavior, roles, and memory styles, with the ability to save settings and flexibly switch between different profiles.
+- **Comprehensive settings menu**: Supports **quick model switching, custom hotkeys, and reset options**, making operations more intuitive and smooth.
+- **Floating panel 2.0**: Upgraded interface with more refined buttons and improved usability.
+- **Core compiled in C for enhanced performance**: The core is compiled with **C (using Nuitka)**, delivering better performance and stability.
 
 ## System Requirements
-- **Windows 10/11** 
-- **Python 3.10-3.13**
-- **NVIDIA GPU (Recommended)** – Uses CUDA acceleration for faster OCR processing.
 
-## Download
-- Clone the repository to your computer:
-   ```bash
-   git clone https://github.com/KuoCT/BeeSeeR.git
-   cd BeeSeeR
-   ```
+- **Windows 10 or newer**
+- **NVIDIA GPU (recommended)** – Leverage CUDA acceleration to boost OCR processing speed.
 
-## Installation
-### `Compatibility Mode` with NVIDIA GPU Acceleration (Recommended)
-- Run `BeeSeeR.bat` for the initial installation.
-- After the first installation, users can freely switch between to CPU mode by editing `BeeSeeR.bat` and setting `mode` to `1`:
-   ```bat
-   :: 設定模式（0 為兼容模式，1 為強制CPU模式）
-   set mode=1
-   ```
-- Set `debug` to `0` to hide the terminal window (recommended once everything is running smoothly):
-   ```bat
-   :: 設定 debug 變數（0 為背景執行模式，1 為除錯模式）
-   set debug=0
-   ```
-- Save `BeeSeeR.bat` for future use.
+## Installation & Usage
 
-### `Force CPU Mode` (Slower but smaller, suitable for users without an NVIDIA GPU)
-- Edit `BeeSeeR.bat`, set `mode` to `1`, and do not change it.
-- Save and run the `BeeSeeR.bat` for the initial installation.
-- After the first installation, set `debug` to `0` in `BeeSeeR.bat` to hide the terminal window (recommended once everything is running smoothly)
-- Save `BeeSeeR.bat` for future use.
+[Download the installer here]()  
+For detailed version updates, please refer to the [changelog](./update_log.md).
 
-The first run may take some time as required dependencies are automatically installed. **Please wait until the OCR popup appears, indicating that the installation is complete.**
+![chart_1](./png/chart_1.png)  
+![chart_2](./png/chart_2.png)
 
-🛠 **Tool:** `fix.bat` helps you uninstall PyTorch-related packages. Use it when you need to switch the initial installation to `Compatibility Mode` or `Force CPU Mode`.
+## Credits
 
-## Usage
-1. Launch BeeSeeR – Run `BeeSeeR.bat`.
-2. Click the `Caprure` button – Select any area on the screen.
-3. The text will be extracted and automatically copied to the clipboard – Ready to paste anywhere (e.g., ChatGPT).
-4. You can find and edit `User_prompt.txt` within the folder - this text will be copied along with the extracted text! (If you don’t want to copy the prompt, simply uncheck the prompt checkbox.)
+Special thanks to the following open-source projects. Without them, this project would not be possible:
 
-## Credit
-A huge thanks to the following open-source projects:
-- [Surya](https://github.com/VikParuchuri/surya) – Powerful OCR model by VikParuchuri.
-- [PyAutoGUI](https://github.com/asweigart/pyautogui) – Intuitive automation tools by asweigart.
-- [CustomTkinter](https://github.com/TomSchimansky/CustomTkinter) – Beautiful and modern UI by TomSchimansky.
+- [Surya](https://github.com/VikParuchuri/surya) – A general-purpose OCR model developed by **VikParuchuri**.
+- [Manga OCR](https://github.com/kha-white/manga-ocr) – A manga-optimized OCR model developed by **kha-white**.
+- [PyAutoGUI](https://github.com/asweigart/pyautogui) – An intuitive automation tool developed by **asweigart**.
+- [CustomTkinter](https://github.com/TomSchimansky/CustomTkinter) – A modern, beautiful UI library for Tkinter developed by **TomSchimansky**.

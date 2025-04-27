@@ -27,12 +27,12 @@ class chatroomWindow(ctk.CTkToplevel):
         self.on_link_persona = on_link_persona # 連結 persona 指令集
 
         # 讀取設定
+        self.APPDATA = APPDATA
         self.settings  = self.load_config()
         self.chat_font_size = self.settings.get("chat_font_size", 14) # 文字大小
         self.chat_save_path = self.settings.get("chat_save_path", APPDATA) # 初始化儲存位置
         self.message_font = ctk.CTkFont(family = "Helvetica", size = self.chat_font_size, weight = "bold")
         text_fix_font = ctk.CTkFont(family = "Helvetica", size = 16, weight = "bold")
-        self.APPDATA = APPDATA
 
         self.updated_persona = None # 初始化 persona
         self.prompt_tokens = 0 # 初始化 token 計數器
