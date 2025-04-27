@@ -55,7 +55,9 @@ class overlayWindow(ctk.CTkToplevel):
         else:
             x1, y1, x2, y2 = coords
             w, h = int((x2 - x1) / scale_factor), int((y2 - y1) / scale_factor)
-            width, height = int(w + (30 / scale_factor)), int(h + (45 / scale_factor)), 
+            width, height = int(w + (30 / scale_factor)), int(h + (45 / scale_factor))
+            self.w = w # 儲存原始寬高，給 relocate 使用
+            self.h = h
 
             # **確保視窗大小不小於最小尺寸**
             if width < min_width:
@@ -357,9 +359,9 @@ class overlayWindow(ctk.CTkToplevel):
 
         # 更新視窗大小與位置
         if self.relocate_mode == "bottom":
-            self.geometry(f"{self.width}x{self.height}+{self.x1}+{self.y1 + self.height}")
+            self.geometry(f"{self.width}x{self.height}+{self.x1}+{self.y1 + self.h}")
         elif self.relocate_mode == "right":
-            self.geometry(f"{self.width}x{self.height}+{(self.x1 + self.width)}+{self.y1}")
+            self.geometry(f"{self.width}x{self.height}+{(self.x1 + self.w)}+{self.y1}")
         else:
             self.geometry(f"{self.width}x{self.height}+{self.x1}+{self.y1}")
 

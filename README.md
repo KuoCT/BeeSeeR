@@ -32,8 +32,10 @@ BeeSeeR 是一款整合 OCR 與大型語言模型 (LLM) 的 多功能 GUI 工具
 [點此下載安裝檔]()  
 版本更新詳細內容請參考 [更新日誌](./update_log.md)。
 
-![chart_1](./png/chart_1.png)
-![chart_2](./png/chart_2.png)
+![demo_1](./png/demo_1.png)
+![demo_2](./png/demo_2.png)
+![demo_3](./png/demo_3.png)
+![demo_4](./png/demo_4.png)
 
 ## 專案支持 (Credits)
 特別感謝以下開源專案的支持，若沒有他們本專案將難以實現：
