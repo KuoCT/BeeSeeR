@@ -1,6 +1,14 @@
 # BeeSeeR
-
-[查看中文版本](./README.md)  
+<table>
+  <tr>
+    <td>
+      <img src="./icon/logo_dark.ico" alt="ICON" width="100">
+    </td>
+    <td>
+      <a href="./README.md">查看中文版本</a>
+    </td>
+  </tr>
+</table>
 
 **BeeSeeR** is a versatile **GUI tool** that integrates **OCR (Optical Character Recognition)** and **Large Language Models (LLMs)**. Users can easily select text from any area on the screen, automatically extract and copy it to the clipboard, and directly pass it to an LLM for translation, or interact with the model to discuss translation details. This enables a seamless experience of **real-time extraction, real-time translation, and real-time interaction**.
 
@@ -17,9 +25,6 @@
 - **Continuous translation**: Designed for scenarios like games and subtitles, supporting fixed-area continuous translation, saving time and effort.
 - **Chatroom with customizable prompts**: Built-in AI chatroom allows prompt DIY, crafting your own personalized translation assistant.
 - **Brand-new command module `Persona`**: Customize AI behavior, roles, and memory styles, with the ability to save settings and flexibly switch between different profiles.
-- **Comprehensive settings menu**: Supports **quick model switching, custom hotkeys, and reset options**, making operations more intuitive and smooth.
-- **Floating panel 2.0**: Upgraded interface with more refined buttons and improved usability.
-- **Core compiled in C for enhanced performance**: The core is compiled with **C (using Nuitka)**, delivering better performance and stability.
 
 ## System Requirements
 
@@ -31,8 +36,10 @@
 [Download the installer here]()  
 For detailed version updates, please refer to the [changelog](./update_log.md).
 
-![chart_1](./png/chart_1.png)  
-![chart_2](./png/chart_2.png)
+![demo_1](./png/demo_1.png)
+![demo_2](./png/demo_2.png)
+![demo_3](./png/demo_3.png)
+![demo_4](./png/demo_4.png)
 
 ## Credits
 

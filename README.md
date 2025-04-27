@@ -1,6 +1,15 @@
 # BeeSeeR
-[View this document in English](./README_en.md)  
-[Batch 腳本使用說明（適合開發者）](./use_batch_file.md)
+<table>
+  <tr>
+    <td>
+      <img src="./icon/logo_dark.ico" alt="ICON" width="100">
+    </td>
+    <td>
+      <a href="./README_en.md">View this document in English</a><br>
+      <a href="./use_batch_file.md">Batch 腳本使用說明（適合開發者）</a>
+    </td>
+  </tr>
+</table>
 
 BeeSeeR 是一款整合 OCR 與大型語言模型 (LLM) 的 多功能 GUI 工具。  
 使用者可輕鬆框選螢幕上的內容，自動分析文字並複製至剪貼簿，可直接傳遞給 LLM 進行翻譯，也能與模型互動、討論翻譯細節，實現 **即時擷取、即時翻譯、即時對話** 的無縫體驗。
@@ -20,9 +29,6 @@ BeeSeeR 是一款整合 OCR 與大型語言模型 (LLM) 的 多功能 GUI 工具
 - **連續翻譯功能**：針對遊戲、字幕等場景，支援固定區域持續翻譯，省時省力。
 - **聊天室與客製化提示詞**：內建 AI 聊天室，可自訂提示詞（Prompt DIY），打造專屬翻譯助理。
 - **全新指令模組 `Persona`**：自訂 AI 行為、角色與記憶風格，並可儲存為設定檔，靈活切換應用場景。
-- **設定選單完整上線**：支援 **模型快速切換、自訂熱鍵、重置設定**，操作更加直覺、流暢。
-- **懸浮窗面板 2.0**：介面全面升級，按鈕更美觀，操作體驗更佳。
-- **核心以 C 編譯，效能全面提升**：底層使用 C 編譯（Nuitka 封裝），程式運行更加穩定、流暢。
 
 ## 系統需求
 - **Windows 10 或更新版本**
