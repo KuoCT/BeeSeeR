@@ -15,8 +15,8 @@
 - **Multi-model LLM support**: Supports **groq API**, allowing direct use of various Large Language Models (LLMs), with the ability to **freely input any model name** from the menu, offering unlimited expansion of your AI experience.
 - **On-screen overlay translation**: Display translation results directly on the screen for an immersive experience.
 - **Continuous translation**: Designed for scenarios like games and subtitles, supporting fixed-area continuous translation, saving time and effort.
-- **Chatroom with customizable prompts**: Built-in AI chatroom allows prompt DIY, crafting your own personalized translation assistant.
-- **Brand-new command module `Persona`**: Customize AI behavior, roles, and memory styles, with the ability to save settings and flexibly switch between different profiles.
+- **Record and Discuss**: An integrated AI chatroom with a memory module allows you to interact and discuss with the AI during translation, just like having a personal assistant by your side. The AI remembers context to provide more relevant responses.
+- **New Command Module `Persona`**: Customize the AI’s behavior, personality, and memory style. Seamlessly switch between different scenarios with saved profiles, enhancing your workflow in the chatroom.
 
 ## System Requirements
 
