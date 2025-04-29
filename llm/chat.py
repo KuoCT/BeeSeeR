@@ -225,7 +225,13 @@ class GroqChatSession:
 
             # 當對話長度超過 max_history，讓 AI 進行摘要
             if len(self.conversation_pairs) > self.max_history // 2:
-                self.summarize_history(recent_conversations, to_summarize)
+                # 用 Threading 在背景執行摘要
+                import threading
+                threading.Thread(
+                    target=self.summarize_history,
+                    args=(recent_conversations, to_summarize),
+                    daemon=True  # 設為 daemon，程式結束時自動結束
+                ).start()
 
             # 取得 token 使用資訊
             usage = chat_completion.usage

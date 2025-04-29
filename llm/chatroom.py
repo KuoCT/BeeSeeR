@@ -31,8 +31,7 @@ class chatroomWindow(ctk.CTkToplevel):
         self.settings  = self.load_config()
         self.chat_font_size = self.settings.get("chat_font_size", 14) # 文字大小
         self.chat_save_path = self.settings.get("chat_save_path", APPDATA) # 初始化儲存位置
-        self.message_font = ctk.CTkFont(family = "Helvetica", size = self.chat_font_size, weight = "bold")
-        text_fix_font = ctk.CTkFont(family = "Helvetica", size = 16, weight = "bold")
+        self.message_font = ctk.CTkFont(size = self.chat_font_size)
 
         self.updated_persona = None # 初始化 persona
         self.prompt_tokens = 0 # 初始化 token 計數器
@@ -92,7 +91,7 @@ class chatroomWindow(ctk.CTkToplevel):
         self.type_f.grid_columnconfigure(1, weight = 0)
 
         # 可捲動文字框
-        self.textbox = ctk.CTkTextbox(self.type_f, font = self.message_font, wrap = "word", corner_radius = 5, height = 100)
+        self.textbox = ctk.CTkTextbox(self.type_f, font = self.message_font, wrap = "char", corner_radius = 5, height = 100)
         self.textbox.grid(row = 0, rowspan = 4, column = 0, padx = (5, 0), pady = 5, sticky = "nsew")
         self.textbox.bind("<Return>", self.on_return_key) # 綁定 Enter 鍵
 
@@ -103,7 +102,6 @@ class chatroomWindow(ctk.CTkToplevel):
             width = 60, 
             height = 20, 
             corner_radius = 4,
-            font = text_fix_font, 
             command = self.increase_font_size
         )
         self.increase_bt.grid(row = 0, column = 1, padx = 5, pady = (5, 0), sticky = "ns")
@@ -114,7 +112,6 @@ class chatroomWindow(ctk.CTkToplevel):
             width = 60, 
             height = 20, 
             corner_radius = 4,
-            font = text_fix_font, 
             command = self.decrease_font_size
         )
         self.decrease_bt.grid(row = 1, column = 1, padx = 5, pady = (2, 0), sticky = "ns")
@@ -125,7 +122,6 @@ class chatroomWindow(ctk.CTkToplevel):
                     width = 60, 
                     height = 20, 
                     corner_radius = 4,
-                    font = text_fix_font, 
                     command = self.save_chatlog
                 )
         self.savelog_bt.grid(row = 2, column = 1, padx = 5, pady = (2, 0), sticky = "ns")
@@ -136,7 +132,6 @@ class chatroomWindow(ctk.CTkToplevel):
             width = 60, 
             height = 20, 
             corner_radius = 4,
-            font = text_fix_font, 
             command = self.talk_to_llm
         )
         self.input_bt.grid(row = 3, column = 1, padx = 5, pady = (2, 5), sticky = "ns")
@@ -238,7 +233,7 @@ class chatroomWindow(ctk.CTkToplevel):
                 )
         )
 
-        textbox = ctk.CTkTextbox(popup, wrap = "word", width = 400, height = 200)
+        textbox = ctk.CTkTextbox(popup, wrap = "char", width = 400, height = 200)
         textbox.pack(padx = 5, pady = 5, fill = "both", expand = True)
         textbox.insert("1.0", message)
         textbox.configure(state="disabled")
@@ -273,14 +268,14 @@ class chatroomWindow(ctk.CTkToplevel):
     def increase_font_size(self):
         """增加字體大小"""
         self.chat_font_size += 2
-        self.message_font.configure(family = "Helvetica", size = self.chat_font_size, weight = "bold")
+        self.message_font.configure(size = self.chat_font_size)
         self.save_config()
 
     def decrease_font_size(self):
         """減少字體大小"""
         if self.chat_font_size > 10:  # 避免字體過小
             self.chat_font_size -= 2
-            self.message_font.configure(family = "Helvetica", size = self.chat_font_size, weight = "bold")
+            self.message_font.configure(size = self.chat_font_size)
             self.save_config()
 
     def update_all_chat_bubbles_font(self):

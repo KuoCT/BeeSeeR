@@ -50,7 +50,6 @@ class ModelSetting(ctk.CTkToplevel):
         self.google_ocr_feature = self.settings.get("google_ocr_feature", "image")
         self.toggle_overlay_hotkey = self.settings.get("toggle_overlay_hotkey", "ctrl+shift+windows+a")
         self.capture_hotkey = self.settings.get("capture_hotkey", "ctrl+shift+windows+s")
-        self.text_font = ctk.CTkFont(family = "Helvetica", size = 14, weight = "bold") # 設定字體
 
         # 區域規劃
         self.grid_columnconfigure(0, weight = 1)
@@ -81,31 +80,32 @@ class ModelSetting(ctk.CTkToplevel):
 
         self.f4 = ctk.CTkFrame(self)
         self.f4.grid(row = 3, column = 0, padx = 5, pady = 5, sticky = "nswe")
-        self.f4.grid_columnconfigure((0, 1, 2), weight = 1)
+        self.f4.grid_columnconfigure(0, weight = 2)
+        self.f4.grid_columnconfigure((1, 2), weight = 1)
         self.f4.grid_rowconfigure(3, weight = 1)
 
         # Google-OCR 開關
         self.google_ocr_sw_var = ctk.StringVar(value = "OFF")
         self.google_ocr_sw = ctk.CTkCheckBox(
-            self.f1, text = "Google Vision-OCR (多國語言)", height = 28, font = self.text_font, variable = self.google_ocr_sw_var, 
+            self.f1, text = "Google Vision-OCR (多國語言)", height = 28, variable = self.google_ocr_sw_var, 
             text_color_disabled = ["gray14", "gray84"], onvalue = "ON", offvalue = "OFF", command = self.activate_google_ocr
         )
         self.google_ocr_sw.grid(row = 0, column = 0, columnspan = 3, padx = 5, pady = (5, 0), sticky = "w")
 
         # 屬性調整
-        self.feature_wd = ctk.CTkLabel(self.f1, text = "分析內容偏好: ", font = self.text_font, anchor = "w")
+        self.feature_wd = ctk.CTkLabel(self.f1, text = "分析內容偏好: ", anchor = "w")
         self.feature_wd.grid(row = 1, column = 1, columnspan = 2, padx = 5, pady = 0, sticky = "w")
 
         self.feature_img_cb_var = ctk.StringVar(value = "OFF")
         self.feature_img_cb = ctk.CTkCheckBox(
-            self.f1, text = "影像", height = 28, font = self.text_font, variable = self.feature_img_cb_var, 
+            self.f1, text = "影像", height = 28, variable = self.feature_img_cb_var, 
             text_color_disabled = ["gray14", "gray84"], onvalue = "ON", offvalue = "OFF", command = self.update_feature
         )
         self.feature_img_cb.grid(row = 2, column = 1, padx = (5, 0), pady = (0, 5), sticky = "w")
 
         self.feature_doc_cb_var = ctk.StringVar(value = "OFF")
         self.feature_doc_cb = ctk.CTkCheckBox(
-            self.f1, text = "文件影像", height = 28, font = self.text_font, variable = self.feature_doc_cb_var, 
+            self.f1, text = "文件影像", height = 28, variable = self.feature_doc_cb_var, 
             text_color_disabled = ["gray14", "gray84"], onvalue = "ON", offvalue = "OFF", command = self.update_feature
         )
         self.feature_doc_cb.grid(row = 2, column = 2, padx = (5, 0), pady = (0, 5), sticky = "w")
@@ -113,53 +113,53 @@ class ModelSetting(ctk.CTkToplevel):
         # Surya-OCR 開關
         self.surya_ocr_sw_var = ctk.StringVar(value = "OFF")
         self.surya_ocr_sw = ctk.CTkCheckBox(
-            self.f2, text = "Surya-OCR (多國語言)", height = 28, font = self.text_font, variable = self.surya_ocr_sw_var, 
+            self.f2, text = "Surya-OCR (多國語言)", height = 28, variable = self.surya_ocr_sw_var, 
             text_color_disabled = ["gray14", "gray84"], onvalue = "ON", offvalue = "OFF", command = self.activate_surya_ocr
         )
         self.surya_ocr_sw.grid(row = 0, column = 0, columnspan = 3, padx = 5, pady = (5, 0), sticky = "w")
 
         # 限定語言
-        self.langs_wd = ctk.CTkLabel(self.f2, text = "限定語言 (可複選): ", font = self.text_font, anchor = "w")
+        self.langs_wd = ctk.CTkLabel(self.f2, text = "限定語言 (可複選): ", anchor = "w")
         self.langs_wd.grid(row = 1, column = 1, columnspan = 2, padx = 5, pady = 0, sticky = "w")
 
         self.langs_zh_cb_var = ctk.StringVar(value = "OFF")
         self.langs_zh_cb = ctk.CTkCheckBox(
-            self.f2, text = "中文", height = 28, font = self.text_font, variable = self.langs_zh_cb_var, 
+            self.f2, text = "中文", height = 28, variable = self.langs_zh_cb_var, 
             onvalue = "ON", offvalue = "OFF", command = self.update_langs
         )
         self.langs_zh_cb.grid(row = 2, column = 1, padx = (5, 0), pady = 0, sticky = "w")
 
         self.langs_en_cb_var = ctk.StringVar(value = "OFF")
         self.langs_en_cb = ctk.CTkCheckBox(
-            self.f2, text = "英文", height = 28, font = self.text_font, variable = self.langs_en_cb_var, 
+            self.f2, text = "英文", height = 28, variable = self.langs_en_cb_var, 
             onvalue = "ON", offvalue = "OFF", command = self.update_langs
         )
         self.langs_en_cb.grid(row = 3, column = 1, padx = (5, 0), pady = 5, sticky = "w")
 
         self.langs_ja_cb_var = ctk.StringVar(value = "OFF")
         self.langs_ja_cb = ctk.CTkCheckBox(
-            self.f2, text = "日文", height = 28, font = self.text_font, variable = self.langs_ja_cb_var, 
+            self.f2, text = "日文", height = 28, variable = self.langs_ja_cb_var, 
             onvalue = "ON", offvalue = "OFF", command = self.update_langs
         )
         self.langs_ja_cb.grid(row = 2, column = 2, padx = 5, pady = 0, sticky = "w")
 
         self.langs_ko_cb_var = ctk.StringVar(value = "OFF")
         self.langs_ko_cb = ctk.CTkCheckBox(
-            self.f2, text = "韓文", height = 28, font = self.text_font, variable = self.langs_ko_cb_var, 
+            self.f2, text = "韓文", height = 28, variable = self.langs_ko_cb_var, 
             onvalue = "ON", offvalue = "OFF", command = self.update_langs
         )
         self.langs_ko_cb.grid(row = 3, column = 2, padx = 5, pady = 5, sticky = "w")
 
         # 精度設定
         # 自動/手動按鈕
-        self.auto_dtype_bt = ctk.CTkButton(self.f2_1, text = "自動", font = self.text_font, width = 20, height = 25, anchor = "c", command = self.toggle_auto_dtype)
+        self.auto_dtype_bt = ctk.CTkButton(self.f2_1, text = "自動", width = 20, height = 25, anchor = "c", command = self.toggle_auto_dtype)
         self.auto_dtype_bt.grid(row = 0, column = 0, padx = (5, 0), pady = 5, sticky = "ew")
 
         # 精度切換
         self.dtype_sw_var = ctk.StringVar(value = "float32" if not is_available() else "float16")
         self.current_dtype = self.dtype_sw_var.get()
         self.dtype_sw = ctk.CTkSwitch(self.f2_1, text = "模型精度: 全精度" if self.current_dtype == "float32" else "模型精度: 半精度", 
-                                height = 28, corner_radius = 4, button_length = 10, font = self.text_font, 
+                                height = 28, corner_radius = 4, button_length = 10, 
                                 variable = self.dtype_sw_var, onvalue = "float32", offvalue = "float16", command = self.toggle_dtype)
         self.dtype_sw.grid(row = 0, column = 1, padx = 5, pady = 0, sticky = "ns")
         self.dtype_sw.configure(state = "disabled" if self.auto_dtype == "ON" else "normal")
@@ -167,33 +167,33 @@ class ModelSetting(ctk.CTkToplevel):
         # Manga-OCR 開關
         self.manga_ocr_sw_var = ctk.StringVar(value = "OFF")
         self.manga_ocr_sw = ctk.CTkCheckBox(
-            self.f3, text = "Manga-OCR (日文漫畫)", height = 28, font = self.text_font, variable = self.manga_ocr_sw_var, 
+            self.f3, text = "Manga-OCR (日文漫畫)", height = 28, variable = self.manga_ocr_sw_var, 
             text_color_disabled = ["gray14", "gray84"], onvalue = "ON", offvalue = "OFF", command = self.activate_manga_ocr
         )
         self.manga_ocr_sw.grid(row = 0, column = 0, columnspan = 2, padx = 5, pady = 5, sticky = "w")
 
         # 打開模型資料夾
-        self.make_ink_bt = ctk.CTkButton(self.f4, text = "模型資料夾", font = self.text_font, width = 20, height = 25, anchor = "c", command = self.open_checkpoint_folder)
+        self.make_ink_bt = ctk.CTkButton(self.f4, text = "模型資料夾", width = 0, height = 25, anchor = "c", command = self.open_checkpoint_folder)
         self.make_ink_bt.grid(row = 0, column = 0, padx = (5, 0), pady = (5, 0), sticky = "nwe")
 
         # 製作捷徑
-        self.make_ink_bt = ctk.CTkButton(self.f4, text = "製作捷徑", font = self.text_font, width = 20, height = 25, anchor = "c", command = self.make_ink)
+        self.make_ink_bt = ctk.CTkButton(self.f4, text = "製作捷徑", width = 0, height = 25, anchor = "c", command = self.make_ink)
         self.make_ink_bt.grid(row = 0, column = 1, padx = (5, 0), pady = (5, 0), sticky = "nwe")
 
         # 回復初始設定
-        self.reset_bt = ctk.CTkButton(self.f4, text = "初始設定", font = self.text_font, width = 20, height = 25, anchor = "c", command = self.reset_settings)
+        self.reset_bt = ctk.CTkButton(self.f4, text = "初始設定", width = 0, height = 25, anchor = "c", command = self.reset_settings)
         self.reset_bt.grid(row = 0, column = 2, padx = 5, pady = (5, 0), sticky = "nwe")
 
         # 快捷鍵設定
-        self.capture_hotkey_wd = ctk.CTkLabel(self.f4, text = "Capture 熱鍵", font = self.text_font, height = 20, anchor = "e")
+        self.capture_hotkey_wd = ctk.CTkLabel(self.f4, text = "Capture 熱鍵", height = 20, anchor = "e")
         self.capture_hotkey_wd.grid(row = 1, column = 0, padx = (5, 0), pady = (3, 0), sticky = "we")
-        self.capture_hotkey_entry = ctk.CTkEntry(self.f4, font = ctk.CTkFont(family = "Helvetica", size = 12))
+        self.capture_hotkey_entry = ctk.CTkEntry(self.f4, font = ctk.CTkFont(size = 12))
         self.capture_hotkey_entry.grid(row = 1, column = 1, columnspan = 2, padx = 5, pady = (3, 0), sticky = "we")
         self.capture_hotkey_entry.insert(0, self.capture_hotkey)
 
-        self.toggle_overlay_hotkey_wd = ctk.CTkLabel(self.f4, text = "隱藏懸浮窗熱鍵", font = self.text_font, height = 20, anchor = "e")
+        self.toggle_overlay_hotkey_wd = ctk.CTkLabel(self.f4, text = "隱藏懸浮窗熱鍵", height = 20, anchor = "e")
         self.toggle_overlay_hotkey_wd.grid(row = 2, column = 0, padx = (5, 0), pady = (3, 0), sticky = "we")
-        self.toggle_overlay_hotkey_entry = ctk.CTkEntry(self.f4, font = ctk.CTkFont(family = "Helvetica", size = 12))
+        self.toggle_overlay_hotkey_entry = ctk.CTkEntry(self.f4, font = ctk.CTkFont(size = 12))
         self.toggle_overlay_hotkey_entry.grid(row = 2, column = 1, columnspan = 2, padx = 5, pady = (3, 0), sticky = "we")
         self.toggle_overlay_hotkey_entry.insert(0, self.toggle_overlay_hotkey)
 
@@ -205,7 +205,7 @@ class ModelSetting(ctk.CTkToplevel):
         self.toggle_overlay_hotkey_entry.bind("<FocusOut>", lambda e: self.update_hotkey())
 
         # 顯示版本號
-        self.version_lab = ctk.CTkLabel(self.f4, text = "BeeSeeR 版本: v3.0.0 ", font = ctk.CTkFont(family = "Helvetica", size = 12), anchor = "e")
+        self.version_lab = ctk.CTkLabel(self.f4, text = "BeeSeeR 版本: v3.0.0 ", font = ctk.CTkFont(size = 12), anchor = "e")
         self.version_lab.grid(row = 3, column = 0, columnspan = 3, padx = 5, pady = 5, sticky = "es")
 
         # 初始化設定選項狀態 (Surya-OCR: 限定語言設定)

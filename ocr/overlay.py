@@ -94,9 +94,8 @@ class overlayWindow(ctk.CTkToplevel):
         self.attributes("-alpha", self.opacity)
         self.overrideredirect(True)  # 移除標題欄
 
-        # 設定預設字體、顏色
-        self.text_font = ctk.CTkFont(family = "Helvetica", size = self.font_size, weight = "bold")
-        text_fix_font = ctk.CTkFont(family = "Helvetica", size = 16, weight = "bold")
+        # 設定預設字型大小
+        self.text_font = ctk.CTkFont(size = self.font_size)
 
         # 讓視窗保持最上層
         self.attributes("-topmost", True) # 讓視窗顯示在最前面
@@ -128,7 +127,7 @@ class overlayWindow(ctk.CTkToplevel):
         self.text_f.grid_columnconfigure(0, weight = 1)
 
         # 可捲動文字框（唯讀但可複製）
-        self.textbox = ctk.CTkTextbox(self.text_f, font = self.text_font, wrap = "word", corner_radius = 4)
+        self.textbox = ctk.CTkTextbox(self.text_f, font = self.text_font, wrap = "char", corner_radius = 4)
         self.textbox.insert("1.0", self.showTEXT)
         self.textbox.configure(state="disabled") # 唯讀
         self.textbox.grid(row = 0, column = 0, padx = 5, pady = (5, 0), sticky = "nsew")
@@ -246,14 +245,14 @@ class overlayWindow(ctk.CTkToplevel):
     def increase_font_size(self):
         """增加字體大小"""
         self.font_size += 2
-        self.text_font.configure(family = "Helvetica", size = self.font_size, weight = "bold")
+        self.text_font.configure(size = self.font_size)
         self.save_config()
 
     def decrease_font_size(self):
         """減少字體大小"""
         if self.font_size > 10:  # 避免字體過小
             self.font_size -= 2
-            self.text_font.configure(family = "Helvetica", size = self.font_size, weight = "bold")
+            self.text_font.configure(size = self.font_size)
             self.save_config()
 
     def increase_v_size(self, size: int):

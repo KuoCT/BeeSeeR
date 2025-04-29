@@ -827,9 +827,8 @@ ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(appid)
 window.attributes("-topmost", True) # 讓視窗顯示在最前面
 window.attributes("-disabled", False)
 
-# 設定預設字體、顏色
-title_font = ctk.CTkFont(family = "Helvetica", size = 24, weight = "bold")
-text_font = ctk.CTkFont(family = "Helvetica", size = 14, weight = "bold")
+# 設定字型大小
+title_font = ctk.CTkFont(size = 24)
 
 # 建立主視窗框架
 window.grid_columnconfigure(0, weight = 1)
@@ -850,24 +849,24 @@ capture_bt.grid(row = 0, column = 0, padx = 5, pady = 5, sticky = "swe")
 
 # 複製 Prompt 開關
 prompt_cb_var = tk.StringVar(master = f1, value = "ON" if prompt_copy else "OFF")
-prompt_cb = ctk.CTkCheckBox(master = f1, text = "複製提示詞 (Prompt)", font = text_font,
+prompt_cb = ctk.CTkCheckBox(master = f1, text = "複製提示詞 (Prompt)",
                            variable = prompt_cb_var, onvalue = "ON", offvalue = "OFF",
                            command = prompt_sw)
 prompt_cb.grid(row = 1, column = 0, padx = 5, pady = 5, sticky = "w")
 
 # AI 自動翻譯
 ost_cb_var = tk.StringVar(master = f1, value = "OFF" if not ost_control else "ON")
-ost_cb = ctk.CTkCheckBox(master = f1, text = "AI 自動翻譯", font = text_font,
+ost_cb = ctk.CTkCheckBox(master = f1, text = "AI 自動翻譯",
                            variable = ost_cb_var, onvalue = "ON", offvalue = "OFF",
                            command = ost_sw)
 ost_cb.grid(row = 2, column = 0, padx = 5, pady = 5, sticky = "w")
 
-API_bt = ctk.CTkButton(master = f1, text = "API", font = text_font, width = 40,
+API_bt = ctk.CTkButton(master = f1, text = "API", width = 0,
                            anchor = "c", command = open_APISetting)
 API_bt.grid(row = 2, column = 0, padx = 5, pady = 5, sticky = "e")
 
 # 展開額外功能按鈕
-setting_bt = ctk.CTkButton(master = f1, text = "▼ 展開額外功能", font = text_font,
+setting_bt = ctk.CTkButton(master = f1, text = "▼ 展開額外功能",
                            anchor = "c", command = toggle_window_size)
 setting_bt.grid(row = 3, column = 0, padx = 5, pady = 5, sticky = "we")
 
@@ -880,21 +879,21 @@ f2.grid_rowconfigure((15), weight = 1)
 f2.grid_remove()  # 預設隱藏 f2
 
 # 擴充功能
-theme_bt = ctk.CTkButton(master = f2, text = "主題切換", font = text_font, height = 28,
+theme_bt = ctk.CTkButton(master = f2, text = "主題切換", height = 28,
                            anchor = "c", command = toggle_theme)
 theme_bt.grid(row = 0, column = 0, padx = 5, pady = 5, sticky = "we")
 
-pfolder_bt = ctk.CTkButton(master = f2, text = "Persona 指令", font = text_font, height = 28,
+pfolder_bt = ctk.CTkButton(master = f2, text = "Persona 指令", height = 28,
                            anchor = "c", command = open_PersonaEditor)
 pfolder_bt.grid(row = 1, column = 0, padx = 5, pady = (0, 5), sticky = "we")
 
 chatroom_bt = ctk.CTkButton(
-    master = f2, text = "聊天室 / 翻譯紀錄", font = text_font, height = 28, anchor = "c", 
+    master = f2, text = "聊天室 / 翻譯紀錄", height = 28, anchor = "c", 
     command = lambda: open_chatroom()
 )
 chatroom_bt.grid(row = 2, column = 0, padx = 5, pady = (0, 5), sticky = "we")
 
-resetchat_bt = ctk.CTkButton(master = f2, text = "AI 重置 / 記憶刪除", font = text_font, height = 28,
+resetchat_bt = ctk.CTkButton(master = f2, text = "AI 重置 / 記憶刪除", height = 28,
                            anchor = "c", command = reset_chat)
 resetchat_bt.grid(row = 3, column = 0, padx = 5, pady = (0, 5), sticky = "we")
 
@@ -904,13 +903,13 @@ sep1.grid(row = 4, column = 0, padx = 5, pady = 5, sticky = "we")
 
 # AI 記憶模塊
 mem_cb_var = tk.StringVar(master = f2, value = "OFF" if not enable_short_term_memory else "ON")
-mem_cb = ctk.CTkCheckBox(master = f2, text = "短期記憶力", font = text_font,
+mem_cb = ctk.CTkCheckBox(master = f2, text = "短期記憶力",
                            variable = mem_cb_var, onvalue = "ON", offvalue = "OFF",
                            command = toggle_memory)
 mem_cb.grid(row = 5, column = 0, padx = 5, pady = 5, sticky = "w")
 
 # AI 記憶壓縮器
-mem_limit_wd = ctk.CTkLabel(master = f2, text = "記憶壓縮器: 3 輪對話", font = text_font, anchor = "w", height = 10)
+mem_limit_wd = ctk.CTkLabel(master = f2, text = "記憶壓縮器: 3 輪對話", anchor = "w", height = 10)
 mem_limit_wd.grid(row = 6, column = 0, padx = 5, pady = 5, sticky = "we")
 mem_limit_sd = ctk.CTkSlider(master = f2, from_ = 2, to = 10, number_of_steps = 200, height = 20,
                                command = set_max_history)
@@ -918,7 +917,7 @@ mem_limit_sd.set(max_history)  # 設定滑桿初始值
 mem_limit_sd.grid(row = 7, column = 0, padx = 5, pady = (0, 5), sticky = "we")
 
 # AI 創意力滑桿
-temperature_wd = ctk.CTkLabel(master = f2, text = f"AI 創意力: {int(temperature * 100)} %", font = text_font, anchor = "w", height = 10)
+temperature_wd = ctk.CTkLabel(master = f2, text = f"AI 創意力: {int(temperature * 100)} %", anchor = "w", height = 10)
 temperature_wd.grid(row = 8, column = 0, padx = 5, pady = 5, sticky = "we")
 temperature_sd = ctk.CTkSlider(master = f2, from_ = 0.0, to = 1.0, number_of_steps = 200, height = 20,
                                command = set_temperature)
@@ -926,19 +925,19 @@ temperature_sd.set(temperature)  # 設定滑桿初始值
 temperature_sd.grid(row = 9, column = 0, padx = 5, pady = (0, 5), sticky = "we")
 
 # Token 計數
-token_wd = ctk.CTkLabel(master = f2, text = "Token 計數器", font = text_font, anchor = "w", height = 10)
+token_wd = ctk.CTkLabel(master = f2, text = "Token 計數器", anchor = "w", height = 10)
 token_wd.grid(row = 10, column = 0, padx = 5, pady = (20, 5), sticky = "we")
-t_input_wd = ctk.CTkLabel(master = f2, text = "● 輸入: 0", font = text_font, anchor = "w", height = 10)
+t_input_wd = ctk.CTkLabel(master = f2, text = "● 輸入: 0", anchor = "w", height = 10)
 t_input_wd.grid(row = 11, column = 0, padx = (10, 5), pady = 2, sticky = "we")
-t_output_wd = ctk.CTkLabel(master = f2, text = "● 輸出: 0", font = text_font, anchor = "w", height = 10)
+t_output_wd = ctk.CTkLabel(master = f2, text = "● 輸出: 0", anchor = "w", height = 10)
 t_output_wd.grid(row = 12, column = 0, padx = (10, 5), pady = 2, sticky = "we")
-t_in_total_wd = ctk.CTkLabel(master = f2, text = "● 累計輸入: 0", font = text_font, anchor = "w", height = 10)
+t_in_total_wd = ctk.CTkLabel(master = f2, text = "● 累計輸入: 0", anchor = "w", height = 10)
 t_in_total_wd.grid(row = 13, column = 0, padx = (10, 5), pady = 2, sticky = "we")
-t_out_total_wd = ctk.CTkLabel(master = f2, text = "● 累計輸出: 0", font = text_font, anchor = "w", height = 10)
+t_out_total_wd = ctk.CTkLabel(master = f2, text = "● 累計輸出: 0", anchor = "w", height = 10)
 t_out_total_wd.grid(row = 14, column = 0, padx = (10, 5), pady = (2, 5), sticky = "we")
 
 # 模型切換器
-model_change_wd = ctk.CTkLabel(master = f2, text = "目前使用的 AI 模型", font = text_font, anchor = "w", height = 10)
+model_change_wd = ctk.CTkLabel(master = f2, text = "目前使用的 AI 模型", anchor = "w", height = 10)
 model_change_wd.grid(row = 15, column = 0, padx = 5, pady = (15, 5), sticky = "swe")
 model_change_op = ctk.CTkComboBox(
     master = f2, 
@@ -951,7 +950,6 @@ model_change_op = ctk.CTkComboBox(
         "meta-llama/llama-4-scout-17b-16e-instruct",
         "Llama3-70B-8192", 
         "llama-3.1-8b-instant", 
-        "llama-guard-3-8b",
         "gemma2-9b-it"
     ], 
     command = set_model

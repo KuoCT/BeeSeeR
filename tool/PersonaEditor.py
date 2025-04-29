@@ -38,7 +38,6 @@ class PersonaEditor(ctk.CTkToplevel):
         self.persona_save_path = self.settings.get("persona_save_path", None) # persona 設定檔儲存位置
         self.language = self.settings.get("language", ["繁體中文", "日本語", "English", "한국어"]) # 翻譯語言
         self.locale = self.settings.get("locale", ["台灣", "日本", "USA", "UK", "대한민국"]) # 在地化
-        self.text_font = ctk.CTkFont(family = "Helvetica", size = 14, weight = "bold") # 設定字體
 
         # 區域規劃
         self.grid_columnconfigure(0, weight = 1)
@@ -57,24 +56,24 @@ class PersonaEditor(ctk.CTkToplevel):
         self.f2.grid_rowconfigure((0, 1), weight = 0)
 
         # 顯示指令的文字框
-        self.Translator_persona_wd = ctk.CTkLabel(self.f1, text = "• AI 翻譯時 - 人格指令:", font = self.text_font, height = 0, anchor = "w")
+        self.Translator_persona_wd = ctk.CTkLabel(self.f1, text = "• AI 翻譯時 - 人格指令:", height = 0, anchor = "w")
         self.Translator_persona_wd.grid(row = 0, column = 0, padx = 5, pady = (5, 0), sticky = "we")       
-        self.Translator_persona_tb = ctk.CTkTextbox(self.f1, font = self.text_font, wrap = "word", corner_radius = 5)
+        self.Translator_persona_tb = ctk.CTkTextbox(self.f1, wrap = "char", corner_radius = 5)
         self.Translator_persona_tb.grid(row = 1, column = 0, padx = (15, 0), pady = 5, sticky = "nsew")
 
-        self.Chat_persona_wd = ctk.CTkLabel(self.f1, text = "• AI 討論時 - 人格指令:", font = self.text_font, height = 0, anchor = "w")
+        self.Chat_persona_wd = ctk.CTkLabel(self.f1, text = "• AI 討論時 - 人格指令:", height = 0, anchor = "w")
         self.Chat_persona_wd.grid(row = 2, column = 0, padx = 5, pady = (5, 0), sticky = "we")
-        self.Chat_persona_tb = ctk.CTkTextbox(self.f1, font = self.text_font, wrap = "word", corner_radius = 5)
+        self.Chat_persona_tb = ctk.CTkTextbox(self.f1, wrap = "char", corner_radius = 5)
         self.Chat_persona_tb.grid(row = 3, column = 0, padx = (15, 0), pady = 5, sticky = "nsew")
 
-        self.Memory_persona_wd = ctk.CTkLabel(self.f1, text = "• AI 記憶時 - 人格指令:", font = self.text_font, height = 0, anchor = "w")
+        self.Memory_persona_wd = ctk.CTkLabel(self.f1, text = "• AI 記憶時 - 人格指令:", height = 0, anchor = "w")
         self.Memory_persona_wd.grid(row = 4, column = 0, padx = 5, pady = (5, 0), sticky = "we")
-        self.Memory_persona_tb = ctk.CTkTextbox(self.f1, font = self.text_font, wrap = "word", corner_radius = 5)
+        self.Memory_persona_tb = ctk.CTkTextbox(self.f1, wrap = "char", corner_radius = 5)
         self.Memory_persona_tb.grid(row = 5, column = 0, padx = (15, 0), pady = 5, sticky = "nsew")
 
-        self.Prompt_wd = ctk.CTkLabel(self.f1, text = "• OCR → 翻譯 - 提示詞 (Prompt):", font = self.text_font, height = 0, anchor = "w")
+        self.Prompt_wd = ctk.CTkLabel(self.f1, text = "• OCR → 翻譯 - 提示詞 (Prompt):", height = 0, anchor = "w")
         self.Prompt_wd.grid(row = 6, column = 0, padx = 5, pady = (5, 0), sticky = "we")
-        self.Prompt_tb = ctk.CTkTextbox(self.f1, font = self.text_font, wrap = "word", corner_radius = 5)
+        self.Prompt_tb = ctk.CTkTextbox(self.f1, wrap = "char", corner_radius = 5)
         self.Prompt_tb.grid(row = 7, column = 0, padx = (15, 0), pady = 5, sticky = "nsew")
 
         # 綁定事件
@@ -84,7 +83,7 @@ class PersonaEditor(ctk.CTkToplevel):
         self.Prompt_tb._textbox.bind("<<Modified>>", lambda e: self.sync_textbox_to_persona('Prompt', self.Prompt_tb))
 
         # 參數設定
-        self.language_wd = ctk.CTkLabel(self.f2, text = "language 參數:", font = self.text_font, height = 0, anchor = "e")
+        self.language_wd = ctk.CTkLabel(self.f2, text = "language 參數:", height = 0, anchor = "e")
         self.language_wd.grid(row = 0, column = 0, padx = (5, 0), pady = (5, 0), sticky = "we")
         self.language_cb = ctk.CTkComboBox(
             master = self.f2, 
@@ -94,7 +93,7 @@ class PersonaEditor(ctk.CTkToplevel):
         self.language_cb.grid(row = 0, column = 1, padx = (5, 0), pady = (5, 0), sticky = "we")
         self.language_cb.set(self.language[0])
 
-        self.locale_wd = ctk.CTkLabel(self.f2, text = "locale 參數:", font = self.text_font, height = 0, anchor = "e")
+        self.locale_wd = ctk.CTkLabel(self.f2, text = "locale 參數:", height = 0, anchor = "e")
         self.locale_wd.grid(row = 1, column = 0, padx = (5, 0), pady = (5, 0), sticky = "we")  
         self.locale_cb = ctk.CTkComboBox(
             master = self.f2,
@@ -114,17 +113,17 @@ class PersonaEditor(ctk.CTkToplevel):
         self.widget_locale.bind("<FocusOut>", lambda e: self.sync_textbox_to_persona(widget = self.locale_cb))
 
         # 說明文字框
-        self.args_info_tb = ctk.CTkTextbox(self.f2, font = self.text_font, wrap = "word", height = 0, corner_radius = 5)
+        self.args_info_tb = ctk.CTkTextbox(self.f2, wrap = "word", height = 0, corner_radius = 5)
         self.args_info_tb.grid(row = 0, rowspan = 2, column = 2, padx = (5, 0), pady = (5, 0), sticky = "nsew")
-        info_text = ("說明: 參數選項內的文字會替代指令中 highlight 的文字，使用 {{雙大括弧}} 包住參數即可在任意地方使用")
+        info_text = ("說明: 選項內的文字會替代上方指令中 {{雙大括弧}} 包住的參數文字")
         self.args_info_tb.insert("1.0", info_text)
         self.args_info_tb.configure(state="disabled")
 
         # 控制按鈕
-        self.read_persona_bt = ctk.CTkButton(self.f2, text = "讀取設定", font = self.text_font, width = 0, command = lambda: self.read_persona_file (dialog = True))
+        self.read_persona_bt = ctk.CTkButton(self.f2, text = "讀取設定", width = 0, command = lambda: self.read_persona_file (dialog = True))
         self.read_persona_bt.grid(row = 0, column = 3, padx = 5, pady = (5, 0), sticky = "ns")
 
-        self.save_persona_bt = ctk.CTkButton(self.f2, text = "儲存設定", font = self.text_font, width = 0, command = self.save_persona_file)
+        self.save_persona_bt = ctk.CTkButton(self.f2, text = "儲存設定", width = 0, command = self.save_persona_file)
         self.save_persona_bt.grid(row = 1, column = 3, padx = 5, pady = 5, sticky = "ns")
 
         # 初始化人格指令

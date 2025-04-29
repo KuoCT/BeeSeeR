@@ -1,4 +1,5 @@
 import customtkinter as ctk
+from PIL import Image
 import os
 import json
 import webbrowser
@@ -41,7 +42,7 @@ class APISetting(ctk.CTkToplevel):
         self.settings = self.load_config()
         self.google_ocr_key = self.settings.get("google_ocr_key", None) # Google Vision API Key 文字辨識
         self.groq_key = self.settings.get("groq_key", None) # Groq API Key 翻譯 / 聊天 語言模型
-        self.text_font = ctk.CTkFont(family = "Helvetica", size = 14, weight = "bold") # 設定字體
+        self.png_select = ctk.CTkImage(Image.open(os.path.join(PATH, "icon", "select.png")), size = (20, 20))
 
         # 區域規劃
         self.grid_columnconfigure(0, weight = 1)
@@ -63,7 +64,7 @@ class APISetting(ctk.CTkToplevel):
         self.f3.grid_rowconfigure((0, 1), weight = 1)
 
         # Google Vision API 設定
-        self.google_ocr_wd = ctk.CTkLabel(self.f1, text = "圖片文字辨識 - Google Vision API:", font = self.text_font, anchor = "w")
+        self.google_ocr_wd = ctk.CTkLabel(self.f1, text = "圖片文字辨識 - Google Vision API:", anchor = "w")
         self.google_ocr_wd.grid(row = 0, column = 0, columnspan = 2, padx = 5, pady = (5, 0), sticky = "nswe")
 
         self.google_ocr_entry = ctk.CTkEntry(self.f1) # 輸入框
@@ -71,12 +72,12 @@ class APISetting(ctk.CTkToplevel):
         if self.google_ocr_key:  # 如果有舊的 API Key，則填入
             self.google_ocr_entry.insert(0, self.google_ocr_key)
 
-        self.google_ocr_select_all_bt = ctk.CTkButton(self.f1, text = "[ ]", font = self.text_font, width = 20, anchor = "c", 
+        self.google_ocr_select_all_bt = ctk.CTkButton(self.f1, text = "", image = self.png_select, width = 0,  
                                                       command = lambda: self.select_all(self.google_ocr_entry))
         self.google_ocr_select_all_bt.grid(row = 1, column = 1, padx = 5, pady = (2, 5), sticky = "e") # 全選按鈕
 
         # groq API 設定
-        self.groq_wd = ctk.CTkLabel(self.f2, text = "AI 自動翻譯 / 聊天室 - Groq API:", font = self.text_font, anchor = "w")
+        self.groq_wd = ctk.CTkLabel(self.f2, text = "AI 自動翻譯 / 聊天室 - Groq API:", anchor = "w")
         self.groq_wd.grid(row = 0, column = 0, columnspan = 2, padx = 5, pady = (5, 0), sticky = "nswe")
 
         self.groq_entry = ctk.CTkEntry(self.f2) # 輸入框
@@ -84,16 +85,16 @@ class APISetting(ctk.CTkToplevel):
         if self.groq_key:  # 如果有舊的 API Key，則填入
             self.groq_entry.insert(0, self.groq_key)
 
-        self.groq_select_all_bt = ctk.CTkButton(self.f2, text = "[ ]", font = self.text_font, width = 20, anchor = "c", 
+        self.groq_select_all_bt = ctk.CTkButton(self.f2, text = "", image = self.png_select, width = 0,
                                                 command = lambda: self.select_all(self.groq_entry))
         self.groq_select_all_bt.grid(row = 1, column = 1, padx = 5, pady = (0, 5), sticky = "e") # 全選按鈕
 
         # 網頁按鈕
-        self.groq_confirm_bt = ctk.CTkButton(self.f3, text = "網頁", font = self.text_font, width = 40, anchor = "c", command = self.open_sites)
+        self.groq_confirm_bt = ctk.CTkButton(self.f3, text = "網頁", width = 40, anchor = "c", command = self.open_sites)
         self.groq_confirm_bt.grid(row = 0, column = 0, padx = 5, pady = (5, 0), sticky = "nswe")
 
         # 載入按鈕
-        self.groq_confirm_bt = ctk.CTkButton(self.f3, text = "套用", font = self.text_font, width = 40, anchor = "c", command = self.confirm_API)
+        self.groq_confirm_bt = ctk.CTkButton(self.f3, text = "套用", width = 40, anchor = "c", command = self.confirm_API)
         self.groq_confirm_bt.grid(row = 1, column = 0, padx = 5, pady = 5, sticky = "nswe")
 
     def load_config(self):
