@@ -205,7 +205,7 @@ class ModelSetting(ctk.CTkToplevel):
         self.toggle_overlay_hotkey_entry.bind("<FocusOut>", lambda e: self.update_hotkey())
 
         # 顯示版本號
-        self.version_lab = ctk.CTkLabel(self.f4, text = "BeeSeeR 版本: v3.0.0 ", font = ctk.CTkFont(size = 12), anchor = "e")
+        self.version_lab = ctk.CTkLabel(self.f4, text = "BeeSeeR 版本: v3.0.1 ", font = ctk.CTkFont(size = 12), anchor = "e")
         self.version_lab.grid(row = 3, column = 0, columnspan = 3, padx = 5, pady = 5, sticky = "es")
 
         # 初始化設定選項狀態 (Surya-OCR: 限定語言設定)
@@ -340,10 +340,32 @@ class ModelSetting(ctk.CTkToplevel):
         self.google_ocr_sw.configure(state = "normal")
         self.surya_ocr_sw.configure(state = "normal")
         if self.on_activate: self.on_activate() # Callback 函數
-        self.save_config()   
+        self.save_config()
+
+    def update_feature(self):
+        """
+        Google OCR 模型屬性:
+        更新影像來源偏好
+        """
+        if self.google_ocr_feature == "image":
+            self.google_ocr_feature = "document"
+            self.feature_img_cb_var.set("OFF")
+            self.feature_doc_cb_var.set("ON")
+            self.feature_doc_cb.configure(state = "disabled")
+            self.feature_img_cb.configure(state = "normal")
+        else:
+            self.google_ocr_feature = "image"
+            self.feature_doc_cb_var.set("OFF")
+            self.feature_img_cb_var.set("ON")
+            self.feature_img_cb.configure(state = "disabled")
+            self.feature_doc_cb.configure(state = "normal")
+        self.save_config()
 
     def update_langs(self):
-        """根據 Checkbox 狀態更新 self.langs"""
+        """
+        Surya OCR 模型屬性:
+        根據 Checkbox 狀態更新 self.langs
+        """
         selected = []
 
         if self.langs_zh_cb_var.get() == "ON":
@@ -361,7 +383,10 @@ class ModelSetting(ctk.CTkToplevel):
         self.save_config()     
 
     def toggle_auto_dtype(self):
-        """模型精度自動/手動調整開關"""
+        """
+        Surya OCR 模型屬性:
+        模型精度自動/手動調整開關
+        """
         if self.auto_dtype == "ON":
             self.auto_dtype = "OFF"
             self.dtype = self.current_dtype
@@ -383,7 +408,10 @@ class ModelSetting(ctk.CTkToplevel):
         self.save_config()
 
     def toggle_dtype(self):
-        """切換模型精度"""
+        """
+        Surya OCR 模型屬性:
+        手動切換模型精度
+        """
         if self.dtype == "float32":
             self.dtype = "float16"
             self.dtype_sw.configure(text = "模型精度: 半精度")
@@ -392,22 +420,6 @@ class ModelSetting(ctk.CTkToplevel):
             self.dtype_sw.configure(text = "模型精度: 全精度")
         if self.on_activate: self.on_activate() # Callback 函數
         self.save_config()
-
-    def update_feature(self):
-        """更新 google OCR 模型"""
-        if self.google_ocr_feature == "image":
-            self.google_ocr_feature = "document"
-            self.feature_img_cb_var.set("OFF")
-            self.feature_doc_cb_var.set("ON")
-            self.feature_doc_cb.configure(state = "disabled")
-            self.feature_img_cb.configure(state = "normal")
-        else:
-            self.google_ocr_feature = "image"
-            self.feature_doc_cb_var.set("OFF")
-            self.feature_img_cb_var.set("ON")
-            self.feature_img_cb.configure(state = "disabled")
-            self.feature_doc_cb.configure(state = "normal")
-
 
     def open_checkpoint_folder(self): 
         """打開 checkpoint 資料夾"""

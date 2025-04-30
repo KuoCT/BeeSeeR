@@ -7,7 +7,7 @@ import webbrowser
 PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..") # 設定相對路徑
 
 class APISetting(ctk.CTkToplevel):
-    w = 450
+    w = 360
     h = 140
     def __init__(
             self, 
@@ -22,7 +22,7 @@ class APISetting(ctk.CTkToplevel):
         # Callback 函數
         self.on_activate = on_activate
 
-        self.title("API 設定")
+        self.title("API 設定 (顯示金鑰，請勿擷取！)")
         width = width if width is not None else self.w
         height = height if height is not None else self.h
         self.geometry(f"{width}x{height}") # 設定視窗大小
@@ -42,6 +42,8 @@ class APISetting(ctk.CTkToplevel):
         self.settings = self.load_config()
         self.google_ocr_key = self.settings.get("google_ocr_key", None) # Google Vision API Key 文字辨識
         self.groq_key = self.settings.get("groq_key", None) # Groq API Key 翻譯 / 聊天 語言模型
+
+        # 圖示
         self.png_select = ctk.CTkImage(Image.open(os.path.join(PATH, "icon", "select.png")), size = (20, 20))
 
         # 區域規劃

@@ -313,7 +313,7 @@ class WindowCapture(tk.Toplevel):
         if device == "CUDA":
             empty_cache()
             ipc_collect()
-            print("\033[32m[INFO] 已釋放 GPU 記憶體。\033[0m")
+            # print("\033[32m[INFO] 已釋放 GPU 記憶體。\033[0m")
     
     def exit_WinCap(self):
         """關閉視窗，釋放綁定與資源"""

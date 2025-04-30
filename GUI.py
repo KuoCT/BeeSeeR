@@ -19,10 +19,44 @@ is_nuitka = "__compiled__" in globals()
 if is_nuitka: 
     # print("執行檔模式")
     APPDATA = os.path.join(os.getenv("LOCALAPPDATA"), "BeeSeeR")
-    os.makedirs(APPDATA, exist_ok = True)
-    if not os.path.exists(os.path.join(APPDATA, "persona")):
-        import shutil
-        shutil.copytree(os.path.join(PATH, "persona"), os.path.join(APPDATA, "persona"))
+    import shutil
+    def copy_files(src, dst):
+        """
+        複製資料夾(src)到指定位置(dst):
+        - 只針對最上層檔案
+        - 若目標檔案不存在或需要更新則複製
+        """
+        if not os.path.exists(dst): os.makedirs(dst, exist_ok = True)
+
+        for file_name in os.listdir(src):
+            src_file = os.path.join(src, file_name)
+            dst_file = os.path.join(dst, file_name)
+
+            # 確保只處理檔案（忽略子資料夾）
+            if not os.path.isfile(src_file):
+                continue
+
+            try:
+                if is_file_updated(src_file, dst_file):
+                    shutil.copy2(src_file, dst_file)
+            except Exception as e:
+                # print(f"無法複製 {src_file}: {e}")
+                pass
+
+    def is_file_updated(file1, file2):
+        """比較兩個檔案的大小不同或來源較新回傳 True，否則回傳 False"""
+        # 先比大小，不同直接回傳 True
+        if os.path.getsize(file1) != os.path.getsize(file2):
+            return True
+
+        # 比對修改時間（如果來源更新才更新）
+        if os.path.getmtime(file1) > os.path.getmtime(file2):
+            return True
+
+        # 如果都沒有變動，回傳 False
+        return False
+    
+    copy_files(os.path.join(PATH, "persona"), os.path.join(APPDATA, "persona"))
 else:
     # print("開發者模式")
     APPDATA = PATH  # 如果是腳本使用當前目錄
@@ -386,10 +420,10 @@ def handle_result(prompt_text, extracted_text, final_text, is_dragging):
                 # 更新 token 計數器
                 total_prompt_tokens += prompt_tokens
                 total_completion_tokens += completion_tokens
-                t_input_wd.configure(text=f"● 輸入: {prompt_tokens}")
-                t_output_wd.configure(text=f"● 輸出: {completion_tokens}")
-                t_in_total_wd.configure(text=f"● 累計輸入: {total_prompt_tokens}")
-                t_out_total_wd.configure(text=f"● 累計輸出: {total_completion_tokens}")
+                t_input_wd.configure(text=f"• 輸入: {prompt_tokens}")
+                t_output_wd.configure(text=f"• 輸出: {completion_tokens}")
+                t_in_total_wd.configure(text=f"• 累計輸入: {total_prompt_tokens}")
+                t_out_total_wd.configure(text=f"• 累計輸出: {total_completion_tokens}")
 
                 # 更新 chatroom
                 chatroom.append_chatbubble(role = "User", message = user_input)
@@ -426,10 +460,10 @@ def update_token_display(prompt_tokens, completion_tokens):
     total_prompt_tokens += prompt_tokens
     total_completion_tokens += completion_tokens
 
-    t_input_wd.configure(text=f"● 輸入: {prompt_tokens}")
-    t_output_wd.configure(text=f"● 輸出: {completion_tokens}")
-    t_in_total_wd.configure(text=f"● 累計輸入: {total_prompt_tokens}")
-    t_out_total_wd.configure(text=f"● 累計輸出: {total_completion_tokens}")
+    t_input_wd.configure(text=f"• 輸入: {prompt_tokens}")
+    t_output_wd.configure(text=f"• 輸出: {completion_tokens}")
+    t_in_total_wd.configure(text=f"• 累計輸入: {total_prompt_tokens}")
+    t_out_total_wd.configure(text=f"• 累計輸出: {total_completion_tokens}")
 
     # 還原按鈕
     resetchat_bt.configure(text = "AI 重置 / 記憶刪除", fg_color = ["#1e8bba", "#C7712D"])
@@ -463,7 +497,7 @@ def update_APISetting():
 
 def open_chatroom():
     """打開聊天室"""
-    chatroom.geometry(f"630x750+{window.winfo_x() - int(640 * scale_factor)}+{window.winfo_y()}")
+    chatroom.geometry(f"650x750+{window.winfo_x() - int(660 * scale_factor)}+{window.winfo_y()}")
     chatroom.deiconify()
 
 def link_persona():
@@ -612,8 +646,8 @@ def reset_chat():
     chat_session.summaries = [""]  # 重置摘要
 
     # 重置當前輸入輸出 token 計數
-    t_input_wd.configure(text = "● 輸入: 0")
-    t_output_wd.configure(text = "● 輸出: 0")
+    t_input_wd.configure(text = "• 輸入: 0")
+    t_output_wd.configure(text = "• 輸出: 0")
 
     # 更改按鈕外觀作為信號（變色或改變文字）
     resetchat_bt.configure(text = "已重置", fg_color = "firebrick")
@@ -644,7 +678,7 @@ def get_refresh_rate():
 # 設定動畫參數
 START_HEIGHT = 200
 START_WIDTH = 200
-END_HEIGHT = 695
+END_HEIGHT = 720
 ANIMATION_DURATION = 700  # 總動畫時間 (毫秒)
 refresh_rate = get_refresh_rate()
 FRAME_RATE = round(1000 / refresh_rate)  # 同步幀率
@@ -883,9 +917,9 @@ theme_bt = ctk.CTkButton(master = f2, text = "主題切換", height = 28,
                            anchor = "c", command = toggle_theme)
 theme_bt.grid(row = 0, column = 0, padx = 5, pady = 5, sticky = "we")
 
-pfolder_bt = ctk.CTkButton(master = f2, text = "Persona 指令", height = 28,
+Persona_bt = ctk.CTkButton(master = f2, text = "Persona 指令", height = 28,
                            anchor = "c", command = open_PersonaEditor)
-pfolder_bt.grid(row = 1, column = 0, padx = 5, pady = (0, 5), sticky = "we")
+Persona_bt.grid(row = 1, column = 0, padx = 5, pady = (0, 5), sticky = "we")
 
 chatroom_bt = ctk.CTkButton(
     master = f2, text = "聊天室 / 翻譯紀錄", height = 28, anchor = "c", 
@@ -927,13 +961,13 @@ temperature_sd.grid(row = 9, column = 0, padx = 5, pady = (0, 5), sticky = "we")
 # Token 計數
 token_wd = ctk.CTkLabel(master = f2, text = "Token 計數器", anchor = "w", height = 10)
 token_wd.grid(row = 10, column = 0, padx = 5, pady = (20, 5), sticky = "we")
-t_input_wd = ctk.CTkLabel(master = f2, text = "● 輸入: 0", anchor = "w", height = 10)
+t_input_wd = ctk.CTkLabel(master = f2, text = "• 輸入: 0", anchor = "w", height = 10)
 t_input_wd.grid(row = 11, column = 0, padx = (10, 5), pady = 2, sticky = "we")
-t_output_wd = ctk.CTkLabel(master = f2, text = "● 輸出: 0", anchor = "w", height = 10)
+t_output_wd = ctk.CTkLabel(master = f2, text = "• 輸出: 0", anchor = "w", height = 10)
 t_output_wd.grid(row = 12, column = 0, padx = (10, 5), pady = 2, sticky = "we")
-t_in_total_wd = ctk.CTkLabel(master = f2, text = "● 累計輸入: 0", anchor = "w", height = 10)
+t_in_total_wd = ctk.CTkLabel(master = f2, text = "• 累計輸入: 0", anchor = "w", height = 10)
 t_in_total_wd.grid(row = 13, column = 0, padx = (10, 5), pady = 2, sticky = "we")
-t_out_total_wd = ctk.CTkLabel(master = f2, text = "● 累計輸出: 0", anchor = "w", height = 10)
+t_out_total_wd = ctk.CTkLabel(master = f2, text = "• 累計輸出: 0", anchor = "w", height = 10)
 t_out_total_wd.grid(row = 14, column = 0, padx = (10, 5), pady = (2, 5), sticky = "we")
 
 # 模型切換器
