@@ -224,7 +224,7 @@ class chatroomWindow(ctk.CTkToplevel):
         y = event.y_root
 
         popup.geometry(f"{popup_width}x{popup_height}+{x}+{y}")
-        popup.attributes("-topmost", True) # 讓視窗顯示在最前面
+        # popup.attributes("-topmost", True) # 讓視窗顯示在最前面
         popup.after(250, popup.iconbitmap, 
                 (
                     os.path.join(PATH, "icon", "logo_dark.ico") 
