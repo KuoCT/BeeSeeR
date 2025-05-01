@@ -14,6 +14,7 @@ PATH = os.path.join(os.path.dirname(os.path.abspath(__file__))) # 設定相對�
 
 # 判斷是否為 Nuitka 環境
 is_nuitka = "__compiled__" in globals()
+# is_nuitka = True # 測試
 
 # 將需要讀取/寫入的文件另存到 LOCALAPPDATA 
 if is_nuitka: 
@@ -40,12 +41,16 @@ if is_nuitka:
                 if is_file_updated(src_file, dst_file):
                     shutil.copy2(src_file, dst_file)
             except Exception as e:
-                # print(f"無法複製 {src_file}: {e}")
+                print(f"無法複製 {src_file}: {e}")
                 pass
 
     def is_file_updated(file1, file2):
         """比較兩個檔案的大小不同或來源較新回傳 True，否則回傳 False"""
-        # 先比大小，不同直接回傳 True
+        # 如果目的檔案不存在，視為需要更新
+        if not os.path.exists(file2):
+            return True
+        
+        # 比對大小，不同直接回傳 True
         if os.path.getsize(file1) != os.path.getsize(file2):
             return True
 

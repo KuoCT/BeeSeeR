@@ -188,8 +188,8 @@ class GroqChatSession:
         else:
             messages_for_chat = self.messages
 
-        # print("\033[32m[INFO] AI 看到的內容:\033[0m")
-        # print(json.dumps(messages_for_chat, indent = 2, ensure_ascii = False))
+        not self.silent and print("\n\033[32m[INFO] AI 看到的內容:\033[0m")
+        not self.silent and print(json.dumps(messages_for_chat, indent = 2, ensure_ascii = False))
 
         try:
             chat_completion = self.client.chat.completions.create(

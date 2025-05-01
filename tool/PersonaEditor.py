@@ -182,7 +182,7 @@ class PersonaEditor(ctk.CTkToplevel):
         self.read_persona_bt.grid(row = 0, column = 6, padx = 5, pady = (5, 0), sticky = "ew")
 
         self.save_persona_bt = ctk.CTkButton(self.f2, text = "儲存 Persona", width = 0, command = self.save_persona_file)
-        self.save_persona_bt.grid(row = 1, column = 6, padx = 5, pady = (5, 0), sticky = "ew")
+        self.save_persona_bt.grid(row = 2, column = 6, padx = 5, pady = (5, 0), sticky = "ew")
 
         self.save_persona_bt = ctk.CTkButton(self.f2, text = "打開資料夾", width = 0, command = lambda: os.startfile(os.path.join(self.APPDATA, "persona")))
         self.save_persona_bt.grid(row = 3, column = 6, padx = 5, pady = 5, sticky = "ew")
