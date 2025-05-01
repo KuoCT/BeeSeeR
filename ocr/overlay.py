@@ -42,7 +42,7 @@ class overlayWindow(ctk.CTkToplevel):
         self.screen_height = int(self.winfo_screenheight() * scale_factor)
 
         # 預設視窗大小
-        default_width, default_height = 350, 90 
+        default_width, default_height = 230, 90 
         min_width, min_height = default_width, default_height  # 最小視窗大小
 
         # 設定視窗標題
@@ -52,6 +52,8 @@ class overlayWindow(ctk.CTkToplevel):
         if coords is None:
             width, height = default_width, default_height
             x1, y1 = (self.screen_width - width) // 2, (self.screen_height - height) // 2  # 置中
+            self.w = default_width # 儲存原始寬高，給 relocate 使用
+            self.h = default_height
         else:
             x1, y1, x2, y2 = coords
             w, h = int((x2 - x1) / scale_factor), int((y2 - y1) / scale_factor)

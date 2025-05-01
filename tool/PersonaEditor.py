@@ -88,7 +88,7 @@ class PersonaEditor(ctk.CTkToplevel):
         # 參數設定
         self.arg1_entry = ctk.CTkEntry(self.f2, height = 0, width = 80)
         self.arg1_entry.grid(row = 0, column = 0, padx = (20, 0), pady = (5, 0), sticky = "ns")
-        self.arg1_cb = ctk.CTkComboBox(master = self.f2, height = 25, width = 120, values = [""], command = self.sync_textbox_to_persona)
+        self.arg1_cb = ctk.CTkComboBox(master = self.f2, height = 25, width = 120, values = [], command = self.sync_textbox_to_persona)
         self.arg1_cb.grid(row = 0, column = 2, padx = (5, 0), pady = (5, 0), sticky = "ns")
         self.arg1_addbt = ctk.CTkButton(self.f2, text = "", image = self.png_add, height = 25, width = 25, 
                                         command = lambda: self.update_combobox(self.arg1_cb, self.arg1_cb, "add"))
@@ -99,7 +99,7 @@ class PersonaEditor(ctk.CTkToplevel):
 
         self.arg2_entry = ctk.CTkEntry(self.f2, height = 0, width = 80)
         self.arg2_entry.grid(row = 1, column = 0, padx = (20, 0), pady = (5, 0), sticky = "ns")
-        self.arg2_cb = ctk.CTkComboBox(master = self.f2, height = 25, width = 120, values = [""], command = self.sync_textbox_to_persona)
+        self.arg2_cb = ctk.CTkComboBox(master = self.f2, height = 25, width = 120, values = [], command = self.sync_textbox_to_persona)
         self.arg2_cb.grid(row = 1, column = 2, padx = (5, 0), pady = (5, 0), sticky = "ns")
         self.arg2_addbt = ctk.CTkButton(self.f2, text = "", image = self.png_add, height = 25, width = 25, 
                                         command = lambda: self.update_combobox(self.arg2_cb, self.arg2_cb, "add"))
@@ -110,7 +110,7 @@ class PersonaEditor(ctk.CTkToplevel):
 
         self.arg3_entry = ctk.CTkEntry(self.f2, height = 0, width = 80)
         self.arg3_entry.grid(row = 2, column = 0, padx = (20, 0), pady = (5, 0), sticky = "ns")
-        self.arg3_cb = ctk.CTkComboBox(master = self.f2, height = 25, width = 120, values = [""], command = self.sync_textbox_to_persona)
+        self.arg3_cb = ctk.CTkComboBox(master = self.f2, height = 25, width = 120, values = [], command = self.sync_textbox_to_persona)
         self.arg3_cb.grid(row = 2, column = 2, padx = (5, 0), pady = (5, 0), sticky = "ns") 
         self.arg3_addbt = ctk.CTkButton(self.f2, text = "", image = self.png_add, height = 25, width = 25, 
                                         command = lambda: self.update_combobox(self.arg3_cb, self.arg3_cb, "add"))
@@ -121,7 +121,7 @@ class PersonaEditor(ctk.CTkToplevel):
         
         self.arg4_entry = ctk.CTkEntry(self.f2, height = 0, width = 80)
         self.arg4_entry.grid(row = 3, column = 0, padx = (20, 0), pady = 5, sticky = "ns")
-        self.arg4_cb = ctk.CTkComboBox(master = self.f2, height = 25, width = 120, values = [""], command = self.sync_textbox_to_persona)
+        self.arg4_cb = ctk.CTkComboBox(master = self.f2, height = 25, width = 120, values = [], command = self.sync_textbox_to_persona)
         self.arg4_cb.grid(row = 3, column = 2, padx = (5, 0), pady = 5, sticky = "ns")
         self.arg4_addbt = ctk.CTkButton(self.f2, text = "", image = self.png_add, height = 25, width = 25, 
                                         command = lambda: self.update_combobox(self.arg4_cb, self.arg4_cb, "add"))
@@ -337,7 +337,7 @@ class PersonaEditor(ctk.CTkToplevel):
         for key, entry_widget, combo_widget in arg_mappings:
             arg = persona_data.get(key, {})
             name = arg.get("name", "")
-            options = arg.get("options", [""])
+            options = arg.get("options", [])
 
             entry_widget.delete(0, "end")
             entry_widget.insert(0, name if name else "")
@@ -383,7 +383,7 @@ class PersonaEditor(ctk.CTkToplevel):
         
         # 建立佔位符對應
         arg_map = {}
-        for i, val in enumerate([arg1, arg2, arg3, arg4], start=1):
+        for i, val in enumerate([arg1, arg2, arg3, arg4], start = 1):
             arg_key = f"arg{i}"
             name = persona.get(arg_key, {}).get("name", "")
             if name:
@@ -413,7 +413,8 @@ class PersonaEditor(ctk.CTkToplevel):
         text_widget = textbox._textbox  # 取得底層 tk.Text 物件
 
         # 先刪除已存在的標籤
-        text_widget.tag_delete("highlight")
+        # text_widget.tag_delete("highlight")
+        text_widget.tag_remove("highlight", "1.0", "end")
 
         # 設定標籤樣式
         text_widget.tag_configure("highlight", foreground = "#03A9F4")
@@ -431,7 +432,7 @@ class PersonaEditor(ctk.CTkToplevel):
         for placeholder in placeholders:
             start_idx = "1.0"
             while True:
-                pos = text_widget.search(placeholder, start_idx, stopindex="end")
+                pos = text_widget.search(placeholder, start_idx, stopindex = "end")
                 if not pos:
                     break # 沒找到就結束
                 end_idx = f"{pos}+{len(placeholder)}c"
