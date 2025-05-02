@@ -91,6 +91,7 @@ if args.force_cpu:
 import json
 import tkinter as tk
 import customtkinter as ctk
+import tool.patchedcustomtkinter as pctk
 import threading
 from ocr.WinCap import WindowCapture
 from ocr.WinCap import MouseTooltip
@@ -978,7 +979,7 @@ t_out_total_wd.grid(row = 14, column = 0, padx = (10, 5), pady = (2, 5), sticky 
 # 模型切換器
 model_change_wd = ctk.CTkLabel(master = f2, text = "目前使用的 AI 模型", anchor = "w", height = 10)
 model_change_wd.grid(row = 15, column = 0, padx = 5, pady = (15, 5), sticky = "swe")
-model_change_op = ctk.CTkComboBox(
+model_change_op = pctk.CTkComboBox(
     master = f2, 
     values = [
         "llama-3.3-70b-versatile", 

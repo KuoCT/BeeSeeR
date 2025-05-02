@@ -2,9 +2,10 @@ import os
 import json
 import colorama
 import markdown
-import tkinter as tk
 import customtkinter as ctk
+import tool.patchedcustomtkinter as pctk
 from bs4 import BeautifulSoup
+import threading
 
 colorama.init() # 讓文字有顏色
 
@@ -91,7 +92,7 @@ class chatroomWindow(ctk.CTkToplevel):
         self.type_f.grid_columnconfigure(1, weight = 0)
 
         # 可捲動文字框
-        self.textbox = ctk.CTkTextbox(self.type_f, font = self.message_font, wrap = "char", corner_radius = 5, height = 100)
+        self.textbox = pctk.CTkTextbox(self.type_f, font = self.message_font, wrap = "char", corner_radius = 5, height = 100)
         self.textbox.grid(row = 0, rowspan = 4, column = 0, padx = (5, 0), pady = 5, sticky = "nsew")
         self.textbox.bind("<Return>", self.on_return_key) # 綁定 Enter 鍵
 
@@ -210,6 +211,27 @@ class chatroomWindow(ctk.CTkToplevel):
         self.update_idletasks()  # 確保渲染完成
         self.text_f._parent_canvas.yview_moveto(1.0)
 
+        return bubble_frame
+
+        # # 回傳包含 bubble_frame 與 text 控制項（未來可更新）
+        # return {
+        #     "frame": bubble_frame,
+        #     "label": text,
+        #     "role": role
+        # }
+    
+    def replace_chatbubble(self, bubble_obj, new_message):
+        """更新指定 chat bubble 的內容文字"""
+        if not bubble_obj or "label" not in bubble_obj:
+            return
+
+        new_text = self.markdown_to_plaintext(new_message)
+        bubble_obj["label"].configure(text = new_text)
+
+        # 自動捲動到底部
+        self.update_idletasks()  # 確保渲染完成
+        self.text_f._parent_canvas.yview_moveto(1.0)
+
     def show_popup(self, event, message):
         """點擊時展開 Toplevel 供選取"""
         popup = ctk.CTkToplevel(self)
@@ -224,7 +246,7 @@ class chatroomWindow(ctk.CTkToplevel):
         y = event.y_root
 
         popup.geometry(f"{popup_width}x{popup_height}+{x}+{y}")
-        # popup.attributes("-topmost", True) # 讓視窗顯示在最前面
+        popup.attributes("-topmost", True) # 讓視窗顯示在最前面
         popup.after(250, popup.iconbitmap, 
                 (
                     os.path.join(PATH, "icon", "logo_dark.ico") 
@@ -292,34 +314,92 @@ class chatroomWindow(ctk.CTkToplevel):
         else:  # 單獨 Enter：送出
             self.talk_to_llm()
         return "break"
-    
         
+    # def talk_to_llm(self, event = None):
+    #     """輸入文字與模型對話"""
+    #     self.on_link_persona() # 連接 persona
+    #     persona = self.updated_persona # 傳入 persona
+    #     self.user_input = self.textbox.get("0.0", "end").strip()
+    #     if self.user_input: # 避免空輸入
+    #         self.append_chatbubble(role = "User", message = self.user_input)
+    #         self.append_chatlog(role = "User", message = self.user_input)
+    #         self.textbox.delete("0.0", "end")  # 清空輸入框內容
+    #         print(f"\n\033[33m[INFO] 使用者輸入：\033[0m")
+    #         print(self.user_input)
+    #         system_prompt = persona["Chat_persona"]
+    #         memory_prompt = persona["Memory_persona"]
+    #         response, prompt_tokens, completion_tokens = self.chat_session.send_to_groq(
+    #             system_prompt, 
+    #             memory_prompt, 
+    #             user_prompt = None, 
+    #             user_input = self.user_input
+    #         )
+    #         self.prompt_tokens = prompt_tokens
+    #         self.completion_tokens = completion_tokens
+    #         self.append_chatbubble(role = self.chat_session.model, message = response)
+    #         self.append_chatlog(role = self.chat_session.model, message = response)
+    #         # 呼叫 callback → 通知主視窗更新 token 顯示
+    #         if self.on_activate:
+    #             self.on_activate(prompt_tokens, completion_tokens)
+
     def talk_to_llm(self, event = None):
-        """輸入文字與模型對話"""
+        """輸入文字與模型對話（非同步）"""
         self.on_link_persona() # 連接 persona
         persona = self.updated_persona # 傳入 persona
         self.user_input = self.textbox.get("0.0", "end").strip()
-        if self.user_input:  # 避免空輸入
-            self.append_chatbubble(role = "User", message = self.user_input)
-            self.append_chatlog(role = "User", message = self.user_input)
-            self.textbox.delete("0.0", "end")  # 清空輸入框內容
-            print(f"\n\033[33m[INFO] 使用者輸入：\033[0m")
-            print(self.user_input)
-            system_prompt = persona["Chat_persona"]
-            memory_prompt = persona["Memory_persona"]
+
+        if not self.user_input: # 避免空輸入
+            return
+
+        self.append_chatbubble(role = "User", message = self.user_input)
+        self.append_chatlog(role = "User", message = self.user_input)
+        self.textbox.delete("0.0", "end") # 清空輸入框內容
+        print(f"\n\033[33m[INFO] 使用者輸入：\033[0m")
+        print(self.user_input)
+
+        # 準備傳送資料給 AI 分析，先鎖定輸入防止多次傳入，並且提示 AI 正在思考，等 AI 開始回應後刪除該文字
+        # 顯示 AI 處理中提示，並暫存 ID
+        self.thinking_bubble = self.append_chatbubble(role = self.chat_session.model, message = "思考中…")
+
+
+        # 建立背景執行緒處理 send_to_groq
+        thread = threading.Thread(
+            target = self._background_send_to_groq,
+            args = (persona["Chat_persona"], persona["Memory_persona"], self.user_input),
+            daemon = True
+        )
+        thread.start()
+
+    def _background_send_to_groq(self, system_prompt, memory_prompt, user_input):
+        """背景執行 send_to_groq，完成後傳回主線程更新 UI"""
+        try:
             response, prompt_tokens, completion_tokens = self.chat_session.send_to_groq(
-                system_prompt, 
-                memory_prompt, 
-                user_prompt = None, 
-                user_input = self.user_input
+                system_prompt,
+                memory_prompt,
+                user_prompt = None,
+                user_input = user_input
             )
-            self.prompt_tokens = prompt_tokens
-            self.completion_tokens = completion_tokens
-            self.append_chatbubble(role = self.chat_session.model, message = response)
-            self.append_chatlog(role = self.chat_session.model, message = response)
-            # 呼叫 callback → 通知主視窗更新 token 顯示
-            if self.on_activate:
-                self.on_activate(prompt_tokens, completion_tokens)
+        except Exception as e:
+            response, prompt_tokens, completion_tokens = f"[ERROR] 模型回應失敗: {e}", 0, 0
+
+        # 回主線程更新 UI
+        self.textbox.after(0, lambda: self._update_ui_with_response(response, prompt_tokens, completion_tokens))
+
+    def _update_ui_with_response(self, response, prompt_tokens, completion_tokens):
+        """主線程中更新 UI 元件"""
+        self.prompt_tokens = prompt_tokens
+        self.completion_tokens = completion_tokens
+
+        # 取代 AI 處理中提示
+        if hasattr(self, "thinking_bubble"):
+            self.thinking_bubble.destroy()
+            del self.thinking_bubble
+
+        self.append_chatbubble(role = self.chat_session.model, message = response)
+        self.append_chatlog(role = self.chat_session.model, message = response)
+
+        if self.on_activate:
+            self.on_activate(prompt_tokens, completion_tokens)
     
     def append_chatlog(self, role, message):
         """將單筆對話追加到 chatlog"""

@@ -1,4 +1,5 @@
 import customtkinter as ctk
+import tool.patchedcustomtkinter as pctk
 from PIL import Image
 import os
 import json
@@ -61,22 +62,22 @@ class PersonaEditor(ctk.CTkToplevel):
         # 顯示指令的文字框
         self.Translator_persona_wd = ctk.CTkLabel(self.f1, text = "• AI 翻譯時 - 人格指令:", height = 0, anchor = "w")
         self.Translator_persona_wd.grid(row = 0, column = 0, padx = 5, pady = (5, 0), sticky = "we")       
-        self.Translator_persona_tb = ctk.CTkTextbox(self.f1, wrap = "char", corner_radius = 5)
+        self.Translator_persona_tb = pctk.CTkTextbox(self.f1, wrap = "char", corner_radius = 5)
         self.Translator_persona_tb.grid(row = 1, column = 0, padx = (15, 0), pady = 5, sticky = "nsew")
 
         self.Chat_persona_wd = ctk.CTkLabel(self.f1, text = "• AI 討論時 - 人格指令:", height = 0, anchor = "w")
         self.Chat_persona_wd.grid(row = 2, column = 0, padx = 5, pady = (5, 0), sticky = "we")
-        self.Chat_persona_tb = ctk.CTkTextbox(self.f1, wrap = "char", corner_radius = 5)
+        self.Chat_persona_tb = pctk.CTkTextbox(self.f1, wrap = "char", corner_radius = 5)
         self.Chat_persona_tb.grid(row = 3, column = 0, padx = (15, 0), pady = 5, sticky = "nsew")
 
         self.Memory_persona_wd = ctk.CTkLabel(self.f1, text = "• AI 記憶時 - 人格指令:", height = 0, anchor = "w")
         self.Memory_persona_wd.grid(row = 4, column = 0, padx = 5, pady = (5, 0), sticky = "we")
-        self.Memory_persona_tb = ctk.CTkTextbox(self.f1, wrap = "char", corner_radius = 5)
+        self.Memory_persona_tb = pctk.CTkTextbox(self.f1, wrap = "char", corner_radius = 5)
         self.Memory_persona_tb.grid(row = 5, column = 0, padx = (15, 0), pady = 5, sticky = "nsew")
 
         self.Prompt_wd = ctk.CTkLabel(self.f1, text = "• OCR → 翻譯 - 提示詞 (Prompt):", height = 0, anchor = "w")
         self.Prompt_wd.grid(row = 6, column = 0, padx = 5, pady = (5, 0), sticky = "we")
-        self.Prompt_tb = ctk.CTkTextbox(self.f1, wrap = "char", corner_radius = 5)
+        self.Prompt_tb = pctk.CTkTextbox(self.f1, wrap = "char", corner_radius = 5)
         self.Prompt_tb.grid(row = 7, column = 0, padx = (15, 0), pady = 5, sticky = "nsew")
 
         # 綁定事件
@@ -86,9 +87,9 @@ class PersonaEditor(ctk.CTkToplevel):
         self.Prompt_tb._textbox.bind("<<Modified>>", lambda e: self.sync_textbox_to_persona('Prompt', self.Prompt_tb))
 
         # 參數設定
-        self.arg1_entry = ctk.CTkEntry(self.f2, height = 0, width = 80)
+        self.arg1_entry = pctk.CTkEntry(self.f2, height = 0, width = 80)
         self.arg1_entry.grid(row = 0, column = 0, padx = (20, 0), pady = (5, 0), sticky = "ns")
-        self.arg1_cb = ctk.CTkComboBox(master = self.f2, height = 25, width = 120, values = [], command = self.sync_textbox_to_persona)
+        self.arg1_cb = pctk.CTkComboBox(master = self.f2, height = 25, width = 120, values = [], command = self.sync_textbox_to_persona)
         self.arg1_cb.grid(row = 0, column = 2, padx = (5, 0), pady = (5, 0), sticky = "ns")
         self.arg1_addbt = ctk.CTkButton(self.f2, text = "", image = self.png_add, height = 25, width = 25, 
                                         command = lambda: self.update_combobox(self.arg1_cb, self.arg1_cb, "add"))
@@ -97,9 +98,9 @@ class PersonaEditor(ctk.CTkToplevel):
                                        command = lambda: self.update_combobox(self.arg1_cb, self.arg1_cb, "remove"))
         self.arg1_rmbt.grid(row = 0, column = 4, padx = (5, 0), pady = (5, 0), sticky = "ns")
 
-        self.arg2_entry = ctk.CTkEntry(self.f2, height = 0, width = 80)
+        self.arg2_entry = pctk.CTkEntry(self.f2, height = 0, width = 80)
         self.arg2_entry.grid(row = 1, column = 0, padx = (20, 0), pady = (5, 0), sticky = "ns")
-        self.arg2_cb = ctk.CTkComboBox(master = self.f2, height = 25, width = 120, values = [], command = self.sync_textbox_to_persona)
+        self.arg2_cb = pctk.CTkComboBox(master = self.f2, height = 25, width = 120, values = [], command = self.sync_textbox_to_persona)
         self.arg2_cb.grid(row = 1, column = 2, padx = (5, 0), pady = (5, 0), sticky = "ns")
         self.arg2_addbt = ctk.CTkButton(self.f2, text = "", image = self.png_add, height = 25, width = 25, 
                                         command = lambda: self.update_combobox(self.arg2_cb, self.arg2_cb, "add"))
@@ -108,9 +109,9 @@ class PersonaEditor(ctk.CTkToplevel):
                                        command = lambda: self.update_combobox(self.arg2_cb, self.arg2_cb, "remove"))
         self.arg2_rmbt.grid(row = 1, column = 4, padx = (5, 0), pady = (5, 0), sticky = "ns")
 
-        self.arg3_entry = ctk.CTkEntry(self.f2, height = 0, width = 80)
+        self.arg3_entry = pctk.CTkEntry(self.f2, height = 0, width = 80)
         self.arg3_entry.grid(row = 2, column = 0, padx = (20, 0), pady = (5, 0), sticky = "ns")
-        self.arg3_cb = ctk.CTkComboBox(master = self.f2, height = 25, width = 120, values = [], command = self.sync_textbox_to_persona)
+        self.arg3_cb = pctk.CTkComboBox(master = self.f2, height = 25, width = 120, values = [], command = self.sync_textbox_to_persona)
         self.arg3_cb.grid(row = 2, column = 2, padx = (5, 0), pady = (5, 0), sticky = "ns") 
         self.arg3_addbt = ctk.CTkButton(self.f2, text = "", image = self.png_add, height = 25, width = 25, 
                                         command = lambda: self.update_combobox(self.arg3_cb, self.arg3_cb, "add"))
@@ -119,9 +120,9 @@ class PersonaEditor(ctk.CTkToplevel):
                                        command = lambda: self.update_combobox(self.arg3_cb, self.arg3_cb, "remove"))
         self.arg3_rmbt.grid(row = 2, column = 4, padx = (5, 0), pady = (5, 0), sticky = "ns")
         
-        self.arg4_entry = ctk.CTkEntry(self.f2, height = 0, width = 80)
+        self.arg4_entry = pctk.CTkEntry(self.f2, height = 0, width = 80)
         self.arg4_entry.grid(row = 3, column = 0, padx = (20, 0), pady = 5, sticky = "ns")
-        self.arg4_cb = ctk.CTkComboBox(master = self.f2, height = 25, width = 120, values = [], command = self.sync_textbox_to_persona)
+        self.arg4_cb = pctk.CTkComboBox(master = self.f2, height = 25, width = 120, values = [], command = self.sync_textbox_to_persona)
         self.arg4_cb.grid(row = 3, column = 2, padx = (5, 0), pady = 5, sticky = "ns")
         self.arg4_addbt = ctk.CTkButton(self.f2, text = "", image = self.png_add, height = 25, width = 25, 
                                         command = lambda: self.update_combobox(self.arg4_cb, self.arg4_cb, "add"))
@@ -146,32 +147,32 @@ class PersonaEditor(ctk.CTkToplevel):
             self.Memory_persona_tb,
             self.Prompt_tb,
         ]
-        self.arg1_entry.bind("<Return>", lambda e: self.sync_textbox_to_persona(textboxs = self.textboxes, widget = self.arg1_entry))
-        self.arg1_entry.bind("<FocusOut>", lambda e: self.sync_textbox_to_persona(textboxs = self.textboxes, widget = self.arg1_entry))
+        self.arg1_entry.bind("<Return>", lambda e: self.sync_textbox_to_persona(textboxs = self.textboxes, widget = self.arg1_entry, namechange = "arg1"))
+        self.arg1_entry.bind("<FocusOut>", lambda e: self.sync_textbox_to_persona(textboxs = self.textboxes, widget = self.arg1_entry, namechange = "arg1"))
         self.widget_arg1 = self.arg1_cb._entry
         self.widget_arg1.bind("<Return>", lambda e: self.sync_textbox_to_persona(widget = self.arg1_cb))
         self.widget_arg1.bind("<FocusOut>", lambda e: self.sync_textbox_to_persona(widget = self.arg1_cb))
 
-        self.arg2_entry.bind("<Return>", lambda e: self.sync_textbox_to_persona(textboxs = self.textboxes, widget = self.arg2_entry))
-        self.arg2_entry.bind("<FocusOut>", lambda e: self.sync_textbox_to_persona(textboxs = self.textboxes, widget = self.arg2_entry))
+        self.arg2_entry.bind("<Return>", lambda e: self.sync_textbox_to_persona(textboxs = self.textboxes, widget = self.arg2_entry, namechange = "arg2"))
+        self.arg2_entry.bind("<FocusOut>", lambda e: self.sync_textbox_to_persona(textboxs = self.textboxes, widget = self.arg2_entry, namechange = "arg2"))
         self.widget_arg2 = self.arg2_cb._entry
         self.widget_arg2.bind("<Return>", lambda e: self.sync_textbox_to_persona(widget = self.arg2_cb))
         self.widget_arg2.bind("<FocusOut>", lambda e: self.sync_textbox_to_persona(widget = self.arg2_cb))
 
-        self.arg3_entry.bind("<Return>", lambda e: self.sync_textbox_to_persona(textboxs = self.textboxes, widget = self.arg3_entry))
-        self.arg3_entry.bind("<FocusOut>", lambda e: self.sync_textbox_to_persona(textboxs = self.textboxes, widget = self.arg3_entry))
+        self.arg3_entry.bind("<Return>", lambda e: self.sync_textbox_to_persona(textboxs = self.textboxes, widget = self.arg3_entry, namechange = "arg3"))
+        self.arg3_entry.bind("<FocusOut>", lambda e: self.sync_textbox_to_persona(textboxs = self.textboxes, widget = self.arg3_entry, namechange = "arg3"))
         self.widget_arg3 = self.arg3_cb._entry
         self.widget_arg3.bind("<Return>", lambda e: self.sync_textbox_to_persona(widget = self.arg3_cb))
         self.widget_arg3.bind("<FocusOut>", lambda e: self.sync_textbox_to_persona(widget = self.arg3_cb))
 
-        self.arg4_entry.bind("<Return>", lambda e: self.sync_textbox_to_persona(textboxs = self.textboxes, widget = self.arg4_entry))
-        self.arg4_entry.bind("<FocusOut>", lambda e: self.sync_textbox_to_persona(textboxs = self.textboxes, widget = self.arg4_entry))
+        self.arg4_entry.bind("<Return>", lambda e: self.sync_textbox_to_persona(textboxs = self.textboxes, widget = self.arg4_entry, namechange = "arg4"))
+        self.arg4_entry.bind("<FocusOut>", lambda e: self.sync_textbox_to_persona(textboxs = self.textboxes, widget = self.arg4_entry, namechange = "arg4"))
         self.widget_arg4 = self.arg4_cb._entry
         self.widget_arg4.bind("<Return>", lambda e: self.sync_textbox_to_persona(widget = self.arg4_cb))
         self.widget_arg4.bind("<FocusOut>", lambda e: self.sync_textbox_to_persona(widget = self.arg4_cb))
 
         # 說明文字框
-        self.args_info_tb = ctk.CTkTextbox(self.f2, wrap = "char", height = 0, corner_radius = 5)
+        self.args_info_tb = pctk.CTkTextbox(self.f2, wrap = "char", height = 0, corner_radius = 5)
         self.args_info_tb.grid(row = 0, rowspan = 4, column = 5, padx = (5, 0), pady = (5, 0), sticky = "nsew")
         info_text = ("◀ 佔位符說明:\n用雙大括弧包住{{佔位符}}，參數選項內的文字將會取代整個{{佔位符}}")
         self.args_info_tb.insert("1.0", info_text)
@@ -344,7 +345,7 @@ class PersonaEditor(ctk.CTkToplevel):
             combo_widget.configure(values = options)
             combo_widget.set(options[0] if options and options[0] else "")
 
-    def load_persona(self, file_or_data, arg1="", arg2="", arg3="", arg4=""):
+    def load_persona(self, file_or_data, arg1 = "", arg2 = "", arg3 = "", arg4 = ""):
 
         """
         從 JSON 文件或已載入的 dict 變數載入 persona 提示詞，
@@ -457,7 +458,7 @@ class PersonaEditor(ctk.CTkToplevel):
         update_textbox_if_needed(self.Memory_persona_tb, self.persona['Memory_persona'])
         update_textbox_if_needed(self.Prompt_tb, self.persona['Prompt'])
 
-    def sync_textbox_to_persona(self, key = None, textbox = None, textboxs = None, widget = None):
+    def sync_textbox_to_persona(self, key = None, textbox = None, textboxs = None, widget = None, namechange = None):
         """同步 textbox 編輯內容到 persona 並更新佔位符替換內容"""
 
         # 若有指定 key 和 textbox，將使用者編輯的內容更新進 persona 原始資料
@@ -466,6 +467,23 @@ class PersonaEditor(ctk.CTkToplevel):
         else:
             if widget: widget.master.focus_set() # 把焦點移開，讓游標從輸入框消失
             pass
+        
+        # 建立對應 key → (entry, combo) 的映射
+        arg_mapping_dict = {
+            "arg1": (self.arg1_entry, self.arg1_cb),
+            "arg2": (self.arg2_entry, self.arg2_cb),
+            "arg3": (self.arg3_entry, self.arg3_cb),
+            "arg4": (self.arg4_entry, self.arg4_cb),
+        }
+
+        if namechange in arg_mapping_dict:
+            entry_widget, combo_widget = arg_mapping_dict[namechange]
+            name = entry_widget.get()
+            options = combo_widget.cget("values")
+            self.persona[namechange] = {
+                "name": name,
+                "options": list(options) if isinstance(options, tuple) else options
+            }
 
         # 從目前 ComboBox 讀取參數值進行佔位符替換
         self.updated_persona, _ = self.load_persona(

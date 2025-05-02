@@ -1,4 +1,5 @@
 import customtkinter as ctk
+import tool.patchedcustomtkinter as pctk
 from PIL import Image
 import os
 import json
@@ -69,7 +70,7 @@ class APISetting(ctk.CTkToplevel):
         self.google_ocr_wd = ctk.CTkLabel(self.f1, text = "圖片文字辨識 - Google Vision API:", anchor = "w")
         self.google_ocr_wd.grid(row = 0, column = 0, columnspan = 2, padx = 5, pady = (5, 0), sticky = "nswe")
 
-        self.google_ocr_entry = ctk.CTkEntry(self.f1) # 輸入框
+        self.google_ocr_entry = pctk.CTkEntry(self.f1) # 輸入框
         self.google_ocr_entry.grid(row = 1, column = 0, padx = (5, 0), pady = (0, 5), sticky = "nswe")
         if self.google_ocr_key:  # 如果有舊的 API Key，則填入
             self.google_ocr_entry.insert(0, self.google_ocr_key)
@@ -82,7 +83,7 @@ class APISetting(ctk.CTkToplevel):
         self.groq_wd = ctk.CTkLabel(self.f2, text = "AI 自動翻譯 / 聊天室 - Groq API:", anchor = "w")
         self.groq_wd.grid(row = 0, column = 0, columnspan = 2, padx = 5, pady = (5, 0), sticky = "nswe")
 
-        self.groq_entry = ctk.CTkEntry(self.f2) # 輸入框
+        self.groq_entry = pctk.CTkEntry(self.f2) # 輸入框
         self.groq_entry.grid(row = 1, column = 0, padx = (5, 0), pady = (2, 5), sticky = "nswe")
         if self.groq_key:  # 如果有舊的 API Key，則填入
             self.groq_entry.insert(0, self.groq_key)

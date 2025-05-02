@@ -1,4 +1,5 @@
 import customtkinter as ctk
+import tool.patchedcustomtkinter as pctk
 import os
 import json
 from torch.cuda import is_available
@@ -187,13 +188,13 @@ class ModelSetting(ctk.CTkToplevel):
         # 快捷鍵設定
         self.capture_hotkey_wd = ctk.CTkLabel(self.f4, text = "Capture 熱鍵", height = 20, anchor = "e")
         self.capture_hotkey_wd.grid(row = 1, column = 0, padx = (5, 0), pady = (3, 0), sticky = "we")
-        self.capture_hotkey_entry = ctk.CTkEntry(self.f4, font = ctk.CTkFont(size = 12))
+        self.capture_hotkey_entry = pctk.CTkEntry(self.f4, font = ctk.CTkFont(size = 12))
         self.capture_hotkey_entry.grid(row = 1, column = 1, columnspan = 2, padx = 5, pady = (3, 0), sticky = "we")
         self.capture_hotkey_entry.insert(0, self.capture_hotkey)
 
         self.toggle_overlay_hotkey_wd = ctk.CTkLabel(self.f4, text = "隱藏懸浮窗熱鍵", height = 20, anchor = "e")
         self.toggle_overlay_hotkey_wd.grid(row = 2, column = 0, padx = (5, 0), pady = (3, 0), sticky = "we")
-        self.toggle_overlay_hotkey_entry = ctk.CTkEntry(self.f4, font = ctk.CTkFont(size = 12))
+        self.toggle_overlay_hotkey_entry = pctk.CTkEntry(self.f4, font = ctk.CTkFont(size = 12))
         self.toggle_overlay_hotkey_entry.grid(row = 2, column = 1, columnspan = 2, padx = 5, pady = (3, 0), sticky = "we")
         self.toggle_overlay_hotkey_entry.insert(0, self.toggle_overlay_hotkey)
 
