@@ -27,7 +27,7 @@ BeeSeeR 是一款整合 OCR 與大型語言模型 (LLM) 的 多功能 GUI 工具
 - **NVIDIA GPU（建議）** – 使用 CUDA 加速提高 OCR 處理速度。
 
 ## 安裝及使用方式
-[點此下載安裝檔](https://github.com/KuoCT/BeeSeeR/releases/download/v3.0.2/BeeSeeR_302_installer.exe)  
+[點此下載安裝檔](https://github.com/KuoCT/BeeSeeR/releases/download/v3.0.3/BeeSeeR_303_installer.exe)  
 版本更新詳細內容請參考 [更新日誌](./update_log.md)。
 
 ![demo_1](./demo/demo_1.png)

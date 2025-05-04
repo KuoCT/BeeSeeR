@@ -136,7 +136,7 @@ class GroqChatSession:
             not self.silent and print(f"\033[31m[ERROR] 總結對話時出錯：{e}\033[0m")
             raise Exception(f"錯誤出現在記憶力模組：{e}")  # 拋出異常到 send_to_groq()
 
-    def send_to_groq(self, system_prompt, memory_prompt, user_prompt, user_input):
+    def send_to_groq(self, system_prompt, memory_prompt, user_prompt, user_input, chat_options = None):
         """發送對話請求給 Groq API，並在歷史過長時進行摘要"""
         if not self.api_key:
             print("\033[31m[ERROR] GROQ_API_KEY 未提供。\033[0m")
@@ -192,7 +192,7 @@ class GroqChatSession:
         not self.silent and print(json.dumps(messages_for_chat, indent = 2, ensure_ascii = False))
 
         try:
-            chat_completion = self.client.chat.completions.create(
+            chat_completion = self.client.with_options(**(chat_options or {})).chat.completions.create(
                 messages = messages_for_chat,
                 model = self.model,
                 temperature = self.temperature  # 溫度參數

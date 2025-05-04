@@ -80,15 +80,15 @@ class WindowCapture(tk.Toplevel):
         # 設定全螢幕
         self.withdraw()
         self.attributes('-fullscreen', True)
-        self.config(bg="black")
+        self.config(bg = "black")
         self.attributes('-alpha', 0.6)
         self.overrideredirect(True)
         self.attributes("-topmost", True) # 讓視窗顯示在最前面
         self.set_transparent_color("green")
 
         # 創建畫布 (Canvas) 來繪製矩形
-        self.canvas = tk.Canvas(self, bg="black", highlightthickness=0)
-        self.canvas.pack(fill=tk.BOTH, expand=True)
+        self.canvas = tk.Canvas(self, bg = "black", highlightthickness = 0)
+        self.canvas.pack(fill = tk.BOTH, expand = True)
 
         # 綁定滑鼠事件
         if bind: # 如果 bind 為 True 則綁定滑鼠事件

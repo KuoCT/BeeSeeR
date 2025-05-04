@@ -381,7 +381,7 @@ def handle_result(prompt_text, extracted_text, final_text, is_dragging):
         # 粗略統計單詞數
         word_count = estimate_word_count(ext)
         print(f"\033[36m[INFO] OCR 結果分析: {word_count} 單字\033[0m")
-        word_threshold = 1000  # 可自行調整單字上限
+        word_threshold = 600  # 可自行調整單字上限
 
         if word_count > word_threshold:
             from tkinter import messagebox
@@ -404,7 +404,7 @@ def handle_result(prompt_text, extracted_text, final_text, is_dragging):
                 system_prompt = persona["Translator_persona"]
                 memory_prompt = persona["Memory_persona"]
                 response, prompt_tokens, completion_tokens = chat_session.send_to_groq(
-                    system_prompt, memory_prompt, user_prompt, user_input
+                    system_prompt, memory_prompt, user_prompt, user_input, chat_options = {"timeout": 5.0}
                 )
                 last_response = response
             except Exception as e:
@@ -447,7 +447,7 @@ def handle_result(prompt_text, extracted_text, final_text, is_dragging):
             window.after(0, update_ui)
 
         # 顯示提示（主線）
-        loading_tip = MouseTooltip(window, follow=True, text="AI 處理中...")
+        loading_tip = MouseTooltip(window, follow = True, text = "雲端 AI 連線中...")
         loading_tip.update()
 
         # 背景執行 AI 翻譯任務

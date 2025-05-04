@@ -206,7 +206,7 @@ class ModelSetting(ctk.CTkToplevel):
         self.toggle_overlay_hotkey_entry.bind("<FocusOut>", lambda e: self.update_hotkey())
 
         # 顯示版本號
-        self.version_lab = ctk.CTkLabel(self.f4, text = "BeeSeeR 版本: v3.0.2 ", font = ctk.CTkFont(size = 12), anchor = "e")
+        self.version_lab = ctk.CTkLabel(self.f4, text = "BeeSeeR 版本: v3.0.3 ", font = ctk.CTkFont(size = 12), anchor = "e")
         self.version_lab.grid(row = 3, column = 0, columnspan = 3, padx = 5, pady = 5, sticky = "es")
 
         # 初始化設定選項狀態 (Surya-OCR: 限定語言設定)

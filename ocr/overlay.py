@@ -1,3 +1,4 @@
+import tkinter as tk
 import customtkinter as ctk
 from PIL import Image
 import json
@@ -57,7 +58,7 @@ class overlayWindow(ctk.CTkToplevel):
         else:
             x1, y1, x2, y2 = coords
             w, h = int((x2 - x1) / scale_factor), int((y2 - y1) / scale_factor)
-            width, height = int(w + (30 / scale_factor)), int(h + (45 / scale_factor))
+            width, height = w, int(h + (45 / scale_factor))
             self.w = w # 儲存原始寬高，給 relocate 使用
             self.h = h
 
@@ -132,7 +133,7 @@ class overlayWindow(ctk.CTkToplevel):
         self.textbox = ctk.CTkTextbox(self.text_f, font = self.text_font, wrap = "char", corner_radius = 4)
         self.textbox.insert("1.0", self.showTEXT)
         self.textbox.configure(state="disabled") # 唯讀
-        self.textbox.grid(row = 0, column = 0, padx = 5, pady = (5, 0), sticky = "nsew")
+        self.textbox.grid(row = 0, column = 0, padx = 0, pady = (0, 0), sticky = "nsew")
 
         # 控制區域 1
         self.control_f1 = ctk.CTkFrame(self, fg_color = "green", bg_color = "green")
@@ -232,6 +233,14 @@ class overlayWindow(ctk.CTkToplevel):
             fg_color = ["#1e8bba", "#C06E2F"], hover_color = ["#325882", "#A85820"],
             command = lambda: self.re_acivate(coords))
         self.re_bt.grid(row = 2, column = 0, padx = 2, pady = (2, 5), sticky = "ns")
+        CTkToolTip(self.re_bt, lambda: "重新翻譯選取範圍")
+
+        # 建立 CoordsHighlighter 物件
+        self.highlighter = CoordsHighlighter(self, coords, self.scale_factor)
+
+        # 加到 re_bt 上的事件
+        self.re_bt.bind("<Enter>", lambda e: self.highlighter.show())
+        self.re_bt.bind("<Leave>", lambda e: self.highlighter.hide())
 
         # 隱藏選項開關
         hide_sw_var = ctk.StringVar(value = self.hide)
@@ -360,9 +369,9 @@ class overlayWindow(ctk.CTkToplevel):
 
         # 更新視窗大小與位置
         if self.relocate_mode == "bottom":
-            self.geometry(f"{self.width}x{self.height}+{self.x1}+{self.y1 + self.h}")
+            self.geometry(f"{self.width}x{self.height}+{self.x1}+{self.y1 + int(self.h * self.scale_factor)}")
         elif self.relocate_mode == "right":
-            self.geometry(f"{self.width}x{self.height}+{(self.x1 + self.w)}+{self.y1}")
+            self.geometry(f"{self.width}x{self.height}+{(self.x1 + int(self.w * self.scale_factor))}+{self.y1}")
         else:
             self.geometry(f"{self.width}x{self.height}+{self.x1}+{self.y1}")
 
@@ -482,3 +491,92 @@ class overlayWindow(ctk.CTkToplevel):
         if hasattr(self, "slider") and self.slider.winfo_exists():
             self.slider.destroy()
         super().destroy()
+
+class CTkToolTip:
+    def __init__(self, widget, text_func, delay = 500):
+        self.widget = widget
+        self.text_func = text_func  # 傳入一個回傳提示文字的函式
+        self.tipwindow = None
+        self.id = None
+        self.delay = delay
+        self.widget.bind("<Enter>", self.enter)
+        self.widget.bind("<Leave>", self.leave)
+
+    def enter(self, event=None):
+        self.schedule()
+
+    def leave(self, event=None):
+        self.unschedule()
+        self.hidetip()
+
+    def schedule(self):
+        self.unschedule()
+        self.id = self.widget.after(self.delay, self.showtip)
+
+    def unschedule(self):
+        if self.id:
+            self.widget.after_cancel(self.id)
+            self.id = None
+
+    def showtip(self):
+        if self.tipwindow:
+            return
+        x, y, _, _ = self.widget.bbox("insert") or (0, 0, 0, 0)
+        x += self.widget.winfo_rootx() + 20
+        y += self.widget.winfo_rooty() + 20
+        self.tipwindow = tw = tk.Toplevel(self.widget)
+        tw.attributes("-topmost", True)  # 再次確保 topmost
+        tw.wm_overrideredirect(True)
+        tw.wm_geometry(f"+{x}+{y}")
+        label = tk.Label(
+            tw, text = self.text_func(),
+            font = ("Helvetica", 10),
+            bg = "yellow",
+            fg = "black",
+            highlightthickness = 1,
+            highlightbackground = "black",
+            anchor = "w",
+            justify = "left",)
+        label.pack()
+
+    def hidetip(self):
+        if self.tipwindow:
+            self.tipwindow.destroy()
+            self.tipwindow = None
+
+class CoordsHighlighter:
+    def __init__(self, master, coords, scale_factor):
+        self.master = master
+        self.coords = coords
+        self.scale_factor = scale_factor
+        self.overlay = None
+
+    def show(self):
+        if not self.coords:
+            return
+        
+        x1, y1, x2, y2 = self.coords
+        width = int((x2 - x1))
+        height = int((y2 - y1))
+        x = int(x1)
+        y = int(y1)
+
+        # 建立透明視窗
+        self.overlay = tk.Toplevel(self.master)
+        self.overlay.overrideredirect(True)
+        self.overlay.attributes("-topmost", True)
+        self.overlay.attributes("-transparentcolor", "green")
+        self.overlay.configure(bg = "green")
+
+        # 設定大小與位置
+        self.overlay.geometry(f"{width}x{height}+{x}+{y}")
+
+        # 畫邊框
+        canvas = tk.Canvas(self.overlay, width = width, height = height, highlightthickness = 0, bg = "green")
+        canvas.pack()
+        canvas.create_rectangle(1, 1, width - 2, height - 2, outline = "yellow", width = 2)
+
+    def hide(self):
+        if self.overlay:
+            self.overlay.destroy()
+            self.overlay = None

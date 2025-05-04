@@ -9,10 +9,10 @@ if __name__ == "__main__":
     from ocr.overlay import overlayWindow
 
     showTEXT = "這是一個不可編輯的文字顯示區域，可以調整透明度，可以縮放字體大小，鎖定視窗後可以複製文字。\n" * 20
-    scale_factor = 1
+    scale_factor = 1.25
     current_theme = "dark"
-    # coords = (500, 100, 800, 400)
-    coords = None
+    coords = (500, 100, 800, 400)
+    # coords = None
 
     # 設定主題
     if current_theme == "dark":

@@ -25,7 +25,7 @@
 
 ## Installation & Usage
 
-[Download the installer here](https://github.com/KuoCT/BeeSeeR/releases/download/v3.0.2/BeeSeeR_302_installer.exe)  
+[Download the installer here](https://github.com/KuoCT/BeeSeeR/releases/download/v3.0.3/BeeSeeR_303_installer.exe)  
 For detailed version updates, please refer to the [changelog](./update_log.md).
 
 ![demo_1](./demo/demo_1.png)

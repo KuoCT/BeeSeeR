@@ -1,0 +1,9 @@
+__pycache__/
+*.pyc
+*.pyo
+ico_converter.py
+setup.png
+setup.ico
+logo_light.png
+logo_dark.png
+logo.ai
