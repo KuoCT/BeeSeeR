@@ -985,12 +985,10 @@ model_change_op = pctk.CTkComboBox(
         "llama-3.3-70b-versatile", 
         "compound-beta-mini", 
         "meta-llama/llama-4-maverick-17b-128e-instruct",
+        "openai/gpt-oss-120b",
+        "moonshotai/kimi-k2-instruct",
         "deepseek-r1-distill-llama-70b",
-        "qwen-qwq-32b",
-        "meta-llama/llama-4-scout-17b-16e-instruct",
-        "Llama3-70B-8192", 
-        "llama-3.1-8b-instant", 
-        "gemma2-9b-it"
+        "qwen/qwen3-32b"
     ], 
     command = set_model
 )

@@ -111,7 +111,8 @@ class GroqChatSession:
                     {"role": "user", "content": chat_content},
                 ],
                 model = self.model,
-                temperature = 0.25 # 降低創意度確保摘要更精確
+                temperature = 0.25, # 降低創意度確保摘要更精確
+                max_completion_tokens = 512 
             )
             
             summary = summary_response.choices[0].message.content.strip()
@@ -195,7 +196,8 @@ class GroqChatSession:
             chat_completion = self.client.with_options(**(chat_options or {})).chat.completions.create(
                 messages = messages_for_chat,
                 model = self.model,
-                temperature = self.temperature  # 溫度參數
+                temperature = self.temperature,  # 溫度參數
+                max_completion_tokens = 2048
             )
             response = chat_completion.choices[0].message.content
 
