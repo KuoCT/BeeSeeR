@@ -13,7 +13,7 @@ with open("requirements.txt", encoding="utf-8") as f:
 # 加入 torch 檢查條件
 mode = 0  # 這行也可從環境變數取得
 if mode == 0:
-    lines.append("torch==2.6.0+cu118")
+    lines.append("torch==2.8.0+cu128")
 
 # 檢查未安裝或版本不符的套件
 missing_or_mismatch = []

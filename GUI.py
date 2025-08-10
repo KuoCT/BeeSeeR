@@ -270,6 +270,7 @@ def run_wincap(coords = None):
         elif ocr_model == "surya":
             if not recognition_predictor and not detection_predictor:
                 threading.Thread(target = simulate_loop_progress, args = (stop_event,), daemon = True).start()
+                from surya.foundation import FoundationPredictor
                 from surya.recognition import RecognitionPredictor
                 from surya.detection import DetectionPredictor
                 
@@ -277,7 +278,8 @@ def run_wincap(coords = None):
                 if not os.path.exists(checkpoint_path): # 檢查 checkpoint 資料夾是否存在
                     handle_model_not_found()
                     return
-                recognition_predictor = RecognitionPredictor(dtype = dtype, checkpoint = checkpoint_path)
+                foundation_predictor = FoundationPredictor(dtype = dtype, checkpoint = checkpoint_path)
+                recognition_predictor = RecognitionPredictor(foundation_predictor)
 
                 checkpoint_path = os.path.join(PATH, "checkpoint", "surya-ocr", "text_detection")
                 if not os.path.exists(checkpoint_path): # 檢查 checkpoint 資料夾是否存在
@@ -476,7 +478,7 @@ def update_token_display(prompt_tokens, completion_tokens):
 
 def open_ModelSetting():
     """開啟模型設定視窗"""
-    ModSet.geometry(f"{ModSet.w}x{ModSet.h}+{window.winfo_x() - int((ModSet.w + 10) * scale_factor)}+{window.winfo_y()}")
+    ModSet.geometry(f"{ModSet.width}x{ModSet.height}+{window.winfo_x() - int((ModSet.width + 10) * scale_factor)}+{window.winfo_y()}")
     ModSet.deiconify()
 
 def update_ModelSetting():
@@ -650,6 +652,7 @@ def reset_chat():
     """重置當前對話的輸入輸出，以及歷史模型記憶"""
     chat_session.messages = []  # 清空對話歷史
     chat_session.summaries = [""]  # 重置摘要
+    chatroom.reset_chat()
 
     # 重置當前輸入輸出 token 計數
     t_input_wd.configure(text = "• 輸入: 0")
@@ -821,7 +824,7 @@ ctk.set_default_color_theme(os.path.join(PATH, "theme", "nectar.json"))
 window = ctk.CTk() # 主視窗 (root)
 freeze_overlay = FreezeOverlay(window) # 模擬螢幕凍結的 overlay (toplevel)
 APISet = APISetting(current_theme, on_activate = update_APISetting, APPDATA = APPDATA) # API 設定視窗 (toplevel)
-ModSet = ModelSetting(current_theme, on_activate = update_ModelSetting, on_restart = restart_app, on_update_hotkey = update_hotkey, APPDATA = APPDATA) # OCR 模型設定視窗 (toplevel)
+ModSet = ModelSetting(current_theme, height = 360, on_activate = update_ModelSetting, on_restart = restart_app, on_update_hotkey = update_hotkey, APPDATA = APPDATA) # OCR 模型設定視窗 (toplevel)
 PerEdit = PersonaEditor(current_theme, APPDATA = APPDATA) # 人格指令編輯器 (toplevel)
 if groq_available:
     chatroom = chatroomWindow(current_theme, chat_session, groq_key, on_activate = update_token_display, on_link_persona = link_persona, APPDATA = APPDATA) # 聊天室 / 翻譯紀錄 (toplevel)

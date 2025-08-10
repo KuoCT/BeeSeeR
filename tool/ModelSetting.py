@@ -27,9 +27,9 @@ class ModelSetting(ctk.CTkToplevel):
         self.on_update_hotkey = on_update_hotkey
 
         self.title("OCR 設定")
-        width = width if width is not None else self.w
-        height = height if height is not None else self.h
-        self.geometry(f"{width}x{height}") # 設定視窗大小
+        self.width = width if width is not None else self.w
+        self.height = height if height is not None else self.h
+        self.geometry(f"{self.width}x{self.height}") # 設定視窗大小
         self.attributes("-topmost", False) # 讓視窗顯示在最前面
         self.after(250, self.iconbitmap, 
                 (
@@ -119,37 +119,50 @@ class ModelSetting(ctk.CTkToplevel):
         )
         self.surya_ocr_sw.grid(row = 0, column = 0, columnspan = 3, padx = 5, pady = (5, 0), sticky = "w")
 
-        # 限定語言
-        self.langs_wd = ctk.CTkLabel(self.f2, text = "限定語言 (可複選): ", anchor = "w")
-        self.langs_wd.grid(row = 1, column = 1, columnspan = 2, padx = 5, pady = 0, sticky = "w")
+        # # 限定語言
+        # self.langs_wd = ctk.CTkLabel(self.f2, text = "建議語言 (可複選): ", anchor = "w")
+        # self.langs_wd.grid(row = 1, column = 1, columnspan = 2, padx = 5, pady = 0, sticky = "w")
 
-        self.langs_zh_cb_var = ctk.StringVar(value = "OFF")
-        self.langs_zh_cb = ctk.CTkCheckBox(
-            self.f2, text = "中文", height = 28, variable = self.langs_zh_cb_var, 
-            onvalue = "ON", offvalue = "OFF", command = self.update_langs
-        )
-        self.langs_zh_cb.grid(row = 2, column = 1, padx = (5, 0), pady = 0, sticky = "w")
+        # self.langs_zh_cb_var = ctk.StringVar(value = "OFF")
+        # self.langs_zh_cb = ctk.CTkCheckBox(
+        #     self.f2, text = "中文", height = 28, variable = self.langs_zh_cb_var, 
+        #     onvalue = "ON", offvalue = "OFF", command = self.update_langs
+        # )
+        # self.langs_zh_cb.grid(row = 2, column = 1, padx = (5, 0), pady = 0, sticky = "w")
 
-        self.langs_en_cb_var = ctk.StringVar(value = "OFF")
-        self.langs_en_cb = ctk.CTkCheckBox(
-            self.f2, text = "英文", height = 28, variable = self.langs_en_cb_var, 
-            onvalue = "ON", offvalue = "OFF", command = self.update_langs
-        )
-        self.langs_en_cb.grid(row = 3, column = 1, padx = (5, 0), pady = 5, sticky = "w")
+        # self.langs_en_cb_var = ctk.StringVar(value = "OFF")
+        # self.langs_en_cb = ctk.CTkCheckBox(
+        #     self.f2, text = "英文", height = 28, variable = self.langs_en_cb_var, 
+        #     onvalue = "ON", offvalue = "OFF", command = self.update_langs
+        # )
+        # self.langs_en_cb.grid(row = 3, column = 1, padx = (5, 0), pady = 5, sticky = "w")
 
-        self.langs_ja_cb_var = ctk.StringVar(value = "OFF")
-        self.langs_ja_cb = ctk.CTkCheckBox(
-            self.f2, text = "日文", height = 28, variable = self.langs_ja_cb_var, 
-            onvalue = "ON", offvalue = "OFF", command = self.update_langs
-        )
-        self.langs_ja_cb.grid(row = 2, column = 2, padx = 5, pady = 0, sticky = "w")
+        # self.langs_ja_cb_var = ctk.StringVar(value = "OFF")
+        # self.langs_ja_cb = ctk.CTkCheckBox(
+        #     self.f2, text = "日文", height = 28, variable = self.langs_ja_cb_var, 
+        #     onvalue = "ON", offvalue = "OFF", command = self.update_langs
+        # )
+        # self.langs_ja_cb.grid(row = 2, column = 2, padx = 5, pady = 0, sticky = "w")
 
-        self.langs_ko_cb_var = ctk.StringVar(value = "OFF")
-        self.langs_ko_cb = ctk.CTkCheckBox(
-            self.f2, text = "韓文", height = 28, variable = self.langs_ko_cb_var, 
-            onvalue = "ON", offvalue = "OFF", command = self.update_langs
-        )
-        self.langs_ko_cb.grid(row = 3, column = 2, padx = 5, pady = 5, sticky = "w")
+        # self.langs_ko_cb_var = ctk.StringVar(value = "OFF")
+        # self.langs_ko_cb = ctk.CTkCheckBox(
+        #     self.f2, text = "韓文", height = 28, variable = self.langs_ko_cb_var, 
+        #     onvalue = "ON", offvalue = "OFF", command = self.update_langs
+        # )
+        # self.langs_ko_cb.grid(row = 3, column = 2, padx = 5, pady = 5, sticky = "w")
+
+        # # 初始化設定選項狀態 (Surya-OCR: 限定語言設定)
+        # if self.langs is not None:
+        #     self.langs_zh_cb_var.set("ON" if "zh" in self.langs else "OFF")
+        #     self.langs_en_cb_var.set("ON" if "en" in self.langs else "OFF")
+        #     self.langs_ja_cb_var.set("ON" if "ja" in self.langs else "OFF")
+        #     self.langs_ko_cb_var.set("ON" if "ko" in self.langs else "OFF")
+        # else:
+        #     # 沒設定，全部 OFF
+        #     self.langs_zh_cb_var.set("OFF")
+        #     self.langs_en_cb_var.set("OFF")
+        #     self.langs_ja_cb_var.set("OFF")
+        #     self.langs_ko_cb_var.set("OFF")
 
         # 精度設定
         # 自動/手動按鈕
@@ -206,21 +219,8 @@ class ModelSetting(ctk.CTkToplevel):
         self.toggle_overlay_hotkey_entry.bind("<FocusOut>", lambda e: self.update_hotkey())
 
         # 顯示版本號
-        self.version_lab = ctk.CTkLabel(self.f4, text = "BeeSeeR 版本: v3.0.3 ", font = ctk.CTkFont(size = 12), anchor = "e")
+        self.version_lab = ctk.CTkLabel(self.f4, text = "BeeSeeR 版本: v3.0.4 ", font = ctk.CTkFont(size = 12), anchor = "e")
         self.version_lab.grid(row = 3, column = 0, columnspan = 3, padx = 5, pady = 5, sticky = "es")
-
-        # 初始化設定選項狀態 (Surya-OCR: 限定語言設定)
-        if self.langs is not None:
-            self.langs_zh_cb_var.set("ON" if "zh" in self.langs else "OFF")
-            self.langs_en_cb_var.set("ON" if "en" in self.langs else "OFF")
-            self.langs_ja_cb_var.set("ON" if "ja" in self.langs else "OFF")
-            self.langs_ko_cb_var.set("ON" if "ko" in self.langs else "OFF")
-        else:
-            # 沒設定，全部 OFF
-            self.langs_zh_cb_var.set("OFF")
-            self.langs_en_cb_var.set("OFF")
-            self.langs_ja_cb_var.set("OFF")
-            self.langs_ko_cb_var.set("OFF")
 
         # 初始化設定選項狀態 (Surya-OCR: 精度切換)
         if not is_available(): self.auto_dtype_bt.configure(state = "disabled")

@@ -212,13 +212,6 @@ class chatroomWindow(ctk.CTkToplevel):
         self.text_f._parent_canvas.yview_moveto(1.0)
 
         return bubble_frame
-
-        # # 回傳包含 bubble_frame 與 text 控制項（未來可更新）
-        # return {
-        #     "frame": bubble_frame,
-        #     "label": text,
-        #     "role": role
-        # }
     
     def replace_chatbubble(self, bubble_obj, new_message):
         """更新指定 chat bubble 的內容文字"""
@@ -314,33 +307,6 @@ class chatroomWindow(ctk.CTkToplevel):
         else:  # 單獨 Enter：送出
             self.talk_to_llm()
         return "break"
-        
-    # def talk_to_llm(self, event = None):
-    #     """輸入文字與模型對話"""
-    #     self.on_link_persona() # 連接 persona
-    #     persona = self.updated_persona # 傳入 persona
-    #     self.user_input = self.textbox.get("0.0", "end").strip()
-    #     if self.user_input: # 避免空輸入
-    #         self.append_chatbubble(role = "User", message = self.user_input)
-    #         self.append_chatlog(role = "User", message = self.user_input)
-    #         self.textbox.delete("0.0", "end")  # 清空輸入框內容
-    #         print(f"\n\033[33m[INFO] 使用者輸入：\033[0m")
-    #         print(self.user_input)
-    #         system_prompt = persona["Chat_persona"]
-    #         memory_prompt = persona["Memory_persona"]
-    #         response, prompt_tokens, completion_tokens = self.chat_session.send_to_groq(
-    #             system_prompt, 
-    #             memory_prompt, 
-    #             user_prompt = None, 
-    #             user_input = self.user_input
-    #         )
-    #         self.prompt_tokens = prompt_tokens
-    #         self.completion_tokens = completion_tokens
-    #         self.append_chatbubble(role = self.chat_session.model, message = response)
-    #         self.append_chatlog(role = self.chat_session.model, message = response)
-    #         # 呼叫 callback → 通知主視窗更新 token 顯示
-    #         if self.on_activate:
-    #             self.on_activate(prompt_tokens, completion_tokens)
 
     def talk_to_llm(self, event = None):
         """輸入文字與模型對話（非同步）"""
@@ -360,7 +326,6 @@ class chatroomWindow(ctk.CTkToplevel):
         # 準備傳送資料給 AI 分析，先鎖定輸入防止多次傳入，並且提示 AI 正在思考，等 AI 開始回應後刪除該文字
         # 顯示 AI 處理中提示，並暫存 ID
         self.thinking_bubble = self.append_chatbubble(role = self.chat_session.model, message = "思考中…")
-
 
         # 建立背景執行緒處理 send_to_groq
         thread = threading.Thread(
@@ -438,3 +403,26 @@ class chatroomWindow(ctk.CTkToplevel):
         else:
             # print("Save operation cancelled.")
             pass
+
+    def reset_chat(self):
+        """清空聊天室內容（泡泡 + 紀錄 + 輸入框）"""
+        # 1. 刪掉所有 chat bubble 元件
+        for child in self.text_f.winfo_children():
+            child.destroy()
+
+        # 2. 清空輸入框
+        self.textbox.delete("0.0", "end")
+
+        # 3. 重置聊天紀錄與 token 計數
+        self.chatlog = ""
+        self.prompt_tokens = 0
+        self.completion_tokens = 0
+        self.user_input = ""
+
+        # 4. 回到卷軸頂端
+        try:
+            self.text_f._parent_canvas.yview_moveto(0.0)
+        except Exception:
+            pass
+
+        print("\033[33m[INFO] 聊天內容已重置\033[0m")

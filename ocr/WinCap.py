@@ -55,7 +55,7 @@ class WindowCapture(tk.Toplevel):
             google_ocr_key = None,
             google_ocr_feature = None,
             dtype = None, 
-            langs = None, 
+            langs = None, # 此功能在新版被刪除 2025/08/11
             mocr = None,
             recognition_predictor = None,
             detection_predictor = None,
@@ -235,12 +235,12 @@ class WindowCapture(tk.Toplevel):
             """使用 Surya-OCR 進行辨識"""
             self.tooltip.deiconify() # 顯示提示窗
             self.tooltip.label.config(text = "偵測文字...")
-            print(f"\033[32m[INFO] 載入 OCR 模型（使用裝置: {device}）...\033[0m")
             recognition_predictor = self.recognition_predictor
             detection_predictor = self.detection_predictor
 
+            # print(f"\033[32m[INFO] 載入 OCR 模型（使用裝置: {device}）...\033[0m")
             langs = self.langs
-            predictions = recognition_predictor([image], [langs], detection_predictor)
+            predictions = recognition_predictor([image], det_predictor = detection_predictor)
             # print(predictions) # 測試用
 
             if predictions and hasattr(predictions[0], 'text_lines'):
