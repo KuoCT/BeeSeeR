@@ -169,6 +169,45 @@ hotkey_enabled = True # 初始化快捷鍵狀態
 # ============================================================================
 if args.force_cpu or auto_dtype == "NO": dtype = None # 強制 CPU 計算時使用自動模型精度
 
+# 若沒有模型則下載模型
+if not os.path.exists(os.path.join(PATH, "checkpoint", "surya-ocr", "text_detection", "2025_05_07", "model.safetensors")):
+    from surya import settings
+    settings.settings.MODEL_CACHE_DIR = os.path.join(PATH, "checkpoint", "surya-ocr")
+    from surya.detection import DetectionPredictor
+    detection_predictor = DetectionPredictor()
+    del detection_predictor
+
+if not os.path.exists(os.path.join(PATH, "checkpoint", "surya-ocr", "text_recognition", "2025_08_08", "model.safetensors")):
+    from surya import settings
+    settings.settings.MODEL_CACHE_DIR = os.path.join(PATH, "checkpoint", "surya-ocr")
+    from surya.foundation import FoundationPredictor
+    from surya.recognition import RecognitionPredictor
+    foundation_predictor = FoundationPredictor()
+    recognition_predictor = RecognitionPredictor(foundation_predictor)
+    del foundation_predictor
+    del recognition_predictor
+
+# 清除舊模型
+for item in os.listdir(os.path.join(PATH, "checkpoint", "surya-ocr", "text_detection")):
+    item_path = os.path.join(os.path.join(PATH, "checkpoint", "surya-ocr", "text_detection"), item)
+    if item != "2025_05_07":
+        if os.path.isdir(item_path):
+            shutil.rmtree(item_path)  # 刪除資料夾
+            print(f"已刪除資料夾: {item_path}")
+        else:
+            os.remove(item_path)  # 刪除檔案
+            print(f"已刪除檔案: {item_path}")
+
+for item in os.listdir(os.path.join(PATH, "checkpoint", "surya-ocr", "text_recognition")):
+    item_path = os.path.join(os.path.join(PATH, "checkpoint", "surya-ocr", "text_recognition"), item)
+    if item != "2025_08_08":
+        if os.path.isdir(item_path):
+            shutil.rmtree(item_path)  # 刪除資料夾
+            print(f"已刪除資料夾: {item_path}")
+        else:
+            os.remove(item_path)  # 刪除檔案
+            print(f"已刪除檔案: {item_path}")
+
 # 如果 API Key 非空，解鎖 AI 自動翻譯功能
 if groq_key:
     groq_available = True
@@ -274,14 +313,14 @@ def run_wincap(coords = None):
                 from surya.recognition import RecognitionPredictor
                 from surya.detection import DetectionPredictor
                 
-                checkpoint_path = os.path.join(PATH, "checkpoint", "surya-ocr", "text_recognition")          
+                checkpoint_path = os.path.join(PATH, "checkpoint", "surya-ocr", "text_recognition", "2025_08_08")          
                 if not os.path.exists(checkpoint_path): # 檢查 checkpoint 資料夾是否存在
                     handle_model_not_found()
                     return
                 foundation_predictor = FoundationPredictor(dtype = dtype, checkpoint = checkpoint_path)
                 recognition_predictor = RecognitionPredictor(foundation_predictor)
 
-                checkpoint_path = os.path.join(PATH, "checkpoint", "surya-ocr", "text_detection")
+                checkpoint_path = os.path.join(PATH, "checkpoint", "surya-ocr", "text_detection", "2025_05_07")
                 if not os.path.exists(checkpoint_path): # 檢查 checkpoint 資料夾是否存在
                     handle_model_not_found()
                     return
